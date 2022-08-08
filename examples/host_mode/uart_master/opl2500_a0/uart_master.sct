@@ -1,0 +1,31 @@
+#! armcc -E
+
+/* User can modify APS_HEAP_START to adjust code size ram and HEAP start address
+ * Heap starts equals to program end */
+#define APS_HEAP_START      0x444000
+
+
+/******* Don't modify below *********/
+#define APS_PATCH_START     0x412454        /* OPL2500A0 patch start */
+#define APS_RAM_START       0x400000
+#define APS_RAM_END         0x454000        /* OPL2500 RAM range: 0x400000~0x454000, 336kB */
+#define APS_PATCH_LEN       (APS_RAM_END-APS_PATCH_START)
+#define APS_HEAP_LENGTH     (APS_RAM_END-APS_HEAP_START)
+
+
+
+LR_IROM1 APS_PATCH_START APS_PATCH_LEN
+{
+    RW_IRAM1_EntryPoint +0
+    {
+        .ANY (ENTRY_POINT)
+    }
+    RW_IRAM1 +0 
+    {
+       .ANY (+RO)
+       .ANY (+RW +ZI)
+    }
+    
+    RW_IRAMx_Heap APS_HEAP_START EMPTY APS_HEAP_LENGTH {}
+}
+ScatterAssert(ImageLimit(LR_IROM1) <= APS_RAM_END)
