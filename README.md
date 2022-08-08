@@ -36,4 +36,4 @@
   - OPL2500_A0: TBD.
 
 # User Guide
-  - Please refer to: https://github.com/harrison-netlink/MyTest/wiki
+  - Please refer to: https://opulinks-tech.github.io/QuickDev-Framework-User-Guide/
