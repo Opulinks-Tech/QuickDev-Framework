@@ -98,13 +98,13 @@ float Bat_AuxAdc_Convert_To_Percentage(void)
     float fVBat;
     float fAverageVBat;
 
-#if defined(OPL1000_A2) || defined(OPL1000_A3)
+#if defined(OPL1000_A2)
     Hal_Pin_ConfigSet(BAT_MEAS_IO_PORT, PIN_TYPE_GPIO_OUTPUT_HIGH, PIN_DRIVING_FLOAT);
     osDelay(3);
     Hal_Aux_IoVoltageGet(BAT_MEAS_IO_PORT, &fVBat);
     Hal_Pin_ConfigSet(BAT_MEAS_IO_PORT, PIN_TYPE_NONE, PIN_DRIVING_FLOAT);
-#elif defined(OPL2500_A0)
-    Hal_Aux_AdcMiniVolt_Get(HAL_AUX_SRC_VBAT, BAT_MEAS_IO_PORT, &fVBat);
+#elif defined(OPL1000_A3) || defined(OPL2500_A0)
+    Hal_Aux_AdcMiniVolt_Get(HAL_AUX_SRC_VBAT, 0, &fVBat);
 #endif
 
     if (fVBat > MAXIMUM_VOLTAGE_DEF)
@@ -143,13 +143,13 @@ float Bat_AuxAdc_Get(void)
 
     g_ulHalAux_AverageCount = BAT_IO_VOLTAGE_GET_AVERAGE_COUNT;
 
-#if defined(OPL1000_A2) || defined(OPL1000_A3)
+#if defined(OPL1000_A2)
     Hal_Pin_ConfigSet(BAT_MEAS_IO_PORT, PIN_TYPE_GPIO_OUTPUT_HIGH, PIN_DRIVING_FLOAT);
     osDelay(3);
     Hal_Aux_IoVoltageGet(BAT_MEAS_IO_PORT, &fVBat);
     Hal_Pin_ConfigSet(BAT_MEAS_IO_PORT, PIN_TYPE_NONE, PIN_DRIVING_FLOAT);
-#elif defined(OPL2500_A0)
-    Hal_Aux_AdcMiniVolt_Get(HAL_AUX_SRC_VBAT, BAT_MEAS_IO_PORT, &fVBat);
+#elif defined(OPL1000_A3) || defined(OPL2500_A0)
+    Hal_Aux_AdcMiniVolt_Get(HAL_AUX_SRC_VBAT, 0, &fVBat);
 #endif
 
     fVBat -= g_fVoltageOffset;
@@ -180,6 +180,10 @@ void Bat_AuxAdc_Init(void)
 
     // Calibration data
     g_ulHalAux_AverageCount = BAT_IO_VOLTAGE_GET_AVERAGE_COUNT;
+
+#if defined(OPL1000_A3) || defined(OPL2500_A0)
+    Hal_Aux_AdcCal_Init();
+#endif
 }
 
 #endif /* BAT_MEAS_ENABLED */

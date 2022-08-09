@@ -498,8 +498,6 @@ static void BM_CmMsgHandler(TASK task, MESSAGEID id, MESSAGE message)
             LE_CM_MSG_CONNECTION_COMPLETE_IND_T *ind = (LE_CM_MSG_CONNECTION_COMPLETE_IND_T *)message;
 #endif
 
-            printf("MAXLIAO !!! BLE connected\r\n");
-
             BM_LOG_DEBG("CONNECTION_COMPLETE_IND status=%x", ind->status);
 
             if (ind->status == SYS_ERR_SUCCESS) 

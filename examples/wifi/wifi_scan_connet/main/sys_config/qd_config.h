@@ -93,7 +93,7 @@ extern "C" {
 // <2=> Power mode - Performance
 // <else> User define
 #ifndef SYS_CFG_PS_MODE
-#define SYS_CFG_PS_MODE                         (0)
+#define SYS_CFG_PS_MODE                         (2)
 #endif
 
 //----------------------------------------------------------

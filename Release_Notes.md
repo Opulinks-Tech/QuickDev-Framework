@@ -1,5 +1,17 @@
 ## Release Version:
 State : RC
+Version : v0.2.1
+
+## Release Date: 2022/08/09
+
+## Descript
+1. Verify ble_svc_battery;opl1000_a3
+2. Verify ble_svc_battery;opl1000_a3 & opl2500_a0
+3. Fix battery adc issue on opl1000_a3
+4. Set ble_svc_battery, ble_svc_data_io, wifi_scan_connect and wifi_quick_connect projects default power mode as performance type
+
+## Release Version:
+State : RC
 Version : v0.2.0
 
 ## Release Date: 2022/08/08

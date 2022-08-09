@@ -94,7 +94,6 @@ extern "C" {
 // <else> User define
 #ifndef SYS_CFG_PS_MODE
 #define SYS_CFG_PS_MODE                         (2)
-//#define SYS_CFG_PS_MODE                         (0)
 #endif
 
 //----------------------------------------------------------
