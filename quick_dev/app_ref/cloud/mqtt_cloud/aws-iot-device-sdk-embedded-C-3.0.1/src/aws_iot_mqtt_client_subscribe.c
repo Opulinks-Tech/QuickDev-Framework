@@ -41,6 +41,10 @@ extern "C" {
 
 #include "aws_iot_mqtt_client_common_internal.h"
 
+#if 1
+#include "cloud_ctrl.h"
+#endif
+
 /**
   * Serializes the supplied subscribe data into the supplied buffer, ready for sending
   * @param pTxBuf the buffer into which the packet will be serialized
@@ -259,7 +263,6 @@ static IoT_Error_t _aws_iot_mqtt_internal_subscribe(AWS_IoT_Client *pClient, con
 	 * This can cause issues if the request timeout value is too small */
 	//	return RX_MESSAGE_INVALID_ERROR;
 	//}
-
 	pClient->clientData.messageHandlers[indexOfFreeMessageHandler].topicName =
 			pTopicName;
 	pClient->clientData.messageHandlers[indexOfFreeMessageHandler].topicNameLen =
@@ -308,18 +311,44 @@ IoT_Error_t aws_iot_mqtt_subscribe(AWS_IoT_Client *pClient, const char *pTopicNa
 		FUNC_EXIT_RC(NETWORK_DISCONNECTED_ERROR);
 	}
 
+#if 1
+	int nPublish = 40;
+
+	while((CLIENT_STATE_CONNECTED_IDLE != clientState) && (CLIENT_STATE_CONNECTED_WAIT_FOR_CB_RETURN != clientState) || (true == pClient->clientStatus.isRecvInProgress))
+	{
+		clientState = aws_iot_mqtt_get_client_state(pClient);
+		nPublish--;
+		if(nPublish <= 0)
+		{
+			IOT_INFO("[%s]client state not in idle[%d][%d]\r\n", __func__, clientState, pClient->clientStatus.isRecvInProgress);
+			FUNC_EXIT_RC(MQTT_CLIENT_NOT_IDLE_ERROR);
+		}
+		else
+		{
+			osDelay(100);
+		}
+	}
+#else
 	clientState = aws_iot_mqtt_get_client_state(pClient);
 	if(CLIENT_STATE_CONNECTED_IDLE != clientState && CLIENT_STATE_CONNECTED_WAIT_FOR_CB_RETURN != clientState) {
 		FUNC_EXIT_RC(MQTT_CLIENT_NOT_IDLE_ERROR);
 	}
+#endif
 
 	rc = aws_iot_mqtt_set_client_state(pClient, clientState, CLIENT_STATE_CONNECTED_SUBSCRIBE_IN_PROGRESS);
 	if(SUCCESS != rc) {
 		FUNC_EXIT_RC(rc);
 	}
 
+	// disable skip dtim
+	Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_SUBSCRIBE, false);
+
 	subRc = _aws_iot_mqtt_internal_subscribe(pClient, pTopicName, topicNameLen, qos,
 											 pApplicationHandler, pApplicationHandlerData);
+
+	// enable skip dtim
+	osDelay(100);
+	Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_SUBSCRIBE, true);
 
 	rc = aws_iot_mqtt_set_client_state(pClient, CLIENT_STATE_CONNECTED_SUBSCRIBE_IN_PROGRESS, clientState);
 	if(SUCCESS == subRc && SUCCESS != rc) {
@@ -432,10 +461,18 @@ IoT_Error_t aws_iot_mqtt_resubscribe(AWS_IoT_Client *pClient) {
 		FUNC_EXIT_RC(rc);
 	}
 
+	// disable skip dtim
+	Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_SUBSCRIBE, false);
+	
 	resubRc = _aws_iot_mqtt_internal_resubscribe(pClient);
 
 	rc = aws_iot_mqtt_set_client_state(pClient, CLIENT_STATE_CONNECTED_RESUBSCRIBE_IN_PROGRESS,
 									   CLIENT_STATE_CONNECTED_IDLE);
+
+	// enable skip dtim
+	osDelay(100);
+	Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_SUBSCRIBE, true);
+	
 	if(SUCCESS == resubRc && SUCCESS != rc) {
 		resubRc = rc;
 	}

@@ -35,6 +35,7 @@ Head Block of The File
 // Sec 1: Include File
 
 #include "app_main.h"
+#include "ble_mngr_api.h"
 #include "etharp.h"
 #include "evt_group.h"
 #include "cmsis_os.h"
@@ -79,13 +80,18 @@ AWS_IoT_Client client;
 // event group of mqtt control
 EventGroupHandle_t g_tCloudMqttCtrl;
 
+// global cloud status callback fp
+T_CloudStatusCbFp g_tCloudStatusCbFp = NULL;
+
 // global cloud configure information
 T_CloudConnInfo g_tCloudConnInfo = {0};
 T_CloudTopicRegInfo g_tTxTopicTab[CLOUD_TOPIC_NUMBER];
 T_CloudTopicRegInfo g_tRxTopicTab[CLOUD_TOPIC_NUMBER];
 
 // dtim id
-uint16_t g_u16CloudDtimId = 0;
+uint16_t g_u16CloudDtimId[CLOUD_SKIP_DTIM_MAX] = {0};
+
+static uint8_t g_u8BeenConnected = false;
 
 // Sec 7: declaration of static function prototype
 
@@ -100,7 +106,66 @@ C Functions
 //// User created Functions
 ////////////////////////////////////
 
-T_OplErr Cloud_TxTopicRegister(T_CloudTopicRegInfo *tCloudTopicRegInfo, void *vCallback)
+/*************************************************************************
+* FUNCTION:
+*   Cloud_StatusCallbackRegister
+*
+* DESCRIPTION:
+*   register cloud status callback function
+*
+* PARAMETERS
+*   tCloudStatusCbFp :
+*                   [IN] function pointer
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_StatusCallbackRegister(T_CloudStatusCbFp tCloudStatusCbFp)
+{
+    g_tCloudStatusCbFp = tCloudStatusCbFp;
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_StatusCallback
+*
+* DESCRIPTION:
+*   calling cloud status callback function
+*
+* PARAMETERS
+*   tCloudStatus :  [IN] cloud status type
+*   pData :         [IN] data
+*   u32DataLen :    [IN] data lens
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_StatusCallback(T_CloudStatus tCloudStatus, void *pData, uint32_t u32DataLen)
+{
+    if(NULL != g_tCloudStatusCbFp)
+    {
+        g_tCloudStatusCbFp(tCloudStatus, pData, u32DataLen);
+    }
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_TxTopicRegisterDyn
+*
+* DESCRIPTION:
+*   dynamice way to register tx topic
+*
+* PARAMETERS
+*   tCloudTopicRegInfo :
+*                   [IN] topic structure
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_TxTopicRegisterDyn(T_CloudTopicRegInfo *tCloudTopicRegInfo)
 {
     T_OplErr tEvtRst = OPL_ERR;
 
@@ -110,6 +175,13 @@ T_OplErr Cloud_TxTopicRegister(T_CloudTopicRegInfo *tCloudTopicRegInfo, void *vC
     {
         return OPL_ERR_PARAM_INVALID;
     }
+
+    if(true == g_tTxTopicTab[u8TopicIndex].u8IsTopicRegisted)
+    {
+        return OPL_ERR;
+    }
+
+    memcpy(&g_tTxTopicTab[u8TopicIndex], tCloudTopicRegInfo, sizeof(T_CloudTopicRegInfo));
 
     // register topic to cloud
     // *
@@ -120,14 +192,107 @@ T_OplErr Cloud_TxTopicRegister(T_CloudTopicRegInfo *tCloudTopicRegInfo, void *vC
 
     if(OPL_OK == tEvtRst)
     {
-        memcpy(&g_tTxTopicTab[u8TopicIndex], tCloudTopicRegInfo, sizeof(T_CloudTopicRegInfo));
         g_tTxTopicTab[u8TopicIndex].u8IsTopicRegisted = true;
     }
+    else
+    {
+        memset(&g_tTxTopicTab[u8TopicIndex], 0, sizeof(T_CloudTopicRegInfo));
+    }
 
-		return tEvtRst;
+    return tEvtRst;    
 }
 
-T_OplErr Cloud_RxTopicRegister(T_CloudTopicRegInfo *tCloudTopicRegInfo, void *vCallback)
+/*************************************************************************
+* FUNCTION:
+*   Cloud_TxTopicRegisterSta
+*
+* DESCRIPTION:
+*   static way to subscribe tx topic
+*
+* PARAMETERS
+*   tCloudTopicRegInfo :
+*                   [IN] topic structure
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_TxTopicRegisterSta(T_CloudTopicRegInfo *tCloudTopicRegInfo)
+{
+    uint8_t u8TopicIndex = tCloudTopicRegInfo->u8TopicIndex;
+
+    if(CLOUD_TOPIC_NUMBER <= u8TopicIndex)
+    {
+        return;
+    }
+
+    if(true == g_tTxTopicTab[u8TopicIndex].u8IsTopicRegisted)
+    {
+        return;
+    }
+
+    memcpy(&g_tTxTopicTab[u8TopicIndex], tCloudTopicRegInfo, sizeof(T_CloudTopicRegInfo));
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_TxTopicUnRegisterDyn
+*
+* DESCRIPTION:
+*   un-subscribe tx topic
+*
+* PARAMETERS
+*   u8TopicIndex :  [IN] topic index
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_TxTopicUnRegisterDyn(uint8_t u8TopicIndex)
+{
+    T_OplErr tEvtRst = OPL_ERR;
+
+    if(CLOUD_TOPIC_NUMBER <= u8TopicIndex)
+    {
+        return OPL_ERR_PARAM_INVALID;
+    }
+
+    if(false == g_tTxTopicTab[u8TopicIndex].u8IsTopicRegisted || 0 == g_tTxTopicTab[u8TopicIndex].u8TopicIndex)
+    {
+        return OPL_ERR;
+    }
+
+    // un-register topic from cloud
+    // *
+    // mqtt no need the tx topic registeration
+    // remove the tx topic register information from global registeration table
+    tEvtRst = OPL_OK;
+    // *
+
+    if(OPL_OK == tEvtRst)
+    {
+        memset(&g_tTxTopicTab[u8TopicIndex], 0, sizeof(T_CloudTopicRegInfo));
+    }
+
+    return tEvtRst;
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RxTopicRegisterDyn
+*
+* DESCRIPTION:
+*   dynamice way to register rx topic
+*
+* PARAMETERS
+*   tCloudTopicRegInfo :
+*                   [IN] topic structure
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_RxTopicRegisterDyn(T_CloudTopicRegInfo *tCloudTopicRegInfo)
 {
     T_OplErr tEvtRst = OPL_ERR;
 
@@ -138,36 +303,126 @@ T_OplErr Cloud_RxTopicRegister(T_CloudTopicRegInfo *tCloudTopicRegInfo, void *vC
         return OPL_ERR_PARAM_INVALID;
     }
 
-    tracer_drct_printf("reg rx: %s (%d)\r\n", tCloudTopicRegInfo->u8aTopicName, strlen((char *)tCloudTopicRegInfo->u8aTopicName));
+    if(true == g_tRxTopicTab[u8TopicIndex].u8IsTopicRegisted)
+    {
+        return OPL_ERR;
+    }
 
     memcpy(&g_tRxTopicTab[u8TopicIndex], tCloudTopicRegInfo, sizeof(T_CloudTopicRegInfo));
 
     // register topic to cloud
     // *
-    // mqtt call subscribe topic to register rx topic
-
-    // subscribe topic name should be a static buffer, otherwise the pointer will be kept update to new one
-    Cloud_MqttSubscribeTopic((char *)g_tRxTopicTab[u8TopicIndex].u8aTopicName, strlen((char *)g_tRxTopicTab[u8TopicIndex].u8aTopicName), QOS1, (pApplicationHandler_t)vCallback);
-    tEvtRst = OPL_OK;
+    // send message to cloud kernel to process subscribe topic
+    tEvtRst = Cloud_MsgSend(CLOUD_EVT_TYPE_REGIS_TOPIC, &u8TopicIndex, sizeof(uint8_t));
     // *
-
-    if(OPL_OK == tEvtRst)
-    {
-        g_tRxTopicTab[u8TopicIndex].u8IsTopicRegisted = true;
-    }
-    else
-    {
-        memset(&g_tRxTopicTab[u8TopicIndex], 0, sizeof(T_CloudTopicRegInfo));
-    }
 
     return tEvtRst;
 }
 
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RxTopicRegisterSta
+*
+* DESCRIPTION:
+*   static way to register rx topic
+*
+* PARAMETERS
+*   tCloudTopicRegInfo :
+*                   [IN] topic structure
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_RxTopicRegisterSta(T_CloudTopicRegInfo *tCloudTopicRegInfo)
+{
+    uint8_t u8TopicIndex = tCloudTopicRegInfo->u8TopicIndex;
+
+    if(CLOUD_TOPIC_NUMBER <= u8TopicIndex)
+    {
+        return;
+    }
+
+    if(true == g_tRxTopicTab[u8TopicIndex].u8IsTopicRegisted)
+    {
+        return;
+    }
+
+    memcpy(&g_tRxTopicTab[u8TopicIndex], tCloudTopicRegInfo, sizeof(T_CloudTopicRegInfo));
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RxTopicUnRegisterDyn
+*
+* DESCRIPTION:
+*   un-subscribe rx topic
+*
+* PARAMETERS
+*   u8TopicIndex :  [IN] topic index
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_RxTopicUnRegisterDyn(uint8_t u8TopicIndex)
+{
+    T_OplErr tEvtRst = OPL_ERR;
+
+    if(CLOUD_TOPIC_NUMBER <= u8TopicIndex)
+    {
+        return OPL_ERR_PARAM_INVALID;
+    }
+
+    if(false == g_tRxTopicTab[u8TopicIndex].u8IsTopicRegisted || 0 == g_tRxTopicTab[u8TopicIndex].u8TopicIndex)
+    {
+        return OPL_ERR;
+    }
+
+    // un-register topic from cloud
+    // *
+    // send message to cloud kernel to process un-subscribe topic
+    tEvtRst = Cloud_MsgSend(CLOUD_EVT_TYPE_UNREGIS_TOPIC, &u8TopicIndex, sizeof(uint8_t));
+    // *
+
+    return tEvtRst;
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_TxTopicGet
+*
+* DESCRIPTION:
+*   get current tx topic global table
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   T_CloudTopicRegInfoPtr :
+*                   [OUT] pointer of global tx topic table
+*
+*************************************************************************/
 T_CloudTopicRegInfoPtr Cloud_TxTopicGet(void)
 {
     return g_tTxTopicTab;
 }
 
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RxTopicGet
+*
+* DESCRIPTION:
+*   get current rx topic global table
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   T_CloudTopicRegInfoPtr :
+*                   [OUT] pointer of global rx topic table
+*
+*************************************************************************/
 T_CloudTopicRegInfoPtr Cloud_RxTopicGet(void)
 {
     return g_tRxTopicTab;
@@ -190,49 +445,51 @@ T_CloudTopicRegInfoPtr Cloud_RxTopicGet(void)
 *   none
 *
 *************************************************************************/
-void Cloud_MqttSubscribeTopic(char *cTopic, uint16_t u16TopicLen, QoS tQoS, pApplicationHandler_t fpFunc)
+T_OplErr Cloud_MqttSubscribeTopic(char *cTopic, uint16_t u16TopicLen, QoS tQoS, pApplicationHandler_t fpFunc)
 {
     IoT_Error_t rc = FAILURE;
+    T_OplErr tRst = OPL_ERR;
 
     IOT_INFO("sub topic %s (%d) [QoS%d]", cTopic, u16TopicLen, tQoS);
 
     if(MAX_SIZE_OF_TOPIC_LENGTH < u16TopicLen)
     {
         IOT_ERROR("topic lens invalid");
-        return;        
+        return OPL_ERR_PARAM_INVALID;
     }
 
-    uint8_t retry = 0;
+    uint8_t u8Retry = 0;
 
-    // peding receive process
-    Cloud_RxProcessGoingStateSet(false);
-
-    while(retry < 10)
+    while(u8Retry < MQTT_RETRY_COUNTS)
     {
-        // disable skip dtim
-        Cloud_MqttSkipDtimSet(false);
-
         // subscribe topic
         rc = aws_iot_mqtt_subscribe(&client, cTopic, u16TopicLen, tQoS, fpFunc, NULL);
 
-        // enable skip dtim
-        Cloud_MqttSkipDtimSet(true);
-
         if(SUCCESS != rc)
         {
-            retry ++;
-            IOT_ERROR("--- subscribe retry %d", retry);
+            u8Retry ++;
+            IOT_ERROR("--- subscribe retry %d", u8Retry);
             osDelay(500);
         }
         else
         {
             IOT_INFO("---> subscribe success");
+            tRst = OPL_OK;
             break;
         }
     }
 
-    // activate receive process
-    Cloud_RxProcessGoingStateSet(true);
+    // calling cloud status callback to notify application
+    if(SUCCESS == rc)
+    {
+        Cloud_StatusCallback(CLOUD_CB_STA_SUB_DONE, NULL, 0);
+    }
+    else
+    {
+        Cloud_StatusCallback(CLOUD_CB_STA_SUB_FAIL, NULL, 0);
+    }
+
+    return tRst;
 }
 
 /*************************************************************************
@@ -250,48 +507,57 @@ void Cloud_MqttSubscribeTopic(char *cTopic, uint16_t u16TopicLen, QoS tQoS, pApp
 *   none
 *
 *************************************************************************/
-void Cloud_MqttUnsubscribeTopic(char *cTopic, uint16_t u16TopicLen)
+T_OplErr Cloud_MqttUnsubscribeTopic(char *cTopic, uint16_t u16TopicLen)
 {
     IoT_Error_t rc = FAILURE;
+    T_OplErr tRst = OPL_ERR;
+
     IOT_INFO("unsub topic %s (%d)", cTopic, u16TopicLen);
 
     if(MAX_SIZE_OF_TOPIC_LENGTH < u16TopicLen)
     {
         IOT_ERROR("topic lens invalid");
-        return;
+        return OPL_ERR_PARAM_INVALID;
     }
 
-    uint8_t retry = 0;
+    uint8_t u8Retry = 0;
 
     // peding receive process
-    Cloud_RxProcessGoingStateSet(false);
+    // Cloud_RxProcessGoingStateSet(false);
 
-    while(retry < 10)
+    while(u8Retry < MQTT_RETRY_COUNTS)
     {
-        // disable skip dtim
-        Cloud_MqttSkipDtimSet(false);
-
         // un-subscribe topic
         rc = aws_iot_mqtt_unsubscribe(&client, cTopic, u16TopicLen);
 
-        // enable skip dtim
-        Cloud_MqttSkipDtimSet(true);
-
         if(SUCCESS != rc)
         {
-            retry ++;
-            IOT_ERROR("--- un-subscribe retry %d", retry);
+            u8Retry ++;
+            IOT_ERROR("--- un-subscribe retry %d", u8Retry);
             osDelay(500);
         }
         else
         {
             IOT_INFO("---> subscribe success");
+            tRst = OPL_OK;
             break;
         }
     }
 
     // activate receive process
-    Cloud_RxProcessGoingStateSet(true);
+    // Cloud_RxProcessGoingStateSet(true);
+
+    // calling cloud status callback to notify application
+    if(SUCCESS == rc)
+    {
+        Cloud_StatusCallback(CLOUD_CB_STA_UNSUB_DONE, NULL, 0);
+    }
+    else
+    {
+        Cloud_StatusCallback(CLOUD_CB_STA_UNSUB_FAIL, NULL, 0);
+    }
+
+    return tRst;
 }
 
 /*************************************************************************
@@ -370,9 +636,12 @@ bool Cloud_RxProcessGoingStateGet(void)
 *************************************************************************/
 void Cloud_MqttSkipDtimInit(void)
 {
-    if(OPL_OK != Opl_Wifi_Skip_Dtim_Module_Reg(&g_u16CloudDtimId))
+    for(uint8_t u8Count = 0; u8Count < CLOUD_SKIP_DTIM_MAX; u8Count ++)
     {
-        OPL_LOG_ERRO(CLOUD, "initiate skip DTIM id fail");
+        if(OPL_OK != Opl_Wifi_Skip_Dtim_Module_Reg(&g_u16CloudDtimId[u8Count]))
+        {
+            OPL_LOG_ERRO(CLOUD, "initiate skip DTIM id %d fail", u8Count);
+        }
     }
 }
 
@@ -391,11 +660,13 @@ void Cloud_MqttSkipDtimInit(void)
 *   none
 *
 *************************************************************************/
-void Cloud_MqttSkipDtimSet(uint8_t u8Enable)
+void Cloud_MqttSkipDtimSet(T_CloudSkipDtimIdx tCloudSkipDtimIdx, uint8_t u8Enable)
 {
-    if(OPL_OK != Opl_Wifi_Skip_Dtim_Set(g_u16CloudDtimId, u8Enable))
+    uint8_t u8Idx = tCloudSkipDtimIdx;
+
+    if(OPL_OK != Opl_Wifi_Skip_Dtim_Set(g_u16CloudDtimId[u8Idx], u8Enable))
     {
-        OPL_LOG_ERRO(CLOUD, "skip DTIM fail");
+        OPL_LOG_ERRO(CLOUD, "skip DTIM fail (idx %d)", u8Idx);
     }
 }
 
@@ -526,7 +797,15 @@ void Cloud_MqttDisconnectIndCallback(AWS_IoT_Client *pClient, void *data)
 
             Cloud_OnlineStatusSet(false);
 
-            Cloud_TimerStart(CLOUD_TMR_CONN_RETRY, MQTT_AUTO_RECONN_TIME);
+            // check network is up or down
+            if(true == Cloud_NetworkStatusGet())
+            {
+                IOT_INFO("Start re-connect timer");
+                Cloud_TimerStart(CLOUD_TMR_CONN_RETRY, MQTT_AUTO_RECONN_TIME);
+            }
+
+            // calling cloud status callback to notify application
+            Cloud_StatusCallback(CLOUD_CB_STA_DISCONN, NULL, 0);
         }
     }
 }
@@ -567,11 +846,41 @@ void Cloud_InitHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
         }
     }
 
+    // reset topics table
+    memset(&g_tTxTopicTab, 0, sizeof(g_tTxTopicTab));
+    memset(&g_tRxTopicTab, 0, sizeof(g_tRxTopicTab));
+
     // event group regi
     Cloud_RxProcessGoingStateInit();
 
     // initiate MQTT DTIM id
     Cloud_MqttSkipDtimInit();
+
+    IoT_Error_t rc = FAILURE;
+
+    // copy the connection information to global
+    memcpy(&g_tCloudConnInfo, (T_CloudConnInfo *)pData, sizeof(T_CloudConnInfo));
+
+    // initialize mqtt protocol
+    IoT_Client_Init_Params mqttInitParams = iotClientInitParamsDefault;
+
+    IOT_INFO("\nMQTT SDK Version %d.%d.%d-%s\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, VERSION_TAG);
+
+    mqttInitParams.pHostURL = (char *)g_tCloudConnInfo.u8aHostAddr;
+    mqttInitParams.port = g_tCloudConnInfo.u16HostPort;
+    mqttInitParams.enableAutoReconnect = false;
+    mqttInitParams.isSSLHostnameVerify = MQTT_SSL_HOST_NAME_VERF;
+    mqttInitParams.mqttCommandTimeout_ms = MQTT_COMMAND_TIMEOUT;
+    mqttInitParams.tlsHandshakeTimeout_ms = MQTT_TLS_HANDSHAKE_TIMEOUT;
+    mqttInitParams.disconnectHandler = Cloud_MqttDisconnectIndCallback;
+    mqttInitParams.disconnectHandlerData = NULL;
+
+    rc = aws_iot_mqtt_init(&client, &mqttInitParams);
+
+    if(SUCCESS != rc)
+    {
+        IOT_ERROR("aws_iot_mqtt_init returned error : %d ", rc);
+    }
 }
 
 /*************************************************************************
@@ -592,7 +901,14 @@ void Cloud_InitHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 *************************************************************************/
 void Cloud_EstablishHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
-    if(true == aws_iot_mqtt_is_client_connected(&client))
+    // check network is up or down
+    if(false == Cloud_NetworkStatusGet())
+    {
+        IOT_INFO("Network not up, cloud connect won't do");
+        return;
+    }
+
+    if(true == Cloud_OnlineStatusGet())
     {
         IOT_INFO("Broker connected already");
         return;
@@ -600,79 +916,116 @@ void Cloud_EstablishHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLe
 
     IoT_Error_t rc = FAILURE;
 
-    // copy the connection information to global
-    g_tCloudConnInfo = *((T_CloudConnInfo *)pData);
-
-    // initialize mqtt protocol
-    IoT_Client_Init_Params mqttInitParams = iotClientInitParamsDefault;
-
-    IOT_INFO("\nMQTT SDK Version %d.%d.%d-%s\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, VERSION_TAG);
-
-    mqttInitParams.pHostURL = (char *)&g_tCloudConnInfo.u8aHostAddr;
-    mqttInitParams.port = g_tCloudConnInfo. u16HostPort;
-    mqttInitParams.enableAutoReconnect = false;
-    mqttInitParams.isSSLHostnameVerify = MQTT_SSL_HOST_NAME_VERF;
-    mqttInitParams.mqttCommandTimeout_ms = MQTT_COMMAND_TIMEOUT;
-    mqttInitParams.tlsHandshakeTimeout_ms = MQTT_TLS_HANDSHAKE_TIMEOUT;
-    mqttInitParams.disconnectHandler = Cloud_MqttDisconnectIndCallback;
-    mqttInitParams.disconnectHandlerData = NULL;
-
-    rc = aws_iot_mqtt_init(&client, &mqttInitParams);
-
-    if(SUCCESS != rc)
+    if(false == g_u8BeenConnected)
     {
-        IOT_ERROR("aws_iot_mqtt_init returned error : %d ", rc);
-    }
+        // connect to mqtt broker
+        IoT_Client_Connect_Params connectParams = iotClientConnectParamsDefault;
 
-    // connect to mqtt broker
-    IoT_Client_Connect_Params connectParams = iotClientConnectParamsDefault;
+        // TODO: refine the client id set, input by pData
+        uint8_t u8aBleMac[6] = {0};
+        Opl_Ble_MacAddr_Read(u8aBleMac);
 
-    // TODO: refine the client id set, input by pData
-    strcpy(g_cCloudMqttClientId, MQTT_CLIENT_ID);
+        sprintf((char *)g_cCloudMqttClientId, "%s_%.2X:%.2X:%.2X:%.2X", MQTT_CLIENT_ID, u8aBleMac[2], u8aBleMac[3], u8aBleMac[4], u8aBleMac[5]);
 
-    connectParams.MQTTVersion = MQTT_3_1_1;
-    connectParams.isCleanSession = true;
-    connectParams.isWillMsgPresent = false;
-    connectParams.keepAliveIntervalInSec = CLOUD_KEEP_ALIVE_TIME / 1000; // in sec
-    connectParams.pClientID = g_cCloudMqttClientId;
-    connectParams.clientIDLen = (uint16_t) strlen(g_cCloudMqttClientId);
+        connectParams.MQTTVersion = MQTT_3_1_1;
+        connectParams.isCleanSession = true;
+        connectParams.isWillMsgPresent = false;
+        connectParams.keepAliveIntervalInSec = MQTT_COMMAND_TIMEOUT; // in sec
+        connectParams.pClientID = g_cCloudMqttClientId;
+        connectParams.clientIDLen = (uint16_t) strlen(g_cCloudMqttClientId);
 
-    connectParams.pUsername = MQTT_USERNAME;
-    connectParams.usernameLen = (uint16_t)strlen(MQTT_USERNAME);
-    connectParams.pPassword = MQTT_PASSWORD;
-    connectParams.passwordLen = (uint16_t)strlen(MQTT_PASSWORD);
+        connectParams.pUsername = MQTT_USERNAME;
+        connectParams.usernameLen = (uint16_t)strlen(MQTT_USERNAME);
+        connectParams.pPassword = MQTT_PASSWORD;
+        connectParams.passwordLen = (uint16_t)strlen(MQTT_PASSWORD);
 
-    IOT_INFO("%s connect to %s:%d", connectParams.pClientID, mqttInitParams.pHostURL, mqttInitParams.port);
-    
-    // disable skip dtim
-    Cloud_MqttSkipDtimSet(false);
+        IOT_INFO("%s connect to %s:%d", connectParams.pClientID, g_tCloudConnInfo.u8aHostAddr, g_tCloudConnInfo.u16HostPort);
 
-    rc = aws_iot_mqtt_connect(&client, &connectParams);
+        rc = aws_iot_mqtt_connect(&client, &connectParams);
+        
+        if(SUCCESS != rc)
+        {
+            IOT_ERROR("Cloud connect fail [rc %d]", rc);
 
-    // enable skip dtim
-    Cloud_MqttSkipDtimSet(true);
-    
-    if(SUCCESS != rc)
-    {
-        IOT_ERROR("Connect to %s:%d error [rc %d]", MQTT_HOST_URL, MQTT_HOST_PORT, rc);
+            // calling cloud status callback to notify application
+            Cloud_StatusCallback(CLOUD_CB_STA_CONN_FAIL, NULL, 0);
+        }
+        else
+        {
+            IOT_INFO("Cloud connected success");
+
+            // register subscribe topics
+            uint8_t u8Count = 0;
+            for(u8Count = 0; u8Count < CLOUD_TOPIC_NUMBER; u8Count ++)
+            {
+                if(g_tRxTopicTab[u8Count].u8TopicIndex != 0)
+                {
+                    if(OPL_OK == Cloud_MqttSubscribeTopic((char *)g_tRxTopicTab[u8Count].u8aTopicName, strlen((char *)g_tRxTopicTab[u8Count].u8aTopicName), QOS1, (pApplicationHandler_t)g_tRxTopicTab[u8Count].fpFunc))
+                    {
+                        g_tRxTopicTab[u8Count].u8IsTopicRegisted = true;
+                    }
+                    else
+                    {
+                        // clear the information while register subscribe topic fail
+                        memset(&g_tRxTopicTab[u8Count], 0, sizeof(T_CloudTopicRegInfo));
+                    }
+                }
+            }
+
+            // register publish topic (only set u8IsTopicRegisted as true)
+            for(u8Count = 0; u8Count < CLOUD_TOPIC_NUMBER; u8Count ++)
+            {
+                if(g_tTxTopicTab[u8Count].u8TopicIndex != 0)
+                {
+                    g_tTxTopicTab[u8Count].u8IsTopicRegisted = true;
+                }
+            }
+
+            Cloud_OnlineStatusSet(true);
+
+            // set the g_u8BeenConnected as true
+            g_u8BeenConnected = true;
+
+            // calling cloud status callback to notify application
+            Cloud_StatusCallback(CLOUD_CB_STA_CONN_DONE, NULL, 0);
+
+            // activate receive process
+            Cloud_RxProcessGoingStateSet(true);
+
+            if(0 != CLOUD_KEEP_ALIVE_TIME)
+            {
+                Cloud_TimerStart(CLOUD_TMR_KEEP_ALIVE, CLOUD_KEEP_ALIVE_TIME);
+            }
+        }
     }
     else
     {
-        IOT_INFO("Connect success");
+        // re-connect
+        IoT_Error_t rc = FAILURE;
+        rc = aws_iot_mqtt_attempt_reconnect(&client);
 
-        Cloud_OnlineStatusSet(true);
-
-        // notify to application
-        APP_SendMessage(APP_EVT_CLOUD_CONNECT_IND, NULL, 0);
-
-        // Cloud_TimerStart(CLOUD_TMR_MQTT_DELAY_START, 500);
-
-        // activate receive process
-        Cloud_RxProcessGoingStateSet(true);
-
-        if(0 != CLOUD_KEEP_ALIVE_TIME)
+        if(NETWORK_RECONNECTED == rc || SUCCESS == rc)
         {
-            Cloud_TimerStart(CLOUD_TMR_KEEP_ALIVE, CLOUD_KEEP_ALIVE_TIME);
+            IOT_INFO("Cloud connected success");
+
+            Cloud_OnlineStatusSet(true);
+
+            // calling cloud status callback to notify application
+            Cloud_StatusCallback(CLOUD_CB_STA_RECONN_DONE, NULL, 0);
+
+            // activate receive process
+            Cloud_RxProcessGoingStateSet(true);
+
+            if(0 != CLOUD_KEEP_ALIVE_TIME)
+            {
+                Cloud_TimerStart(CLOUD_TMR_KEEP_ALIVE, CLOUD_KEEP_ALIVE_TIME);
+            }
+        }
+        else
+        {
+            IOT_WARN("Re-connect Failed [rc %d], retry after %d ms", rc, MQTT_AUTO_RECONN_TIME);
+
+            Cloud_TimerStart(CLOUD_TMR_CONN_RETRY, MQTT_AUTO_RECONN_TIME);
         }
     }
 }
@@ -695,7 +1048,7 @@ void Cloud_EstablishHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLe
 *************************************************************************/
 void Cloud_DisconnectHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
-    if(false == aws_iot_mqtt_is_client_connected(&client))
+    if(false == Cloud_OnlineStatusGet())
     {
         IOT_INFO("Broker already disconnected");
         return;
@@ -707,11 +1060,11 @@ void Cloud_DisconnectHandler(uint32_t u32EventId, void *pData, uint32_t u32DataL
 
     if(SUCCESS != rc)
     {
-        IOT_ERROR("Disconnect fail [rc %d]", rc);
+        IOT_ERROR("Cloud disconnect fail [rc %d]", rc);
     }
     else
     {
-        IOT_INFO("Disconnect success");
+        IOT_INFO("Cloud disconnect success");
 
         // peding receive process
         Cloud_RxProcessGoingStateSet(false);
@@ -721,8 +1074,8 @@ void Cloud_DisconnectHandler(uint32_t u32EventId, void *pData, uint32_t u32DataL
 
         Cloud_OnlineStatusSet(false);
 
-        // notify to application
-        APP_SendMessage(APP_EVT_CLOUD_DISCONNECT_IND, NULL, 0);
+        // calling cloud status callback to notify application
+        Cloud_StatusCallback(CLOUD_CB_STA_DISCONN, NULL, 0);
     }
 }
 
@@ -754,25 +1107,32 @@ void Cloud_TimeoutHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
         // case of timer id (refer to T_CloudTimerIdx)
         case CLOUD_TMR_CONN_RETRY:
         {
-            if(true == aws_iot_mqtt_is_client_connected(&client))
+            // check network is up or down
+            if(false == Cloud_NetworkStatusGet())
+            {
+                IOT_INFO("Network not up, ignore cloud re-connect");
+                return;
+            }
+
+            if(true == Cloud_OnlineStatusGet())
             {
                 IOT_INFO("Broker connected already");
                 return;
             }
 
-            // disable skip dtim
-            Cloud_MqttSkipDtimSet(false);
 
             // re-connect
             IoT_Error_t rc = FAILURE;
             rc = aws_iot_mqtt_attempt_reconnect(&client);
         
-            // enable skip dtim
-            Cloud_MqttSkipDtimSet(true);
-    
             if(NETWORK_RECONNECTED == rc || SUCCESS == rc)
             {
                 IOT_INFO("Re-connect Successful");
+
+                Cloud_OnlineStatusSet(true);
+
+                // calling cloud status callback to notify application
+                Cloud_StatusCallback(CLOUD_CB_STA_RECONN_DONE, NULL, 0);
 
                 // activate receive process
                 Cloud_RxProcessGoingStateSet(true);
@@ -781,8 +1141,6 @@ void Cloud_TimeoutHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
                 {
                     Cloud_TimerStart(CLOUD_TMR_KEEP_ALIVE, CLOUD_KEEP_ALIVE_TIME);
                 }
-        
-                Cloud_OnlineStatusSet(true);
             }
             else
             {
@@ -795,9 +1153,37 @@ void Cloud_TimeoutHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
         }
 
         case CLOUD_TMR_KEEP_ALIVE:
+        {
             // Cloud_MsgSend(CLOUD_EVT_TYPE_KEEP_ALIVE, NULL, 0);
             Cloud_KeepAliveHandler(u32EventId, pData, u32DataLen);
             break;
+        }
+
+        case CLOUD_TMR_DATA_POST_TIMEOUT:
+        {
+            IOT_WARN("Waiting PUBACK timeout, restore flag");
+            aws_iot_mqtt_restore_wait_pub_ack(&client);
+            break;
+        }
+
+        case CLOUD_TMR_KEEP_ALIVE_TIMEOUT:
+        {
+            IOT_WARN("Waiting PINGRESP timeout, restore skip dtim");
+            aws_iot_mqtt_restore_keep_alive_skip_dtim(&client);
+            break;
+        }
+
+        case CLOUD_TMR_PUB_SKIP_DTIM_EN:
+        {
+            Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_PUBLIC, true);
+            break;
+        }
+
+        case CLOUD_TMR_KEEP_ALIVE_SKIP_DTIM_EN:
+        {
+            Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_KEEPALIVE, true);
+            break;
+        }
 
         case CLOUD_TMR_MAX:
         default:
@@ -853,6 +1239,20 @@ void Cloud_BindingHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 *************************************************************************/
 void Cloud_KeepAliveHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
+    // check network is up or down
+    if(false == Cloud_NetworkStatusGet())
+    {
+        OPL_LOG_INFO(CLOUD, "Network not up, ignore keep alive");
+        return;
+    }
+
+    // check connection
+    if(false == Cloud_OnlineStatusGet())
+    {   
+        OPL_LOG_INFO(CLOUD, "Cloud disconnected");
+        return;
+    }
+    
     IoT_Error_t rc = FAILURE;
 
     // peding receive process
@@ -868,7 +1268,10 @@ void Cloud_KeepAliveHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLe
         IOT_ERROR("Keep alive fail [rc %d]", rc);
     }
 
-    Cloud_TimerStart(CLOUD_TMR_KEEP_ALIVE, CLOUD_KEEP_ALIVE_TIME);
+    if(true == Cloud_OnlineStatusGet())
+    {
+        Cloud_TimerStart(CLOUD_TMR_KEEP_ALIVE, CLOUD_KEEP_ALIVE_TIME);
+    }
 }
 
 /*************************************************************************
@@ -921,7 +1324,6 @@ void Cloud_PostHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
     if(false == Cloud_OnlineStatusGet())
     {   
         OPL_LOG_INFO(CLOUD, "Cloud disconnected");
-
         return;
     }
 
@@ -947,30 +1349,108 @@ void Cloud_PostHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 
     IOT_INFO("--->Publish");
 
-    uint8_t u8Retry = 0;
+    rc = aws_iot_mqtt_publish(&client,
+                              (char *)g_tTxTopicTab[tCloudPayloadFmt.u8TopicIndex].u8aTopicName,
+                              strlen((char *)g_tTxTopicTab[tCloudPayloadFmt.u8TopicIndex].u8aTopicName),
+                              &tPubMsgParam);
 
-    while(u8Retry < 3)
+    if(SUCCESS != rc)
     {
-        rc = aws_iot_mqtt_publish(&client,
-                                  (char *)g_tTxTopicTab[tCloudPayloadFmt.u8TopicIndex].u8aTopicName,
-                                  strlen((char *)g_tTxTopicTab[tCloudPayloadFmt.u8TopicIndex].u8aTopicName),
-                                  &tPubMsgParam);
+        // calling cloud status callback to notify application
+        Cloud_StatusCallback(CLOUD_CB_STA_PUB_FAIL, NULL, 0);
 
-        if(SUCCESS != rc)
-        {
-            u8Retry ++;
-            IOT_WARN("---Publish fail [rc %d], retry %d", rc, u8Retry);
-        }
-        else
-        {
-            break;
-        }
+        IOT_WARN("---Publish fail [rc %d]", rc);
+    }
+    else
+    {
+        // calling cloud status callback to notify application
+        Cloud_StatusCallback(CLOUD_CB_STA_PUB_DONE, NULL, 0);
+
+        IOT_INFO("Publish start");
     }
 
     IOT_INFO("<---Publish [rc %d]", rc);
 
     // activate receive process
     Cloud_RxProcessGoingStateSet(true);
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RegisterTopicHandler
+*
+* DESCRIPTION:
+*   register topic to cloud (CLOUD_EVT_TYPE_REGIST_TOPIC event)
+*
+* PARAMETERS
+*   u32EventId :    [IN] event ID
+*   pData :         [IN] message data
+*   u32DataLen :    [IN] message data lens
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_RegisterTopicHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
+{
+    T_OplErr tEvtRst = OPL_ERR;
+
+    uint8_t u8TopicIndex = *((uint8_t *)pData);
+
+    // peding receive process
+    Cloud_RxProcessGoingStateSet(false);
+
+    // register topic to cloud
+    tEvtRst = Cloud_MqttSubscribeTopic((char *)g_tRxTopicTab[u8TopicIndex].u8aTopicName, strlen((char *)g_tRxTopicTab[u8TopicIndex].u8aTopicName), QOS1, (pApplicationHandler_t)g_tRxTopicTab[u8TopicIndex].fpFunc);
+
+    // peding receive process
+    Cloud_RxProcessGoingStateSet(true);
+
+    if(OPL_OK == tEvtRst)
+    {
+        g_tRxTopicTab[u8TopicIndex].u8IsTopicRegisted = true;
+    }
+    else
+    {
+        memset(&g_tRxTopicTab[u8TopicIndex], 0, sizeof(T_CloudTopicRegInfo));
+    }
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_UnRegisterTopicHandler
+*
+* DESCRIPTION:
+*   un-register topuc from cloud (CLOUD_EVT_TYPE_UNREGIST_TOPIC event)
+*
+* PARAMETERS
+*   u32EventId :    [IN] event ID
+*   pData :         [IN] message data
+*   u32DataLen :    [IN] message data lens
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_UnRegisterTopicHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
+{
+    T_OplErr tEvtRst = OPL_ERR;
+
+    uint8_t u8TopicIndex = *((uint8_t *)pData);
+
+    // peding receive process
+    Cloud_RxProcessGoingStateSet(false);
+
+    // remove topic from cloud
+    tEvtRst = Cloud_MqttUnsubscribeTopic((char *)g_tRxTopicTab[u8TopicIndex].u8aTopicName, strlen((char *)g_tRxTopicTab[u8TopicIndex].u8aTopicName));
+
+    // peding receive process
+    Cloud_RxProcessGoingStateSet(true);
+
+    if(OPL_OK == tEvtRst)
+    {
+        memset(&g_tRxTopicTab[u8TopicIndex], 0, sizeof(T_CloudTopicRegInfo));
+    }
 }
 
 #if (CLOUD_TX_DATA_BACKUP_ENABLED == 1)
@@ -1045,12 +1525,16 @@ void Cloud_ReceiveHandler(void)
     {
         IOT_INFO("-->Yield");
 
+#if 1
+        rc = aws_iot_mqtt_yield(&client);
+#else
         rc = aws_iot_mqtt_yield(&client, MQTT_YIELD_TIMEOUT);
+#endif
 
         IOT_INFO("<--Yield [rc %d]", rc);
     }
 
-    osDelay(MQTT_YIELD_ROUND_DELAY);
+    // osDelay(MQTT_YIELD_ROUND_DELAY);
 
     // WARNING: IF DO NOTHING IN RECEIVE HANDLER, THE DELAY MUST EXIST
     // osDelay(1000);

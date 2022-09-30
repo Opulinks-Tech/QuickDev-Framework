@@ -200,11 +200,26 @@ static IoT_Error_t _aws_iot_mqtt_internal_publish(AWS_IoT_Client *pClient, const
 												  uint16_t topicNameLen, IoT_Publish_Message_Params *pParams) {
 	Timer timer;
 	uint32_t len = 0;
+#if 0
 	uint16_t packet_id;
 	unsigned char dup, type;
+#endif
 	IoT_Error_t rc;
 
+#ifdef _ENABLE_THREAD_SUPPORT_
+	IoT_Error_t threadRc;
+#endif
+
 	FUNC_ENTRY;
+
+#if 1
+	if(true == pClient->clientStatus.isWaitPubAck)
+	{
+		// still waiting PUBACK
+		IOT_WARN("Still wait PUBACK\r\n");
+		FUNC_EXIT_RC(MQTT_WAITING_PUBACK);
+	}
+#endif
 
 	init_timer(&timer);
 	countdown_ms(&timer, pClient->clientData.commandTimeoutMs);
@@ -221,12 +236,23 @@ static IoT_Error_t _aws_iot_mqtt_internal_publish(AWS_IoT_Client *pClient, const
 		FUNC_EXIT_RC(rc);
 	}
 
+	// disable skip dtim
+	Cloud_TimerStop(CLOUD_TMR_DATA_POST_TIMEOUT);
+	Cloud_TimerStop(CLOUD_TMR_PUB_SKIP_DTIM_EN);
+    Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_PUBLIC, false);
+
 	/* send the publish packet */
 	rc = aws_iot_mqtt_internal_send_packet(pClient, len, &timer);
 	if(SUCCESS != rc) {
+#if 1
+		// enable skip dtim
+		Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_PUBLIC, true);
+#endif
+
 		FUNC_EXIT_RC(rc);
 	}
 
+#if 0
 	/* Wait for ack if QoS1 */
 	if(QOS1 == pParams->qos) {
 		rc = aws_iot_mqtt_internal_wait_for_read(pClient, PUBACK, &timer);
@@ -240,6 +266,35 @@ static IoT_Error_t _aws_iot_mqtt_internal_publish(AWS_IoT_Client *pClient, const
 			FUNC_EXIT_RC(rc);
 		}
 	}
+#else
+	if(QOS0 == pParams->qos)
+	{
+		// no need to wait recv, enable skip dtim directly
+	    Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_PUBLIC, true);
+	}
+	else if(QOS1 == pParams->qos)
+	{
+#ifdef _ENABLE_THREAD_SUPPORT_
+		threadRc = aws_iot_mqtt_client_lock_mutex(pClient, &(pClient->clientData.wait_pub_ack_change_mutex));
+		if(SUCCESS != threadRc) {
+			FUNC_EXIT_RC(threadRc);
+		}
+#endif
+
+		// set the wait PUBACK as true
+		pClient->clientStatus.isWaitPubAck = true;
+
+		// start the data post timer
+		Cloud_TimerStart(CLOUD_TMR_DATA_POST_TIMEOUT, MQTT_COMMAND_TIMEOUT);
+
+#ifdef _ENABLE_THREAD_SUPPORT_
+		threadRc = aws_iot_mqtt_client_unlock_mutex(pClient, &(pClient->clientData.wait_pub_ack_change_mutex));
+		if(SUCCESS != threadRc) {
+			return threadRc;
+		}
+#endif
+	}
+#endif
 
 	FUNC_EXIT_RC(SUCCESS);
 }
@@ -263,7 +318,11 @@ static IoT_Error_t _aws_iot_mqtt_internal_publish(AWS_IoT_Client *pClient, const
  */
 IoT_Error_t aws_iot_mqtt_publish(AWS_IoT_Client *pClient, const char *pTopicName, uint16_t topicNameLen,
 								 IoT_Publish_Message_Params *pParams) {
+#if 0
 	IoT_Error_t rc, pubRc;
+#else
+	IoT_Error_t pubRc;
+#endif
 	ClientState clientState;
     int nPublish = 40;
 
@@ -279,44 +338,40 @@ IoT_Error_t aws_iot_mqtt_publish(AWS_IoT_Client *pClient, const char *pTopicName
 
     while((CLIENT_STATE_CONNECTED_IDLE != clientState) && (CLIENT_STATE_CONNECTED_WAIT_FOR_CB_RETURN != clientState) )
     {
-            clientState = aws_iot_mqtt_get_client_state(pClient);
-            nPublish--;
-            if(nPublish <= 0)
-            {
-                IOT_INFO(" RX task is not in CLIENT_STATE_CONNECTED_IDLE or WAIT_FOR_CB_RETURN timeout \n");
-                break;
-            }
-            else
-            {
-                osDelay(100);
-            }
+		clientState = aws_iot_mqtt_get_client_state(pClient);
+		nPublish--;
+		if(nPublish <= 0)
+		{
+			IOT_INFO("[%s]client state not in idle[%d]\r\n", __func__, clientState);
+			FUNC_EXIT_RC(MQTT_CLIENT_NOT_IDLE_ERROR);
+		}
+		else
+		{
+			osDelay(100);
+		}
     }
 
 	//clientState = aws_iot_mqtt_get_client_state(pClient);
 	if(CLIENT_STATE_CONNECTED_IDLE != clientState && CLIENT_STATE_CONNECTED_WAIT_FOR_CB_RETURN != clientState) 
     {
-        
 		FUNC_EXIT_RC(MQTT_CLIENT_NOT_IDLE_ERROR);
 	}
 
+#if 0
 	rc = aws_iot_mqtt_set_client_state(pClient, clientState, CLIENT_STATE_CONNECTED_PUBLISH_IN_PROGRESS);
 	if(SUCCESS != rc) {
 		FUNC_EXIT_RC(rc);
 	}
-
-	// disable skip dtim
-    Cloud_MqttSkipDtimSet(false);
-
+#endif
 
 	pubRc = _aws_iot_mqtt_internal_publish(pClient, pTopicName, topicNameLen, pParams);
 
-    // enable skip dtim
-    Cloud_MqttSkipDtimSet(true);
-
+#if 0
 	rc = aws_iot_mqtt_set_client_state(pClient, CLIENT_STATE_CONNECTED_PUBLISH_IN_PROGRESS, clientState);
 	if(SUCCESS == pubRc && SUCCESS != rc) {
 		pubRc = rc;
 	}
+#endif
 
 	FUNC_EXIT_RC(pubRc);
 }
@@ -448,6 +503,29 @@ IoT_Error_t aws_iot_mqtt_internal_deserialize_ack(unsigned char *pPacketType, un
 	*pPacketId = aws_iot_mqtt_internal_read_uint16_t(&curdata);
 
 	FUNC_EXIT_RC(SUCCESS);
+}
+
+IoT_Error_t aws_iot_mqtt_restore_wait_pub_ack(AWS_IoT_Client *pClient)
+{
+#ifdef _ENABLE_THREAD_SUPPORT_
+	IoT_Error_t threadRc;
+
+	threadRc = aws_iot_mqtt_client_lock_mutex(pClient, &(pClient->clientData.wait_pub_ack_change_mutex));
+	if(SUCCESS != threadRc) {
+		FUNC_EXIT_RC(threadRc);
+	}
+#endif
+
+	pClient->clientStatus.isWaitPubAck = false;
+
+#ifdef _ENABLE_THREAD_SUPPORT_
+	threadRc = aws_iot_mqtt_client_unlock_mutex(pClient, &(pClient->clientData.wait_pub_ack_change_mutex));
+#endif
+
+	// enable skip dtim
+	Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_PUBLIC, true);
+
+	return threadRc;
 }
 
 #ifdef __cplusplus

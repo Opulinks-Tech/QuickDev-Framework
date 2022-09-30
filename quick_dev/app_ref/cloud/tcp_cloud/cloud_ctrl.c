@@ -217,8 +217,8 @@ void Cloud_PostData(uint8_t *pu8Data, uint32_t u32DataLen)
             uint8_t u8ReConnect = true;
             Cloud_MsgSend(CLOUD_EVT_TYPE_DISCONNECT, &u8ReConnect, sizeof(u8ReConnect));
 
-            g_ptrCloudTcpHdlId = (uintptr_t)-1;
-            g_i32TcpHdlId = -1;
+            // g_ptrCloudTcpHdlId = (uintptr_t)-1;
+            // g_i32TcpHdlId = -1;
             g_i32TcpTxId = -1;
         }
 
@@ -249,7 +249,7 @@ void Cloud_KeepAliveDurationSet(uint32_t u32Duration)
     // check connection first
     if(false == Cloud_OnlineStatusGet())
     {   
-        OPL_LOG_INFO(CLOUD, "cloud disconnected");
+        OPL_LOG_WARN(CLOUD, "already disconnected");
     }
     else
     {
@@ -486,10 +486,13 @@ void Cloud_DisconnectHandler(uint32_t u32EventId, void *pData, uint32_t u32DataL
     Cloud_TimerStop(CLOUD_TMR_KEEP_ALIVE);
     Cloud_TimerStop(CLOUD_TMR_DATA_POST);
 
-    Cloud_OnlineStatusSet(false);
-
     // 1. close connection
-    int32_t i32Ret = TCP_Disconnect(g_ptrCloudTcpHdlId);
+    int32_t i32Ret = 0;
+
+    if(true == Cloud_OnlineStatusGet())
+    {
+        i32Ret = TCP_Disconnect(g_ptrCloudTcpHdlId);
+    }
 
     // 2. determine the disconnect result and change the connection status
     if(i32Ret < 0)
@@ -500,9 +503,14 @@ void Cloud_DisconnectHandler(uint32_t u32EventId, void *pData, uint32_t u32DataL
     {
         OPL_LOG_INFO(CLOUD, "tcp disconnected");
 
+        Cloud_OnlineStatusSet(false);
+
         // notify to application
         APP_SendMessage(APP_EVT_CLOUD_DISCONNECT_IND, NULL, 0);
     }
+
+    g_ptrCloudTcpHdlId = (uintptr_t)-1;
+    g_i32TcpHdlId = -1;
 
     if(u8ReConnect == true)
     {
@@ -587,7 +595,7 @@ void Cloud_BindingHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
     // check connection first
     if(false == Cloud_OnlineStatusGet())
     {   
-        OPL_LOG_INFO(CLOUD, "cloud disconnected");
+        OPL_LOG_WARN(CLOUD, "already disconnected");
     }
 
     // user implement
@@ -615,7 +623,7 @@ void Cloud_KeepAliveHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLe
     // check connection first
     if(false == Cloud_OnlineStatusGet())
     {   
-        OPL_LOG_INFO(CLOUD, "cloud disconnected");
+        OPL_LOG_WARN(CLOUD, "already disconnected");
     }
     else
     {
@@ -655,7 +663,7 @@ void Cloud_AckHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
     // check connection first
     if(false == Cloud_OnlineStatusGet())
     {   
-        OPL_LOG_INFO(CLOUD, "cloud disconnected");
+        OPL_LOG_WARN(CLOUD, "already disconnected");
     }
     else
     {
@@ -693,7 +701,7 @@ void Cloud_PostHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
     // check connection first
     if(false == Cloud_OnlineStatusGet())
     {   
-        OPL_LOG_INFO(CLOUD, "cloud disconnected");
+        OPL_LOG_WARN(CLOUD, "already disconnected");
     }
     else
     {
@@ -797,14 +805,20 @@ void Cloud_ReceiveHandler(void)
     // 1. receive data from cloud
     char databuf[TCP_RX_BUF_SIZE] = {0};
 
-    osSemaphoreWait(g_tCloudSemaphoreId, osWaitForever);
+    if(NULL != g_tCloudSemaphoreId)
+    {
+        osSemaphoreWait(g_tCloudSemaphoreId, osWaitForever);
+    }
 
     if(g_i32TcpRxId != g_i32TcpHdlId)
     {
         g_i32TcpRxId = g_i32TcpHdlId;
     }
 
-    osSemaphoreRelease(g_tCloudSemaphoreId);
+    if(NULL != g_tCloudSemaphoreId)
+    {
+        osSemaphoreRelease(g_tCloudSemaphoreId);
+    }
 
     i8Ret = TCP_Recv(g_ptrCloudTcpHdlId, (char *)databuf, TCP_RX_BUF_SIZE, TCP_RX_RECV_TIMEOUT);
     
@@ -821,7 +835,10 @@ void Cloud_ReceiveHandler(void)
     {
         OPL_LOG_ERRO(CLOUD, "recv fail (ret %d)", i8Ret);
 
-        osSemaphoreWait(g_tCloudSemaphoreId, osWaitForever);
+        if(NULL != g_tCloudSemaphoreId)
+        {
+            osSemaphoreWait(g_tCloudSemaphoreId, osWaitForever);
+        }
 
         if(((uintptr_t)-1 != g_ptrCloudTcpHdlId) &&
             (g_i32TcpHdlId == g_i32TcpRxId) &&
@@ -830,12 +847,15 @@ void Cloud_ReceiveHandler(void)
             uint8_t u8ReConnect = true;
             Cloud_MsgSend(CLOUD_EVT_TYPE_DISCONNECT, &u8ReConnect, sizeof(u8ReConnect));
 
-            g_ptrCloudTcpHdlId = (uintptr_t)-1;
-            g_i32TcpHdlId = -1;
+            // g_ptrCloudTcpHdlId = (uintptr_t)-1;
+            // g_i32TcpHdlId = -1;
             g_i32TcpRxId = -1;
         }
 
-        osSemaphoreRelease(g_tCloudSemaphoreId);
+        if(NULL != g_tCloudSemaphoreId)
+        {
+            osSemaphoreRelease(g_tCloudSemaphoreId);
+        }
     }
 
     // WARNING: IF DO NOTHING IN RECEIVE HANDLER, THE DELAY MUST EXIST

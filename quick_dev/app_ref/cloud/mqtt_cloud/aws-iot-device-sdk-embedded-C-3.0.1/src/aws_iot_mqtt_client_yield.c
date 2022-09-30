@@ -56,9 +56,16 @@ uint32_t g_u32MqttPingCount = 0;
   * This is for the case when the aws_iot_mqtt_internal_send_packet Fails.
   */
 static void _aws_iot_mqtt_force_client_disconnect(AWS_IoT_Client *pClient) {
+    // disable skip dtim
+	Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_DISCONN, false);
+
     pClient->clientStatus.clientState = CLIENT_STATE_DISCONNECTED_ERROR;
     pClient->networkStack.disconnect(&(pClient->networkStack));
     pClient->networkStack.destroy(&(pClient->networkStack));
+
+    // disable skip dtim
+    osDelay(100);
+	Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_DISCONN, true);
 }
 
 static IoT_Error_t _aws_iot_mqtt_handle_disconnect(AWS_IoT_Client *pClient) {
@@ -71,6 +78,13 @@ static IoT_Error_t _aws_iot_mqtt_handle_disconnect(AWS_IoT_Client *pClient) {
         // If the aws_iot_mqtt_internal_send_packet prevents us from sending a disconnect packet then we have to clean the stack
         _aws_iot_mqtt_force_client_disconnect(pClient);
     }
+
+#if 1
+    // restore the flags
+    pClient->clientStatus.isRecvInProgress = 0;
+    pClient->clientStatus.isWaitPubAck = 0;
+    pClient->clientStatus.isWaitPingResp = 0;
+#endif
 
     if(NULL != pClient->clientData.disconnectHandler) {
         pClient->clientData.disconnectHandler(pClient, pClient->clientData.disconnectHandlerData);
@@ -141,8 +155,15 @@ static IoT_Error_t _aws_iot_mqtt_handle_reconnect(AWS_IoT_Client *pClient) {
  */
 IoT_Error_t aws_iot_mqtt_keep_alive(AWS_IoT_Client *pClient) {
     IoT_Error_t rc = SUCCESS;
+
+#ifdef _ENABLE_THREAD_SUPPORT_
+	IoT_Error_t threadRc;
+#endif
+
     Timer timer;
+    ClientState clientState = CLIENT_STATE_INVALID;
     size_t serialized_len;
+    int nPublish = 40;
 
     FUNC_ENTRY;
 
@@ -153,47 +174,107 @@ IoT_Error_t aws_iot_mqtt_keep_alive(AWS_IoT_Client *pClient) {
     if(0 == pClient->clientData.keepAliveInterval) {
         FUNC_EXIT_RC(SUCCESS);
     }
+
+    // check client connection
+    if(!aws_iot_mqtt_is_client_connected(pClient)) {
+        FUNC_EXIT_RC(NETWORK_DISCONNECTED_ERROR);
+    }
+
     //IOT_INFO(" %s --> t expired  %d  %d", __FUNCTION__, pClient->pingTimer.end_time.tv_sec,pClient->pingTimer.end_time.tv_usec);
     // if(!has_timer_expired(&pClient->pingTimer)) {
     //     FUNC_EXIT_RC(SUCCESS);
     // }
     //IOT_INFO(" %s <-- t expired  %d  %d", __FUNCTION__, pClient->pingTimer.end_time.tv_sec, pClient->pingTimer.end_time.tv_usec);
 
+#if 1
+    if(true == pClient->clientStatus.isWaitPingResp)
+    {
+        IOT_WARN("Still wait PINGRESP\r\n");
+        rc = _aws_iot_mqtt_handle_disconnect(pClient);
+        if(SUCCESS != rc)
+        {
+            FUNC_EXIT_RC(rc);
+        }
+
+        FUNC_EXIT_RC(MQTT_WAITING_PINGRESP);
+    }
+#else
     if(pClient->clientStatus.isPingOutstanding) {
+        IOT_WARN("Last keep alive not finish");
         rc = _aws_iot_mqtt_handle_disconnect(pClient);
         FUNC_EXIT_RC(rc);
     }
+#endif
+
+    // wait till client state in connected idle or wait for cb return type
+    while((CLIENT_STATE_CONNECTED_IDLE != clientState) && (CLIENT_STATE_CONNECTED_WAIT_FOR_CB_RETURN != clientState) )
+    {
+        clientState = aws_iot_mqtt_get_client_state(pClient);
+        nPublish--;
+        if(nPublish <= 0)
+        {
+			IOT_INFO("[%s]client state not in idle[%d]\r\n", __func__, clientState);
+            FUNC_EXIT_RC(MQTT_CLIENT_NOT_IDLE_ERROR);
+        }
+        else
+        {
+            osDelay(100);
+        }
+    }
+
+    /* Check if client is idle, if not another operation is in progress and we should return */
+#if 0
+    if(CLIENT_STATE_CONNECTED_IDLE != clientState && CLIENT_STATE_CONNECTED_WAIT_FOR_CB_RETURN != clientState) {
+        IOT_INFO("Error %d : clientState --> %d \n",__LINE__, clientState);
+        FUNC_EXIT_RC(MQTT_CLIENT_NOT_IDLE_ERROR);
+    }
+
+    rc = aws_iot_mqtt_set_client_state(pClient, clientState,
+                                        CLIENT_STATE_CONNECTED_KEEPALIVE_IN_PROGRESS);
+    if(SUCCESS != rc) {
+        IOT_INFO("Set client state fail %d\n", __LINE__);
+        FUNC_EXIT_RC(rc);
+    }
+#endif
 
     /* there is no ping outstanding - send one */
     init_timer(&timer);
 
-    countdown_ms(&timer, pClient->clientData.commandTimeoutMs);
+    // countdown_ms(&timer, pClient->clientData.commandTimeoutMs);
+    countdown_ms(&timer, pClient->clientData.keepAliveInterval);
+
     serialized_len = 0;
     rc = aws_iot_mqtt_internal_serialize_zero(pClient->clientData.writeBuf, pClient->clientData.writeBufSize,
                                               PINGREQ, &serialized_len);
     if(SUCCESS != rc) {
-        FUNC_EXIT_RC(rc);
+        goto done;
     }
 
     // disable skip dtim
-    Cloud_MqttSkipDtimSet(false);
+    Cloud_TimerStop(CLOUD_TMR_KEEP_ALIVE_TIMEOUT);
+    Cloud_TimerStop(CLOUD_TMR_KEEP_ALIVE_SKIP_DTIM_EN);
+    Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_KEEPALIVE, false);
 
     /* send the ping packet */
     rc = aws_iot_mqtt_internal_send_packet(pClient, serialized_len, &timer);
+
     if(SUCCESS != rc) {
+
+        // enable skip dtim
+        Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_KEEPALIVE, true);
+
         //If sending a PING fails we can no longer determine if we are connected.  In this case we decide we are disconnected and begin reconnection attempts
         rc = _aws_iot_mqtt_handle_disconnect(pClient);
 
-        // enable skip dtim
-        Cloud_MqttSkipDtimSet(true);
-
-        FUNC_EXIT_RC(rc);
+        goto done;
     }
     else
     {
         IOT_INFO("PING sending for keepalive\n");
+        Cloud_TimerStart(CLOUD_TMR_KEEP_ALIVE_TIMEOUT, MQTT_COMMAND_TIMEOUT);
     }
 
+#if 0
     // #ifdef BLEWIFI_MQTT_PING_COUNT
     // g_u32MqttPingCount += 1;
     // #else
@@ -201,19 +282,46 @@ IoT_Error_t aws_iot_mqtt_keep_alive(AWS_IoT_Client *pClient) {
     // #endif
     
     /* start a timer to wait for PINGRESP from server */
-    countdown_sec(&pClient->pingTimer, pClient->clientData.keepAliveInterval);
+    // countdown_sec(&pClient->pingTimer, pClient->clientData.keepAliveInterval);
 
-    rc = aws_iot_mqtt_internal_wait_for_read(pClient, PINGRESP, &pClient->pingTimer);
+    // rc = aws_iot_mqtt_internal_wait_for_read(pClient, PINGRESP, &pClient->pingTimer);
+    rc = aws_iot_mqtt_internal_wait_for_read(pClient, PINGRESP, &timer);
 
+    if(SUCCESS != rc) {
+        goto done;
+    }
+#else
+
+#ifdef _ENABLE_THREAD_SUPPORT_
+    threadRc = aws_iot_mqtt_client_lock_mutex(pClient, &(pClient->clientData.wait_ping_resp_change_mutex));
+    if(SUCCESS != threadRc) {
+        FUNC_EXIT_RC(threadRc);
+    }
+#endif
+
+    pClient->clientStatus.isWaitPingResp = true;
+
+#ifdef _ENABLE_THREAD_SUPPORT_
+    threadRc = aws_iot_mqtt_client_unlock_mutex(pClient, &(pClient->clientData.wait_ping_resp_change_mutex));
+    if(SUCCESS != threadRc) {
+        return threadRc;
+    }
+#endif
+
+#endif
+
+done:
+#if 0
     // enable skip dtim
     Cloud_MqttSkipDtimSet(true);
 
-    if(SUCCESS != rc) {
-        IOT_ERROR("keepalive wait for read fail [rc %d]\n", rc);
-        FUNC_EXIT_RC(rc);
-    }
+    rc = aws_iot_mqtt_set_client_state(pClient, CLIENT_STATE_CONNECTED_KEEPALIVE_IN_PROGRESS, clientState);
+	if(SUCCESS != rc) {
+        IOT_INFO("Set client state fail %d\n", __LINE__);
+	}
+#endif
 
-    FUNC_EXIT_RC(SUCCESS);
+    FUNC_EXIT_RC(rc);
 }
 #else
 #ifdef BLEWIFI_ENABLE_KEEPALIVE
@@ -286,6 +394,15 @@ static IoT_Error_t _aws_iot_mqtt_keep_alive(AWS_IoT_Client *pClient) {
 #endif
 #endif
 
+#if 1
+IoT_Error_t aws_iot_mqtt_restore_keep_alive_skip_dtim(AWS_IoT_Client *pClient) {
+    // enable skip dtim
+    Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_KEEPALIVE, true);
+
+    FUNC_EXIT_RC(SUCCESS);
+}
+#endif
+
 /**
  * @brief Yield to the MQTT client
  *
@@ -305,34 +422,58 @@ static IoT_Error_t _aws_iot_mqtt_keep_alive(AWS_IoT_Client *pClient) {
  *         If this call results in an error it is likely the MQTT connection has dropped.
  *         iot_is_mqtt_connected can be called to confirm.
  */
-
+#if 1
+static IoT_Error_t _aws_iot_mqtt_internal_yield(AWS_IoT_Client *pClient) {
+#else
 static IoT_Error_t _aws_iot_mqtt_internal_yield(AWS_IoT_Client *pClient, uint32_t timeout_ms) {
+#endif
     IoT_Error_t yieldRc = SUCCESS;
+
+// #ifdef _ENABLE_THREAD_SUPPORT_
+// 	IoT_Error_t threadRc;
+// #endif
 
     uint8_t packet_type;
     ClientState clientState;
     Timer timer;
     init_timer(&timer);
-    countdown_ms(&timer, timeout_ms);
+    countdown_ms(&timer, YIELD_TIMEOUT);
 
     FUNC_ENTRY;
 
     //IOT_INFO(" %s --> t expired  %d  %d", __FUNCTION__, timer.end_time.tv_sec, timer.end_time.tv_usec);
     // evaluate timeout at the end of the loop to make sure the actual yield runs at least once
+#if 0
     do {
+#endif
         clientState = aws_iot_mqtt_get_client_state(pClient);
         if(CLIENT_STATE_PENDING_RECONNECT == clientState) {
             if(AWS_IOT_MQTT_MAX_RECONNECT_WAIT_INTERVAL < pClient->clientData.currentReconnectWaitInterval) {
                 yieldRc = NETWORK_RECONNECT_TIMED_OUT_ERROR;
+#if 0
                 break;
+#else
+                FUNC_EXIT_RC(yieldRc);
+#endif
             }
             yieldRc = _aws_iot_mqtt_handle_reconnect(pClient);
             /* Network reconnect attempted, check if yield timer expired before
              * doing anything else */
+#if 0
             continue;
+#endif
         }
 
+#if 1
+        pClient->clientStatus.isRecvInProgress = true;
+#endif
+
         yieldRc = aws_iot_mqtt_internal_cycle_read(pClient, &timer, &packet_type);
+
+#if 1
+        pClient->clientStatus.isRecvInProgress = false;
+#endif
+
         if(SUCCESS == yieldRc) {
         #ifdef BLEWIFI_ENABLE_KEEPALIVE
             yieldRc = _aws_iot_mqtt_keep_alive(pClient);
@@ -370,14 +511,20 @@ static IoT_Error_t _aws_iot_mqtt_internal_yield(AWS_IoT_Client *pClient, uint32_
                  * attempt has started */
                 yieldRc = NETWORK_ATTEMPTING_RECONNECT;
             } else {
+#if 0
                 break;
+#endif
             }
         } else if(SUCCESS != yieldRc) {
+#if 0
             break;
+#endif
         }
 
+#if 0
         osDelay(timeout_ms);
     } while(!has_timer_expired(&timer));
+#endif
     //IOT_INFO(" %s <-- t expired  %d  %d", __FUNCTION__, timer.end_time.tv_sec, timer.end_time.tv_usec);
     FUNC_EXIT_RC(yieldRc);
 }
@@ -401,15 +548,32 @@ static IoT_Error_t _aws_iot_mqtt_internal_yield(AWS_IoT_Client *pClient, uint32_
  *         If this call results in an error it is likely the MQTT connection has dropped.
  *         iot_is_mqtt_connected can be called to confirm.
  */
+#if 1
+IoT_Error_t aws_iot_mqtt_yield(AWS_IoT_Client *pClient) {
+#else
 IoT_Error_t aws_iot_mqtt_yield(AWS_IoT_Client *pClient, uint32_t timeout_ms) {
+#endif
+
+#if 0
     IoT_Error_t rc, yieldRc;
+#else
+    IoT_Error_t yieldRc;
+#endif
     ClientState clientState;
     //int nPublish = 30000;
 
+#if 1
+    if(NULL == pClient)
+    {
+        IOT_INFO("Error %d  \n", __LINE__);
+        FUNC_EXIT_RC(NULL_VALUE_ERROR);
+    }
+#else
     if(NULL == pClient || 0 == timeout_ms) {
         IOT_INFO("Error %d  \n",__LINE__);
         FUNC_EXIT_RC(NULL_VALUE_ERROR);
     }
+#endif
 
     clientState = aws_iot_mqtt_get_client_state(pClient);
     /* Check if network was manually disconnected */
@@ -443,22 +607,31 @@ IoT_Error_t aws_iot_mqtt_yield(AWS_IoT_Client *pClient, uint32_t timeout_ms) {
             }
         }
         #endif
+
+
         /* Check if client is idle, if not another operation is in progress and we should return */
         if(CLIENT_STATE_CONNECTED_IDLE != clientState) {
             IOT_INFO("Error %d : clientState --> %d \n",__LINE__, clientState);
             FUNC_EXIT_RC(MQTT_CLIENT_NOT_IDLE_ERROR);
         }
 
+#if 0
         rc = aws_iot_mqtt_set_client_state(pClient, CLIENT_STATE_CONNECTED_IDLE,
                                            CLIENT_STATE_CONNECTED_YIELD_IN_PROGRESS);
         if(SUCCESS != rc) {
             IOT_INFO("Error %d  \n",__LINE__);
             FUNC_EXIT_RC(rc);
         }
+#endif
     }
 
+#if 1
+    yieldRc = _aws_iot_mqtt_internal_yield(pClient);
+#else
     yieldRc = _aws_iot_mqtt_internal_yield(pClient, timeout_ms);
+#endif
 
+#if 0
     if(NETWORK_DISCONNECTED_ERROR != yieldRc && NETWORK_ATTEMPTING_RECONNECT != yieldRc) {
         rc = aws_iot_mqtt_set_client_state(pClient, CLIENT_STATE_CONNECTED_YIELD_IN_PROGRESS,
                                            CLIENT_STATE_CONNECTED_IDLE);
@@ -466,6 +639,8 @@ IoT_Error_t aws_iot_mqtt_yield(AWS_IoT_Client *pClient, uint32_t timeout_ms) {
             yieldRc = rc;
         }
     }
+#endif
+
     FUNC_EXIT_RC(yieldRc);
 }
 

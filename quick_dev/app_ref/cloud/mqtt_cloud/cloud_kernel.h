@@ -76,6 +76,8 @@ typedef enum E_CloudTxEvt
     CLOUD_EVT_TYPE_KEEP_ALIVE,
     CLOUD_EVT_TYPE_ACK,
     CLOUD_EVT_TYPE_POST,
+    CLOUD_EVT_TYPE_REGIS_TOPIC,
+    CLOUD_EVT_TYPE_UNREGIS_TOPIC,
 #if (CLOUD_TX_DATA_BACKUP_ENABLED == 1)
     CLOUD_EVT_TYPE_POST_BACKUP,
 #endif
@@ -105,6 +107,56 @@ Declaration of Global Variables & Functions
 // Sec 4: declaration of global variable
 
 // Sec 5: declaration of global function prototype
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_NetworkStatusSet
+*
+* DESCRIPTION:
+*   set wifi network status
+*
+* PARAMETERS
+*   blNetworkUp :   [IN] true -> wifi network up
+*                        false -> wifi networ down
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_NetworkStatusSet(bool blNetworkUp);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_NetworkStatusGet
+*
+* DESCRIPTION:
+*   get wifi network status
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   bool :          [OUT] true -> wifi network up
+*                         false -> wifi network down
+*
+*************************************************************************/
+bool Cloud_NetworkStatusGet(void);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_NetworkStatusWait
+*
+* DESCRIPTION:
+*   waiting wifi network connection
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_NetworkStatusWait(void);
 
 /*************************************************************************
 * FUNCTION:
@@ -174,21 +226,22 @@ T_OplErr Cloud_OnlineStatusWait(void);
 *************************************************************************/
 T_OplErr Cloud_MsgSend(uint32_t u32EventId, uint8_t *pu8Data, uint32_t u32DataLen);
 
-/*************************************************************************
-* FUNCTION:
-*   Cloud_Init
-*
-* DESCRIPTION:
-*   cloud initiate function
-*
-* PARAMETERS
-*   none
-*
-* RETURNS
-*   none
-*
-*************************************************************************/
-void Cloud_Init(void);
+// /*************************************************************************
+// * FUNCTION:
+// *   Cloud_Init
+// *
+// * DESCRIPTION:
+// *   cloud initiate function
+// *
+// * PARAMETERS
+// *   tCloudInitConnInfo :
+// *                   [IN] 
+// *
+// * RETURNS
+// *   none
+// *
+// *************************************************************************/
+// void Cloud_Init(T_CloudConnInfo *tCloudInitConnInfo);
 
 /***************************************************
 Declaration of static Global Variables & Functions

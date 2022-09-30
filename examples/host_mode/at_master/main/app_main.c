@@ -116,6 +116,7 @@ int8_t *i8HostModeReqCmdListStrTbl[] =
 // host mode ack command list in string (the indexing of string array must same as T_HostModeAckCmdList)
 int8_t *i8HostModeAckCmdListStrTbl[] = 
 {
+    "+BOOT",
     "+READY",
     "+WAKEUP",
     "+PROVISION",
@@ -210,18 +211,21 @@ static void APP_EvtHandler_AtMsgRecv(uint32_t u32EventId, void *pData, uint32_t 
 
 static void APP_EvtHandler_SleepSlave(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
-    T_HostModeReqCmdFmt tHostModeReqCmdFmt;
+    if(1 == g_u8WifiStatus)
+    {
+        T_HostModeReqCmdFmt tHostModeReqCmdFmt;
 
-    // trigger sleep mode
-    // 1 = smart sleep
-    // 2 = timer sleep
-    // 3 = deep sleep
-    strcpy((char *)tHostModeReqCmdFmt.u8aPayload, "1");
-    tHostModeReqCmdFmt.u16PayloadLen = strlen((char *)tHostModeReqCmdFmt.u8aPayload);
-    tHostModeReqCmdFmt.tHostModeReqCmdIdx = AT_CMD_REQ_SLEEP;
-    tHostModeReqCmdFmt.tAtMode = AT_CMD_MODE_SET;
+        // trigger sleep mode
+        // 1 = smart sleep
+        // 2 = timer sleep
+        // 3 = deep sleep
+        strcpy((char *)tHostModeReqCmdFmt.u8aPayload, "1");
+        tHostModeReqCmdFmt.u16PayloadLen = strlen((char *)tHostModeReqCmdFmt.u8aPayload);
+        tHostModeReqCmdFmt.tHostModeReqCmdIdx = AT_CMD_REQ_SLEEP;
+        tHostModeReqCmdFmt.tAtMode = AT_CMD_MODE_SET;
 
-    APP_SendMessage(APP_EVT_AT_MSG_SEND, (uint8_t*)&tHostModeReqCmdFmt, sizeof(T_HostModeReqCmdFmt));
+        APP_SendMessage(APP_EVT_AT_MSG_SEND, (uint8_t*)&tHostModeReqCmdFmt, sizeof(T_HostModeReqCmdFmt));
+    }
 }
 
 static void APP_EvtHandler_WakeupSlave(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
@@ -329,10 +333,17 @@ void APP_HostModeDemoProgress(T_HostModeAckCmdList tHostModeAckCmdIdx, uint8_t *
 
     switch(tHostModeAckCmdIdx)
     {
+        case AT_CMD_ACK_BOOT_UP:
+        {
+            osTimerStop(g_tAppSleepSlaveTimer);
+            osTimerStop(g_tAppWakeupSlaveTimer);
+
+            break;
+        }
         case AT_CMD_ACK_DEVICE_READY:
         {
             // might cause from slave auto-connect
-            if(1 != g_u8WifiStatus)
+            if(0 == g_u8WifiStatus)
             {
                 // start provision
                 strcpy((char *)tHostModeReqCmdFmt.u8aPayload, "60");
@@ -347,12 +358,19 @@ void APP_HostModeDemoProgress(T_HostModeAckCmdList tHostModeAckCmdIdx, uint8_t *
         }
         case AT_CMD_ACK_WAKEUP_FROM_SLEEP:
         {
-            strcpy((char *)tHostModeReqCmdFmt.u8aPayload, "1,10");
-            tHostModeReqCmdFmt.u16PayloadLen = strlen((char *)tHostModeReqCmdFmt.u8aPayload);
-            tHostModeReqCmdFmt.tHostModeReqCmdIdx = AT_CMD_REQ_CLOUD_TX_POST;
-            tHostModeReqCmdFmt.tAtMode = AT_CMD_MODE_SET;
+            if(1 == g_u8WifiStatus)
+            {
+                strcpy((char *)tHostModeReqCmdFmt.u8aPayload, "1,10");
+                tHostModeReqCmdFmt.u16PayloadLen = strlen((char *)tHostModeReqCmdFmt.u8aPayload);
+                tHostModeReqCmdFmt.tHostModeReqCmdIdx = AT_CMD_REQ_CLOUD_TX_POST;
+                tHostModeReqCmdFmt.tAtMode = AT_CMD_MODE_SET;
 
-            u8NeedToSend = 1;
+                u8NeedToSend = 1;
+            }
+            else
+            {
+                // wait until network up ack to restore the procedure
+            }
 
             break;
         }

@@ -127,6 +127,7 @@ static T_AppEvtHandlerTbl g_tAppEvtHandlerTbl[] =
 // host mode ack command list in string (the indexing of string array must same as T_HostModeAckCmdList)
 int8_t *i8HostModeAckCmdListStrTbl[] = 
 {
+    "+BOOT",
     "+READY",
     "+WAKEUP",
     "+PROVISION",
@@ -168,7 +169,7 @@ void APP_TaskInit(void);
 void APP_BleInit(void);
 void APP_NetInit(void);
 void APP_CldInit(void);
-void APP_HostModeInit(void);
+void APP_UserAtInit(void);
 
 /***********
 C Functions
@@ -599,6 +600,8 @@ static void APP_EvtHandler_NetworkDown(uint32_t u32EventId, void *pData, uint32_
     uint8_t u8Payload = 0x30; // '0' : success
 
     APP_HostModeResponseAck(AT_CMD_ACK_NETWORK_DOWN, &u8Payload, sizeof(u8Payload));
+
+    Cloud_MsgSend(CLOUD_EVT_TYPE_DISCONNECT, NULL, 0);
 }
 
 static void APP_EvtHandler_NetworkReset(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
@@ -956,9 +959,8 @@ void APP_CldInit(void)
     Cloud_Init();
 }
 
-void APP_HostModeInit(void)
+void APP_UserAtInit(void)
 {
-    // TODO: host mode implement
     // add at cmd and enable CR/LF
     AT_CmdListAdd(1);  // #define CRLF_ENABLE (1)
 }
@@ -1141,7 +1143,7 @@ void APP_MainInit(void)
 
     APP_CldInit();
 
-    APP_HostModeInit();
+    APP_UserAtInit();
     
     // enter smart sleep after 5s
 #if (PS_ENABLED == 1)
@@ -1149,4 +1151,6 @@ void APP_MainInit(void)
 #endif
     
     osTimerStart(g_tSysTimer, 5000);
+
+    APP_HostModeResponseAck(AT_CMD_ACK_BOOT_UP, NULL, 0);
 }

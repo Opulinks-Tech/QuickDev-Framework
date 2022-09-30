@@ -88,7 +88,9 @@ static T_AppEvtHandlerTbl g_tAppEvtHandlerTbl[] =
     {APP_EVT_NETWORK_DOWN,                  APP_EvtHandler_NetworkDown},
     {APP_EVT_NETWORK_RESET,                 APP_EvtHandler_NetworkReset},
 
-    {APP_EVT_CLOUD_CONNECT_IND,             APP_EvtHandler_CloudConnectInd},
+    {APP_EVT_CLOUD_CONNECT_DONE_IND,        APP_EvtHandler_CloudConnectDoneInd},
+    {APP_EVT_CLOUD_CONNECT_FAIL_IND,        APP_EvtHandler_CloudConnectFailInd},
+    {APP_EVT_CLOUD_RECONNECT_DONE_IND,      APP_EvtHandler_CloudReconnectDoneInd},
     {APP_EVT_CLOUD_DISCONNECT_IND,          APP_EvtHandler_CloudDisconnectInd},
 
     {APP_EVT_SYS_TIMER_TIMEOUT,             APP_EvtHandler_SysTimerTimeout},
@@ -106,7 +108,7 @@ void APP_TaskInit(void);
 void APP_BleInit(void);
 void APP_NetInit(void);
 void APP_CldInit(void);
-void APP_HostModeInit(void);
+void APP_UserAtInit(void);
 
 /***********
 C Functions
@@ -130,17 +132,26 @@ void APP_NmUnsolicitedCallback(T_NmUslctdEvtType tEvtType, uint8_t *pu8Data, uin
         {
             APP_SendMessage(APP_EVT_NETWORK_UP, pu8Data, u32DataLen);
 
+            // set network up (for cloud to checking wifi connection)
+            Cloud_NetworkStatusSet(true);
+
             break;
         }
         case NM_USLCTD_EVT_NETWORK_DOWN:
         {
             APP_SendMessage(APP_EVT_NETWORK_DOWN, NULL, 0);
 
+            // set network down (for cloud to checking wifi connection)
+            Cloud_NetworkStatusSet(false);
+
             break;
         }
         case NM_USLCTD_EVT_NETWORK_RESET:
         {
             APP_SendMessage(APP_EVT_NETWORK_RESET, NULL, 0);
+
+            // set network down (for cloud to checking wifi connection)
+            Cloud_NetworkStatusSet(false);
 
             break;
         }
@@ -197,6 +208,44 @@ void APP_BleUnsolicitedCallback(uint16_t u16EvtType, T_OplErr tEvtRst, uint8_t *
          
             break;
         }
+    }
+}
+
+void APP_CloudStatusCallback(T_CloudStatus tCloudStatus, void *pData, uint32_t u32DataLen)
+{
+    switch(tCloudStatus)
+    {
+        case CLOUD_CB_STA_INIT_DONE:
+        case CLOUD_CB_STA_INIT_FAIL:
+            break;
+        case CLOUD_CB_STA_CONN_DONE:
+        {
+            APP_SendMessage(APP_EVT_CLOUD_CONNECT_DONE_IND, NULL, 0);
+            break;
+        }
+        case CLOUD_CB_STA_CONN_FAIL:
+        {
+            APP_SendMessage(APP_EVT_CLOUD_CONNECT_FAIL_IND, NULL, 0);        
+            break;
+        }
+        case CLOUD_CB_STA_RECONN_DONE:
+        {
+            APP_SendMessage(APP_EVT_CLOUD_RECONNECT_DONE_IND, NULL, 0);
+            break;
+        }
+        case CLOUD_CB_STA_DISCONN:
+        {
+            APP_SendMessage(APP_EVT_CLOUD_DISCONNECT_IND, NULL, 0);
+            break;
+        }
+        case CLOUD_CB_STA_SUB_DONE:
+        case CLOUD_CB_STA_SUB_FAIL:
+        case CLOUD_CB_STA_UNSUB_DONE:
+        case CLOUD_CB_STA_UNSUB_FAIL:
+        case CLOUD_CB_STA_PUB_DONE:
+        case CLOUD_CB_STA_PUB_FAIL:
+        default:
+            break;
     }
 }
 
@@ -279,22 +328,33 @@ static void APP_EvtHandler_NetworkUp(uint32_t u32EventId, void *pData, uint32_t 
 
     OPL_LOG_INFO(APP, "WI-FI IP [%d.%d.%d.%d]", u8aIp[0], u8aIp[1], u8aIp[2], u8aIp[3]);
 
-    T_CloudConnInfo tCloudConnInfo;
+    // register topics
+    T_CloudTopicRegInfo tCloudTopicRegInfo;
 
-    tCloudConnInfo.u8AutoConn = 1;
-    tCloudConnInfo.u8Security = 0;
-    tCloudConnInfo.u16HostPort = MQTT_HOST_PORT;
-    memcpy(tCloudConnInfo.u8aHostAddr, MQTT_HOST_URL, strlen(MQTT_HOST_URL));
+    // register subscribe topic 1
+    memset(&tCloudTopicRegInfo, 0, sizeof(T_CloudTopicRegInfo));
+    tCloudTopicRegInfo.u8TopicIndex = 1;
+    tCloudTopicRegInfo.fpFunc = APP_MqttSubTest1IndicateCallback;
+    strcpy((char *)tCloudTopicRegInfo.u8aTopicName, "QD_FWK/MQTT_DEMO/SUB_Test/1");
 
-    Cloud_MsgSend(CLOUD_EVT_TYPE_ESTABLISH, (uint8_t *)&tCloudConnInfo, sizeof(T_CloudConnInfo));
+    Cloud_RxTopicRegisterSta(&tCloudTopicRegInfo);
 
+    // register publish topic
+    memset(&tCloudTopicRegInfo, 0, sizeof(T_CloudTopicRegInfo));
+    tCloudTopicRegInfo.u8TopicIndex = 1;
+    tCloudTopicRegInfo.fpFunc = NULL;
+    strcpy((char *)tCloudTopicRegInfo.u8aTopicName, "QD_FWK/MQTT_DEMO/PUB_Test/1");
+
+    Cloud_TxTopicRegisterSta(&tCloudTopicRegInfo);
+
+    Cloud_MsgSend(CLOUD_EVT_TYPE_ESTABLISH, NULL, 0);
 }
 
 static void APP_EvtHandler_NetworkDown(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
     OPL_LOG_INFO(APP, "Network disconnected");
 
-    Cloud_MsgSend(CLOUD_EVT_TYPE_DISCONNECT, NULL, 0);
+    // Cloud_MsgSend(CLOUD_EVT_TYPE_DISCONNECT, NULL, 0);
 }
 
 static void APP_EvtHandler_NetworkReset(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
@@ -302,41 +362,44 @@ static void APP_EvtHandler_NetworkReset(uint32_t u32EventId, void *pData, uint32
     OPL_LOG_INFO(APP, "Network reset");
 }
 
-static void APP_EvtHandler_CloudConnectInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
+static void APP_EvtHandler_CloudConnectDoneInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
+    osDelay(1000);
+
+    // register topics
     T_CloudTopicRegInfo tCloudTopicRegInfo;
 
     // register subscribe topic 1
     memset(&tCloudTopicRegInfo, 0, sizeof(T_CloudTopicRegInfo));
-    tCloudTopicRegInfo.u8TopicIndex = 1;
-    strcpy((char *)tCloudTopicRegInfo.u8aTopicName, "QD_FWK/MQTT_DEMO/SUB_Test/1");
-
-    Cloud_RxTopicRegister(&tCloudTopicRegInfo, APP_MqttSubTest1IndicateCallback);
-
-    // register subscribe topic 2
-    memset(&tCloudTopicRegInfo, 0, sizeof(T_CloudTopicRegInfo));
     tCloudTopicRegInfo.u8TopicIndex = 2;
+    tCloudTopicRegInfo.fpFunc = APP_MqttSubTest2IndicateCallback;
     strcpy((char *)tCloudTopicRegInfo.u8aTopicName, "QD_FWK/MQTT_DEMO/SUB_Test/2");
 
-    Cloud_RxTopicRegister(&tCloudTopicRegInfo, APP_MqttSubTest2IndicateCallback);
-
-    // register publish topic
-    memset(&tCloudTopicRegInfo, 0, sizeof(T_CloudTopicRegInfo));
-    tCloudTopicRegInfo.u8TopicIndex = 1;
-    strcpy((char *)tCloudTopicRegInfo.u8aTopicName, "QD_FWK/MQTT_DEMO/PUB_Test/1");
-
-    Cloud_TxTopicRegister(&tCloudTopicRegInfo, NULL);
+    Cloud_RxTopicRegisterDyn(&tCloudTopicRegInfo);
 
     // start periodic timer to publish data
-    osTimerStart(g_tAppSysTimer, 15000);
+    osTimerStart(g_tAppSysTimer, 20000);
 
     // stop ble advertise
     Opl_Ble_Stop_Req();
 }
 
+static void APP_EvtHandler_CloudConnectFailInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
+{
+    // retry connection
+    Cloud_MsgSend(CLOUD_EVT_TYPE_ESTABLISH, NULL, 0);
+}
+
+static void APP_EvtHandler_CloudReconnectDoneInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
+{
+    // start periodic timer to publish data
+    osTimerStart(g_tAppSysTimer, 20000);
+}
+
 static void APP_EvtHandler_CloudDisconnectInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
-    // nothing to do
+    // stop periodic timer
+    osTimerStop(g_tAppSysTimer);
 }
 
 static void APP_EvtHandler_SysTimerTimeout(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
@@ -525,13 +588,24 @@ void APP_NetInit(void)
 
 void APP_CldInit(void)
 {
+    // initialize cloud status callback
+    Cloud_StatusCallbackRegister(APP_CloudStatusCallback);
+
+    // initialize cloud connect information
+    T_CloudConnInfo tCloudConnInfo;
+
+    tCloudConnInfo.u8AutoConn = 1;
+    tCloudConnInfo.u8Security = 0;
+    tCloudConnInfo.u16HostPort = MQTT_HOST_PORT;
+    strcpy((char *)tCloudConnInfo.u8aHostAddr, MQTT_HOST_URL);
+
+    Cloud_Init(&tCloudConnInfo);
+
     // user implement
-    Cloud_Init();
 }
 
-void APP_HostModeInit(void)
+void APP_UserAtInit(void)
 {
-    // TODO: host mode implement
     // add at cmd and enable CR/LF
     AT_CmdListAdd(1);  // #define CRLF_ENABLE (1)
 }
@@ -714,7 +788,7 @@ void APP_MainInit(void)
 
     APP_CldInit();
 
-    APP_HostModeInit();
+    APP_UserAtInit();
     
     // enter smart sleep after 5s
 #if (PS_ENABLED == 1)

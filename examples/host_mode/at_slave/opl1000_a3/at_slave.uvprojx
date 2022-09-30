@@ -13,16 +13,16 @@
       <pCCUsed>5060183::V5.06 update 2 (build 183)::ARMCC</pCCUsed>
       <TargetOption>
         <TargetCommonOption>
-          <Device>ARMCM4_FP</Device>
+          <Device>ARMCM3</Device>
           <Vendor>ARM</Vendor>
           <PackID>ARM.CMSIS.5.6.0</PackID>
           <PackURL>http://www.keil.com/pack/</PackURL>
-          <Cpu>IRAM(0x20000000,0x00020000) IROM(0x00000000,0x00040000) CPUTYPE("Cortex-M4") FPU2 CLOCK(12000000) ESEL ELITTLE</Cpu>
+          <Cpu>IRAM(0x20000000,0x20000) IROM(0x00000000,0x40000) CPUTYPE("Cortex-M3") CLOCK(12000000) ESEL ELITTLE</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
           <StartupFile></StartupFile>
-          <FlashDriverDll>UL2CM3(-S0 -C0 -P0 -FD20000000 -FC1000)</FlashDriverDll>
+          <FlashDriverDll>UL2CM3(-S0 -C0 -P0 -FD20000000 -FC1000 -FN1 -FF0NEW_DEVICE -FS00 -FL040000 -FP0($$Device:ARMCM3$Device\ARM\Flash\NEW_DEVICE.FLM))</FlashDriverDll>
           <DeviceId>0</DeviceId>
-          <RegisterFile>$$Device:ARMCM4_FP$Device\ARM\ARMCM4\Include\ARMCM4_FP.h</RegisterFile>
+          <RegisterFile>$$Device:ARMCM3$Device\ARM\ARMCM3\Include\ARMCM3.h</RegisterFile>
           <MemoryEnv></MemoryEnv>
           <Cmp></Cmp>
           <Asm></Asm>
@@ -32,7 +32,7 @@
           <SLE66CMisc></SLE66CMisc>
           <SLE66AMisc></SLE66AMisc>
           <SLE66LinkerMisc></SLE66LinkerMisc>
-          <SFDFile>$$Device:ARMCM4_FP$Device\ARM\SVD\ARMCM4.svd</SFDFile>
+          <SFDFile>$$Device:ARMCM3$Device\ARM\SVD\ARMCM3.svd</SFDFile>
           <bCustSvd>0</bCustSvd>
           <UseEnv>0</UseEnv>
           <BinPath></BinPath>
@@ -81,7 +81,7 @@
           <AfterMake>
             <RunUserProg1>1</RunUserProg1>
             <RunUserProg2>0</RunUserProg2>
-            <UserProg1Name>.\at_master.bat $L @L</UserProg1Name>
+            <UserProg1Name>.\at_slave.bat $L !L @L</UserProg1Name>
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>1</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
@@ -111,11 +111,11 @@
           <SimDllName>SARMCM3.DLL</SimDllName>
           <SimDllArguments>  -MPU</SimDllArguments>
           <SimDlgDll>DCM.DLL</SimDlgDll>
-          <SimDlgDllArguments>-pCM4</SimDlgDllArguments>
+          <SimDlgDllArguments>-pCM3</SimDlgDllArguments>
           <TargetDllName>SARMCM3.DLL</TargetDllName>
           <TargetDllArguments> -MPU</TargetDllArguments>
           <TargetDlgDll>TCM.DLL</TargetDlgDll>
-          <TargetDlgDllArguments>-pCM4</TargetDlgDllArguments>
+          <TargetDlgDllArguments>-pCM3</TargetDlgDllArguments>
         </DllOption>
         <DebugOption>
           <OPTHX>
@@ -173,7 +173,7 @@
             <AdsLsxf>1</AdsLsxf>
             <RvctClst>0</RvctClst>
             <GenPPlst>0</GenPPlst>
-            <AdsCpuType>"Cortex-M4"</AdsCpuType>
+            <AdsCpuType>"Cortex-M3"</AdsCpuType>
             <RvctDeviceName></RvctDeviceName>
             <mOS>0</mOS>
             <uocRom>0</uocRom>
@@ -182,7 +182,7 @@
             <hadIRAM>1</hadIRAM>
             <hadXRAM>0</hadXRAM>
             <uocXRam>0</uocXRam>
-            <RvdsVP>2</RvdsVP>
+            <RvdsVP>0</RvdsVP>
             <hadIRAM2>0</hadIRAM2>
             <hadIROM2>0</hadIROM2>
             <StupSel>8</StupSel>
@@ -273,7 +273,7 @@
               <OCR_RVCT4>
                 <Type>1</Type>
                 <StartAddress>0x0</StartAddress>
-                <Size>0x40000</Size>
+                <Size>0xc0000</Size>
               </OCR_RVCT4>
               <OCR_RVCT5>
                 <Type>1</Type>
@@ -297,8 +297,8 @@
               </OCR_RVCT8>
               <OCR_RVCT9>
                 <Type>0</Type>
-                <StartAddress>0x20000000</StartAddress>
-                <Size>0x20000</Size>
+                <StartAddress>0x400000</StartAddress>
+                <Size>0x50000</Size>
               </OCR_RVCT9>
               <OCR_RVCT10>
                 <Type>0</Type>
@@ -316,7 +316,7 @@
             <OneElfS>1</OneElfS>
             <Strict>0</Strict>
             <EnumInt>0</EnumInt>
-            <PlainCh>1</PlainCh>
+            <PlainCh>0</PlainCh>
             <Ropi>0</Ropi>
             <Rwpi>0</Rwpi>
             <wLevel>2</wLevel>
@@ -332,9 +332,9 @@
             <v6WtE>0</v6WtE>
             <VariousControls>
               <MiscControls>--preinclude=sys_common.h</MiscControls>
-              <Define>OPL2500_APS OPL2500_PATCH __noSIMULATOR__ __BLE__ __LE_HOST_USE_CMD__ __LWIP_TASK__ __WIFI_MAC_TASK__ __PMP_ENABLE__ __PMP_REGION__ __HEAP_REGION__ noLWIP_DYNAMIC_DEBUG_ENABLE __AT_CMD_TASK__ __noRTL_SIMULATION__ MBEDTLS_CONFIG_FILE="&lt;config-opl-default.h&gt;" OPL2500_A0 HOST_MODE_TCP</Define>
+              <Define>__noSIMULATOR__ __BLE__ __LE_HOST_USE_CMD__ __LWIP_TASK__ __WPA_SUPPLICANT__ __noHW_CRYPTO_ENGINE__ __WIFI_MAC_TASK__ __NL1000_An__ __PMP_ENABLE__ __PMP_REGION__ __HEAP_REGION__ noLWIP_DYNAMIC_DEBUG_ENABLE __AT_CMD_TASK__ __noRTL_SIMULATION__ __WIFI_AUTO_CONNECT__ OPL1000_APS MBEDTLS_CONFIG_FILE="&lt;config-opl-default.h&gt;" OPL1000_A3 HOST_MODE_TCP</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\..\..\sdk\SDK\APS\project\opl2500\boot_sequence;..\..\..\..\sdk\SDK\APS\project\opl2500\include;..\..\..\..\sdk\SDK\APS\project\opl2500\lib;..\..\..\..\sdk\SDK\APS\project\opl2500\startup;..\..\..\..\sdk\SDK\APS\project\common;..\..\..\..\sdk\SDK\APS\FreeRtos;..\..\..\..\sdk\SDK\APS\FreeRtos\Source\include;..\..\..\..\sdk\SDK\APS\FreeRtos\Source\portable\Keil\ARM_CM4F;..\..\..\..\sdk\SDK\APS\driver\CMSIS\Device\Opulinks\opl2500\Include;..\..\..\..\sdk\SDK\APS\driver\CMSIS\Include;..\..\..\..\sdk\SDK\APS\driver\chip;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\camera;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_auxadc;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_dbg_uart;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_dma;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_gpio;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_i2c;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_patch;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_pdm;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_pwm;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_spi;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_system;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_tick;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_tmr;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_uart;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_vic;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_wdt;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\securityipdriver;..\..\..\..\sdk\SDK\APS\middleware\netlink;..\..\..\..\sdk\SDK\APS\middleware\netlink\at;..\..\..\..\sdk\SDK\APS\middleware\netlink\ble_controller_layer\inc;..\..\..\..\sdk\SDK\APS\middleware\netlink\cli;..\..\..\..\sdk\SDK\APS\middleware\netlink\common\sys_api;..\..\..\..\sdk\SDK\APS\middleware\netlink\common\sys_api\rom_if;..\..\..\..\sdk\SDK\APS\middleware\netlink\common\sys_ctrl;..\..\..\..\sdk\SDK\APS\middleware\netlink\controller_task;..\..\..\..\sdk\SDK\APS\middleware\netlink\data_flow;..\..\..\..\sdk\SDK\APS\middleware\netlink\diag_task;..\..\..\..\sdk\SDK\APS\middleware\netlink\le_stack;..\..\..\..\sdk\SDK\APS\middleware\netlink\msg;..\..\..\..\sdk\SDK\APS\middleware\netlink\mw_fim;..\..\..\..\sdk\SDK\APS\middleware\netlink\mw_ota;..\..\..\..\sdk\SDK\APS\middleware\netlink\ps_task;..\..\..\..\sdk\SDK\APS\middleware\netlink\wifi_controller_layer;..\..\..\..\sdk\SDK\APS\middleware\netlink\wifi_mac;..\..\..\..\sdk\SDK\APS\middleware\netlink\wifi_mac\utils;..\..\..\..\sdk\SDK\APS\middleware\netlink\wifi_mac\common;..\..\..\..\sdk\SDK\APS\middleware\third_party\httpclient;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\lwip\src\include;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\lwip\src\include\lwip;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\ports\freertos\include;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\ports\freertos\netif;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\ports\rom_if;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\contrib\apps;..\..\..\..\sdk\SDK\APS\middleware\third_party\mbedtls\configs;..\..\..\..\sdk\SDK\APS\middleware\third_party\mbedtls\include;..\..\..\..\sdk\SDK\APS\middleware\third_party\mbedtls\include\mbedtls;..\..\..\..\sdk\SDK\APS\middleware\third_party\mbedtls\port\include;..\..\..\..\sdk\SDK\APS\middleware\third_party\tinycrypt\include;..\..\..\..\sdk\SDK\APS\middleware\third_party\tinycrypt\include\tinycrypt;..\..\..\..\sdk\SDK\APS\apps\le_app\cmd_app;..\..\..\..\sdk\SDK\APS\apps\le_app\pts_app;..\..\..\..\sdk\SDK\APS_PATCH\project\opl2500\boot_sequence;..\..\..\..\sdk\SDK\APS_PATCH\project\opl2500\include;..\..\..\..\sdk\SDK\APS_PATCH\project\opl2500\lib;..\..\..\..\sdk\SDK\APS_PATCH\project\opl2500\startup;..\..\..\..\sdk\SDK\APS_PATCH\project\common;..\..\..\..\sdk\SDK\APS_PATCH\FreeRtos;..\..\..\..\sdk\SDK\APS_PATCH\FreeRtos\Source\include;..\..\..\..\sdk\SDK\APS_PATCH\FreeRtos\Source\portable\Keil\ARM_CM4F;..\..\..\..\sdk\SDK\APS_PATCH\driver\CMSIS\Device\Opulinks\opl2500\Include;..\..\..\..\sdk\SDK\APS_PATCH\driver\CMSIS\Include;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\camera;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_auxadc;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_dbg_uart;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_dma;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_gpio;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_i2c;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_patch;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_pdm;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_pwm;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_spi;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_system;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_tick;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_tmr;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_uart;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_vic;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_wdt;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\securityipdriver;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\at;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\ble_controller_layer\inc;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\cli;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\common\sys_api;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\common\sys_api\rom_if;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\common\sys_ctrl;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\controller_task;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\data_flow;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\diag_task;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\le_stack;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\msg;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\mw_fim;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\mw_ota;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\ps_task;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\wifi_controller_layer;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\wifi_mac;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\wifi_mac\common;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3\lwip\src\include;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3\ports\freertos\include;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3\ports\freertos\netif;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3\ports\rom_if;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3\contrib\apps;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\mbedtls\configs;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\mbedtls\include;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\mbedtls\include\mbedtls;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\mbedtls\port\include;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\tinycrypt\include;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\tinycrypt\include\tinycrypt;..\..\..\..\sdk\SDK\APS_PATCH\apps\le_app\cmd_app;..\..\..\..\sdk\SDK\APS_PATCH\apps\le_app\include;..\..\..\..\sdk\SDK\APS_PATCH\apps\le_app\pts_app;..\..\..\..\quick_dev;..\..\..\..\quick_dev\app_ref\ble_data_prot\opl_data;..\..\..\..\quick_dev\app_ref\ble_services;..\..\..\..\quick_dev\app_ref\cloud;..\..\..\..\quick_dev\app_ref\cloud\tcp_cloud;..\..\..\..\quick_dev\app_ref\cloud\tcp_cloud\infra_cjson;..\..\..\..\quick_dev\app_ref\cloud\tcp_cloud\tcp_client;..\..\..\..\quick_dev\app_ref\mngr_api\ble_mngr_api;..\..\..\..\quick_dev\app_ref\mngr_api\net_mngr_api;..\..\..\..\quick_dev\app_ref\mngr_api\wifi_mngr_api;..\..\..\..\quick_dev\common\battery;..\..\..\..\quick_dev\common\error;..\..\..\..\quick_dev\common\evt_group;..\..\..\..\quick_dev\common\fsm;..\..\..\..\quick_dev\common\log;..\..\..\..\quick_dev\common\mp;..\..\..\..\quick_dev\common\ota;..\..\..\..\quick_dev\common\config\ps_config;..\..\..\..\quick_dev\common\pwr_save;..\..\..\..\quick_dev\common\rf_pwr;..\..\..\..\quick_dev\common\time_stmp;..\..\..\..\quick_dev\middleware\ble_mngr;..\..\..\..\quick_dev\middleware\net_mngr;..\..\..\..\quick_dev\middleware\wifi_mngr;..\..\..\..\quick_dev\middleware\wifi_mngr\wifi_autocon;..\..\..\..\quick_dev\middleware\wifi_mngr\wifi_agent;..\..\..\..\quick_dev\middleware\wifi_mngr\wifi_pro_rec;..\main;..\main\hal;..\main\sys_config;.\hal;.\board</IncludePath>
+              <IncludePath>..\..\..\..\sdk\SDK\APS\apps\le_app\cmd_app;..\..\..\..\sdk\SDK\APS\apps\le_app\mtc_app;..\..\..\..\sdk\SDK\APS\apps\le_app\pts_app;..\..\..\..\sdk\SDK\APS\apps\wifi_app;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_auxadc;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_dbg_uart;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_dma;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_i2c;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_patch;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_pwm;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_spi;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_system;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_tick;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_tmr;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_uart;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_vic;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_wdt;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\securityipdriver;..\..\..\..\sdk\SDK\APS\driver\CMSIS\Device\opl1000\Include;..\..\..\..\sdk\SDK\APS\driver\CMSIS\Include;..\..\..\..\sdk\SDK\APS\FreeRtos\Source\include;..\..\..\..\sdk\SDK\APS\FreeRtos\Source\portable\Keil\ARM_CM3;..\..\..\..\sdk\SDK\APS\middleware\netlink\at;..\..\..\..\sdk\SDK\APS\middleware\netlink\ble_controller_layer\inc;..\..\..\..\sdk\SDK\APS\middleware\netlink\cli;..\..\..\..\sdk\SDK\APS\middleware\netlink\common\sys_api;..\..\..\..\sdk\SDK\APS\middleware\netlink\common\sys_api\rom_if;..\..\..\..\sdk\SDK\APS\middleware\netlink\common\sys_ctrl;..\..\..\..\sdk\SDK\APS\middleware\netlink\controller_task;..\..\..\..\sdk\SDK\APS\middleware\netlink\data_flow;..\..\..\..\sdk\SDK\APS\middleware\netlink\diag_task;..\..\..\..\sdk\SDK\APS\middleware\netlink\msg;..\..\..\..\sdk\SDK\APS\middleware\netlink\mw_fim;..\..\..\..\sdk\SDK\APS\middleware\netlink\mw_ota;..\..\..\..\sdk\SDK\APS\middleware\netlink\ps_task;..\..\..\..\sdk\SDK\APS\middleware\netlink\wifi_controller_layer;..\..\..\..\sdk\SDK\APS\middleware\netlink\wifi_controller_layer\rom_if;..\..\..\..\sdk\SDK\APS\middleware\netlink\wifi_mac;..\..\..\..\sdk\SDK\APS\middleware\third_party\fatfs\src;..\..\..\..\sdk\SDK\APS\middleware\third_party\httpclient;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\lwip\src\include\;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\lwip\src\include\lwip;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\ports\freertos\include;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\ports\freertos\netif;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\ports\rom_if;..\..\..\..\sdk\SDK\APS\middleware\third_party\mbedtls\configs;..\..\..\..\sdk\SDK\APS\middleware\third_party\mbedtls\include;..\..\..\..\sdk\SDK\APS\middleware\third_party\mbedtls\port\include;..\..\..\..\sdk\SDK\APS\middleware\third_party\tinycrypt\include\tinycrypt;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\ap;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\common;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\crypto;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\drivers;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\eapol_auth;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\eapol_supp;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\eap_common;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\eap_peer;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\eap_server;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\l2_packet;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\radius;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\rsn_supp;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\tls;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\utils;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\wps;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\wpa_supplicant;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\wpa_supplicant\dbus;..\..\..\..\sdk\SDK\APS\project\common;..\..\..\..\sdk\SDK\APS\project\opl1000\boot_sequence;..\..\..\..\sdk\SDK\APS\project\opl1000\include;..\..\..\..\sdk\SDK\APS\project\opl1000\startup;..\..\..\..\sdk\SDK\APS\apps\le_app\cmd_app;..\..\..\..\sdk\SDK\APS\apps\le_app\include;..\..\..\..\sdk\SDK\APS\apps\le_app\mtc_app;..\..\..\..\sdk\SDK\APS\apps\le_app\pts_app;..\..\..\..\sdk\SDK\APS\apps\wifi_app;..\..\..\..\sdk\SDK\APS_PATCH\apps\le_app\include;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_auxadc;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_dbg_uart;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_dma;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_i2c;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_patch;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_pwm;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_spi;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_system;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_tick;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_tmr;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_uart;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_vic;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_wdt;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\securityipdriver;..\..\..\..\sdk\SDK\APS_PATCH\driver\CMSIS\Device\opl1000\Include;..\..\..\..\sdk\SDK\APS_PATCH\driver\CMSIS\Include;..\..\..\..\sdk\SDK\APS_PATCH\FreeRtos\Source\include;..\..\..\..\sdk\SDK\APS_PATCH\FreeRtos\Source\portable\Keil\ARM_CM3;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\at;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\ble_controller_layer\inc;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\cli;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\common\sys_api;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\common\sys_api\rom_if;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\common\sys_ctrl;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\controller_task;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\data_flow;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\diag_task;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\msg;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\mw_fim;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\mw_ota;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\ps_task;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\wifi_controller_layer;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\wifi_controller_layer\rom_if;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\wifi_mac;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\fatfs\src;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\httpclient;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3\lwip\src\include;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3\lwip\src\include\lwip;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3\ports\freertos\include;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3\ports\freertos\netif;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3\ports\rom_if;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\mbedtls\configs;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\mbedtls\include;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\mbedtls\port\include;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\tinycrypt\include\tinycrypt;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\ap;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\common;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\crypto;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\drivers;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\eapol_auth;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\eapol_supp;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\eap_common;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\eap_peer;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\eap_server;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\l2_packet;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\radius;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\rsn_supp;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\tls;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\utils;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\wps;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\wpa_supplicant;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\wpa_supplicant\dbus;..\..\..\..\sdk\SDK\APS_PATCH\project\common;..\..\..\..\sdk\SDK\APS_PATCH\project\opl1000\boot_sequence;..\..\..\..\sdk\SDK\APS_PATCH\project\opl1000\include;..\..\..\..\sdk\SDK\APS_PATCH\project\opl1000\startup;..\..\..\..\quick_dev;..\..\..\..\quick_dev\app_ref\ble_data_prot\opl_data;..\..\..\..\quick_dev\app_ref\ble_services;..\..\..\..\quick_dev\app_ref\cloud;..\..\..\..\quick_dev\app_ref\cloud\tcp_cloud;..\..\..\..\quick_dev\app_ref\cloud\tcp_cloud\infra_cjson;..\..\..\..\quick_dev\app_ref\cloud\tcp_cloud\tcp_client;..\..\..\..\quick_dev\app_ref\mngr_api\ble_mngr_api;..\..\..\..\quick_dev\app_ref\mngr_api\net_mngr_api;..\..\..\..\quick_dev\app_ref\mngr_api\wifi_mngr_api;..\..\..\..\quick_dev\common\battery;..\..\..\..\quick_dev\common\error;..\..\..\..\quick_dev\common\evt_group;..\..\..\..\quick_dev\common\fsm;..\..\..\..\quick_dev\common\log;..\..\..\..\quick_dev\common\mp;..\..\..\..\quick_dev\common\ota;..\..\..\..\quick_dev\common\config\ps_config;..\..\..\..\quick_dev\common\pwr_save;..\..\..\..\quick_dev\common\rf_pwr;..\..\..\..\quick_dev\common\time_stmp;..\..\..\..\quick_dev\middleware\ble_mngr;..\..\..\..\quick_dev\middleware\net_mngr;..\..\..\..\quick_dev\middleware\wifi_mngr;..\..\..\..\quick_dev\middleware\wifi_mngr\wifi_autocon;..\..\..\..\quick_dev\middleware\wifi_mngr\wifi_agent;..\..\..\..\quick_dev\middleware\wifi_mngr\wifi_pro_rec;..\main;..\main\hal;..\main\sys_config;.\hal;.\board</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -364,10 +364,10 @@
             <TextAddressRange></TextAddressRange>
             <DataAddressRange></DataAddressRange>
             <pXoBase></pXoBase>
-            <ScatterFile>.\at_master.sct</ScatterFile>
+            <ScatterFile>.\at_slave.sct</ScatterFile>
             <IncludeLibs></IncludeLibs>
             <IncludeLibsPath></IncludeLibsPath>
-            <Misc>--datacompressor off --any_contingency --entry=__Patch_EntryPoint</Misc>
+            <Misc>--datacompressor off --entry=__Patch_EntryPoint</Misc>
             <LinkerInputFile></LinkerInputFile>
             <DisabledWarnings></DisabledWarnings>
           </LDads>
@@ -445,17 +445,17 @@
             <File>
               <FileName>symdefs.o</FileName>
               <FileType>3</FileType>
-              <FilePath>..\..\..\..\sdk\SDK\APS\targets\opl2500\object\symdefs.o</FilePath>
+              <FilePath>..\..\..\..\sdk\SDK\APS\targets\opl1000\object\symdefs.o</FilePath>
             </File>
             <File>
-              <FileName>opl2500_patch_aps.lib</FileName>
+              <FileName>opl1000_sdk_m3.lib</FileName>
               <FileType>4</FileType>
-              <FilePath>..\..\..\..\sdk\SDK\APS\targets\opl2500\Output\Objects\opl2500_patch_aps.lib</FilePath>
+              <FilePath>..\..\..\..\sdk\SDK\APS\targets\opl1000\Output\Objects\opl1000_sdk_m3.lib</FilePath>
             </File>
             <File>
-              <FileName>opl2500_sdk_aps.lib</FileName>
+              <FileName>opl1000_patch_m3.lib</FileName>
               <FileType>4</FileType>
-              <FilePath>..\..\..\..\sdk\SDK\APS\targets\opl2500\Output\Objects\opl2500_sdk_aps.lib</FilePath>
+              <FilePath>..\..\..\..\sdk\SDK\APS\targets\opl1000\Output\Objects\opl1000_patch_m3.lib</FilePath>
             </File>
           </Files>
         </Group>
@@ -885,16 +885,16 @@
       <pCCUsed>5060183::V5.06 update 2 (build 183)::ARMCC</pCCUsed>
       <TargetOption>
         <TargetCommonOption>
-          <Device>ARMCM4_FP</Device>
+          <Device>ARMCM3</Device>
           <Vendor>ARM</Vendor>
           <PackID>ARM.CMSIS.5.6.0</PackID>
           <PackURL>http://www.keil.com/pack/</PackURL>
-          <Cpu>IRAM(0x20000000,0x00020000) IROM(0x00000000,0x00040000) CPUTYPE("Cortex-M4") FPU2 CLOCK(12000000) ESEL ELITTLE</Cpu>
+          <Cpu>IRAM(0x20000000,0x20000) IROM(0x00000000,0x40000) CPUTYPE("Cortex-M3") CLOCK(12000000) ESEL ELITTLE</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
           <StartupFile></StartupFile>
-          <FlashDriverDll>UL2CM3(-S0 -C0 -P0 -FD20000000 -FC1000)</FlashDriverDll>
+          <FlashDriverDll>UL2CM3(-S0 -C0 -P0 -FD20000000 -FC1000 -FN1 -FF0NEW_DEVICE -FS00 -FL040000 -FP0($$Device:ARMCM3$Device\ARM\Flash\NEW_DEVICE.FLM))</FlashDriverDll>
           <DeviceId>0</DeviceId>
-          <RegisterFile>$$Device:ARMCM4_FP$Device\ARM\ARMCM4\Include\ARMCM4_FP.h</RegisterFile>
+          <RegisterFile>$$Device:ARMCM3$Device\ARM\ARMCM3\Include\ARMCM3.h</RegisterFile>
           <MemoryEnv></MemoryEnv>
           <Cmp></Cmp>
           <Asm></Asm>
@@ -904,7 +904,7 @@
           <SLE66CMisc></SLE66CMisc>
           <SLE66AMisc></SLE66AMisc>
           <SLE66LinkerMisc></SLE66LinkerMisc>
-          <SFDFile>$$Device:ARMCM4_FP$Device\ARM\SVD\ARMCM4.svd</SFDFile>
+          <SFDFile>$$Device:ARMCM3$Device\ARM\SVD\ARMCM3.svd</SFDFile>
           <bCustSvd>0</bCustSvd>
           <UseEnv>0</UseEnv>
           <BinPath></BinPath>
@@ -953,7 +953,7 @@
           <AfterMake>
             <RunUserProg1>1</RunUserProg1>
             <RunUserProg2>0</RunUserProg2>
-            <UserProg1Name>.\at_master.bat $L @L</UserProg1Name>
+            <UserProg1Name>.\at_slave.bat $L !L @L</UserProg1Name>
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>1</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
@@ -983,11 +983,11 @@
           <SimDllName>SARMCM3.DLL</SimDllName>
           <SimDllArguments>  -MPU</SimDllArguments>
           <SimDlgDll>DCM.DLL</SimDlgDll>
-          <SimDlgDllArguments>-pCM4</SimDlgDllArguments>
+          <SimDlgDllArguments>-pCM3</SimDlgDllArguments>
           <TargetDllName>SARMCM3.DLL</TargetDllName>
           <TargetDllArguments> -MPU</TargetDllArguments>
           <TargetDlgDll>TCM.DLL</TargetDlgDll>
-          <TargetDlgDllArguments>-pCM4</TargetDlgDllArguments>
+          <TargetDlgDllArguments>-pCM3</TargetDlgDllArguments>
         </DllOption>
         <DebugOption>
           <OPTHX>
@@ -1045,7 +1045,7 @@
             <AdsLsxf>1</AdsLsxf>
             <RvctClst>0</RvctClst>
             <GenPPlst>0</GenPPlst>
-            <AdsCpuType>"Cortex-M4"</AdsCpuType>
+            <AdsCpuType>"Cortex-M3"</AdsCpuType>
             <RvctDeviceName></RvctDeviceName>
             <mOS>0</mOS>
             <uocRom>0</uocRom>
@@ -1054,7 +1054,7 @@
             <hadIRAM>1</hadIRAM>
             <hadXRAM>0</hadXRAM>
             <uocXRam>0</uocXRam>
-            <RvdsVP>2</RvdsVP>
+            <RvdsVP>0</RvdsVP>
             <hadIRAM2>0</hadIRAM2>
             <hadIROM2>0</hadIROM2>
             <StupSel>8</StupSel>
@@ -1145,7 +1145,7 @@
               <OCR_RVCT4>
                 <Type>1</Type>
                 <StartAddress>0x0</StartAddress>
-                <Size>0x40000</Size>
+                <Size>0xc0000</Size>
               </OCR_RVCT4>
               <OCR_RVCT5>
                 <Type>1</Type>
@@ -1169,8 +1169,8 @@
               </OCR_RVCT8>
               <OCR_RVCT9>
                 <Type>0</Type>
-                <StartAddress>0x20000000</StartAddress>
-                <Size>0x20000</Size>
+                <StartAddress>0x400000</StartAddress>
+                <Size>0x50000</Size>
               </OCR_RVCT9>
               <OCR_RVCT10>
                 <Type>0</Type>
@@ -1188,7 +1188,7 @@
             <OneElfS>1</OneElfS>
             <Strict>0</Strict>
             <EnumInt>0</EnumInt>
-            <PlainCh>1</PlainCh>
+            <PlainCh>0</PlainCh>
             <Ropi>0</Ropi>
             <Rwpi>0</Rwpi>
             <wLevel>2</wLevel>
@@ -1204,9 +1204,9 @@
             <v6WtE>0</v6WtE>
             <VariousControls>
               <MiscControls>--preinclude=sys_common.h</MiscControls>
-              <Define>OPL2500_APS OPL2500_PATCH __noSIMULATOR__ __BLE__ __LE_HOST_USE_CMD__ __LWIP_TASK__ __WIFI_MAC_TASK__ __PMP_ENABLE__ __PMP_REGION__ __HEAP_REGION__ noLWIP_DYNAMIC_DEBUG_ENABLE __AT_CMD_TASK__ __noRTL_SIMULATION__ MBEDTLS_CONFIG_FILE="&lt;config-opl-default.h&gt;" OPL2500_A0 HOST_MODE_MQTT</Define>
+              <Define>__noSIMULATOR__ __BLE__ __LE_HOST_USE_CMD__ __LWIP_TASK__ __WPA_SUPPLICANT__ __noHW_CRYPTO_ENGINE__ __WIFI_MAC_TASK__ __NL1000_An__ __PMP_ENABLE__ __PMP_REGION__ __HEAP_REGION__ noLWIP_DYNAMIC_DEBUG_ENABLE __AT_CMD_TASK__ __noRTL_SIMULATION__ __WIFI_AUTO_CONNECT__ OPL1000_APS MBEDTLS_CONFIG_FILE="&lt;config-opl-default.h&gt;" OPL1000_A3 HOST_MODE_MQTT _ENABLE_THREAD_SUPPORT_</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\..\..\sdk\SDK\APS\project\opl2500\boot_sequence;..\..\..\..\sdk\SDK\APS\project\opl2500\include;..\..\..\..\sdk\SDK\APS\project\opl2500\lib;..\..\..\..\sdk\SDK\APS\project\opl2500\startup;..\..\..\..\sdk\SDK\APS\project\common;..\..\..\..\sdk\SDK\APS\FreeRtos;..\..\..\..\sdk\SDK\APS\FreeRtos\Source\include;..\..\..\..\sdk\SDK\APS\FreeRtos\Source\portable\Keil\ARM_CM4F;..\..\..\..\sdk\SDK\APS\driver\CMSIS\Device\Opulinks\opl2500\Include;..\..\..\..\sdk\SDK\APS\driver\CMSIS\Include;..\..\..\..\sdk\SDK\APS\driver\chip;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\camera;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_auxadc;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_dbg_uart;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_dma;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_gpio;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_i2c;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_patch;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_pdm;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_pwm;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_spi;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_system;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_tick;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_tmr;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_uart;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_vic;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\hal_wdt;..\..\..\..\sdk\SDK\APS\driver\chip\opl2500\securityipdriver;..\..\..\..\sdk\SDK\APS\middleware\netlink;..\..\..\..\sdk\SDK\APS\middleware\netlink\at;..\..\..\..\sdk\SDK\APS\middleware\netlink\ble_controller_layer\inc;..\..\..\..\sdk\SDK\APS\middleware\netlink\cli;..\..\..\..\sdk\SDK\APS\middleware\netlink\common\sys_api;..\..\..\..\sdk\SDK\APS\middleware\netlink\common\sys_api\rom_if;..\..\..\..\sdk\SDK\APS\middleware\netlink\common\sys_ctrl;..\..\..\..\sdk\SDK\APS\middleware\netlink\controller_task;..\..\..\..\sdk\SDK\APS\middleware\netlink\data_flow;..\..\..\..\sdk\SDK\APS\middleware\netlink\diag_task;..\..\..\..\sdk\SDK\APS\middleware\netlink\le_stack;..\..\..\..\sdk\SDK\APS\middleware\netlink\msg;..\..\..\..\sdk\SDK\APS\middleware\netlink\mw_fim;..\..\..\..\sdk\SDK\APS\middleware\netlink\mw_ota;..\..\..\..\sdk\SDK\APS\middleware\netlink\ps_task;..\..\..\..\sdk\SDK\APS\middleware\netlink\wifi_controller_layer;..\..\..\..\sdk\SDK\APS\middleware\netlink\wifi_mac;..\..\..\..\sdk\SDK\APS\middleware\netlink\wifi_mac\utils;..\..\..\..\sdk\SDK\APS\middleware\netlink\wifi_mac\common;..\..\..\..\sdk\SDK\APS\middleware\third_party\httpclient;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\lwip\src\include;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\lwip\src\include\lwip;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\ports\freertos\include;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\ports\freertos\netif;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\ports\rom_if;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\contrib\apps;..\..\..\..\sdk\SDK\APS\middleware\third_party\mbedtls\configs;..\..\..\..\sdk\SDK\APS\middleware\third_party\mbedtls\include;..\..\..\..\sdk\SDK\APS\middleware\third_party\mbedtls\include\mbedtls;..\..\..\..\sdk\SDK\APS\middleware\third_party\mbedtls\port\include;..\..\..\..\sdk\SDK\APS\middleware\third_party\tinycrypt\include;..\..\..\..\sdk\SDK\APS\middleware\third_party\tinycrypt\include\tinycrypt;..\..\..\..\sdk\SDK\APS\apps\le_app\cmd_app;..\..\..\..\sdk\SDK\APS\apps\le_app\pts_app;..\..\..\..\sdk\SDK\APS_PATCH\project\opl2500\boot_sequence;..\..\..\..\sdk\SDK\APS_PATCH\project\opl2500\include;..\..\..\..\sdk\SDK\APS_PATCH\project\opl2500\lib;..\..\..\..\sdk\SDK\APS_PATCH\project\opl2500\startup;..\..\..\..\sdk\SDK\APS_PATCH\project\common;..\..\..\..\sdk\SDK\APS_PATCH\FreeRtos;..\..\..\..\sdk\SDK\APS_PATCH\FreeRtos\Source\include;..\..\..\..\sdk\SDK\APS_PATCH\FreeRtos\Source\portable\Keil\ARM_CM4F;..\..\..\..\sdk\SDK\APS_PATCH\driver\CMSIS\Device\Opulinks\opl2500\Include;..\..\..\..\sdk\SDK\APS_PATCH\driver\CMSIS\Include;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\camera;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_auxadc;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_dbg_uart;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_dma;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_gpio;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_i2c;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_patch;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_pdm;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_pwm;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_spi;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_system;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_tick;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_tmr;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_uart;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_vic;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\hal_wdt;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl2500\securityipdriver;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\at;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\ble_controller_layer\inc;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\cli;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\common\sys_api;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\common\sys_api\rom_if;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\common\sys_ctrl;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\controller_task;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\data_flow;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\diag_task;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\le_stack;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\msg;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\mw_fim;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\mw_ota;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\ps_task;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\wifi_controller_layer;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\wifi_mac;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\wifi_mac\common;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3\lwip\src\include;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3\ports\freertos\include;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3\ports\freertos\netif;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3\ports\rom_if;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3\contrib\apps;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\mbedtls\configs;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\mbedtls\include;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\mbedtls\include\mbedtls;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\mbedtls\port\include;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\tinycrypt\include;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\tinycrypt\include\tinycrypt;..\..\..\..\sdk\SDK\APS_PATCH\apps\le_app\cmd_app;..\..\..\..\sdk\SDK\APS_PATCH\apps\le_app\include;..\..\..\..\sdk\SDK\APS_PATCH\apps\le_app\pts_app;..\..\..\..\quick_dev;..\..\..\..\quick_dev\app_ref\ble_data_prot\opl_data;..\..\..\..\quick_dev\app_ref\ble_services;..\..\..\..\quick_dev\app_ref\cloud;..\..\..\..\quick_dev\app_ref\cloud\mqtt_cloud;..\..\..\..\quick_dev\app_ref\cloud\mqtt_cloud\aws-iot-device-sdk-embedded-C-3.0.1\include;..\..\..\..\quick_dev\app_ref\cloud\mqtt_cloud\aws-iot-device-sdk-embedded-C-3.0.1\platform\linux;..\..\..\..\quick_dev\app_ref\cloud\mqtt_cloud\aws-iot-device-sdk-embedded-C-3.0.1\platform\linux\common;..\..\..\..\quick_dev\app_ref\cloud\mqtt_cloud\aws-iot-device-sdk-embedded-C-3.0.1\platform\linux\mbedtls;..\..\..\..\quick_dev\app_ref\cloud\mqtt_cloud\aws-iot-device-sdk-embedded-C-3.0.1\platform\linux\pthread;..\..\..\..\quick_dev\app_ref\cloud\mqtt_cloud\aws-iot-device-sdk-embedded-C-3.0.1\external_libs\jsmn;..\..\..\..\quick_dev\app_ref\mngr_api\ble_mngr_api;..\..\..\..\quick_dev\app_ref\mngr_api\net_mngr_api;..\..\..\..\quick_dev\app_ref\mngr_api\wifi_mngr_api;..\..\..\..\quick_dev\common\battery;..\..\..\..\quick_dev\common\error;..\..\..\..\quick_dev\common\evt_group;..\..\..\..\quick_dev\common\fsm;..\..\..\..\quick_dev\common\log;..\..\..\..\quick_dev\common\mp;..\..\..\..\quick_dev\common\ota;..\..\..\..\quick_dev\common\config\ps_config;..\..\..\..\quick_dev\common\pwr_save;..\..\..\..\quick_dev\common\rf_pwr;..\..\..\..\quick_dev\common\time_stmp;..\..\..\..\quick_dev\middleware\ble_mngr;..\..\..\..\quick_dev\middleware\net_mngr;..\..\..\..\quick_dev\middleware\wifi_mngr;..\..\..\..\quick_dev\middleware\wifi_mngr\wifi_autocon;..\..\..\..\quick_dev\middleware\wifi_mngr\wifi_agent;..\..\..\..\quick_dev\middleware\wifi_mngr\wifi_pro_rec;..\main;..\main\hal;..\main\sys_config;.\hal;.\board</IncludePath>
+              <IncludePath>..\..\..\..\sdk\SDK\APS\apps\le_app\cmd_app;..\..\..\..\sdk\SDK\APS\apps\le_app\mtc_app;..\..\..\..\sdk\SDK\APS\apps\le_app\pts_app;..\..\..\..\sdk\SDK\APS\apps\wifi_app;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_auxadc;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_dbg_uart;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_dma;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_i2c;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_patch;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_pwm;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_spi;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_system;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_tick;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_tmr;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_uart;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_vic;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\hal_wdt;..\..\..\..\sdk\SDK\APS\driver\chip\opl1000\securityipdriver;..\..\..\..\sdk\SDK\APS\driver\CMSIS\Device\opl1000\Include;..\..\..\..\sdk\SDK\APS\driver\CMSIS\Include;..\..\..\..\sdk\SDK\APS\FreeRtos\Source\include;..\..\..\..\sdk\SDK\APS\FreeRtos\Source\portable\Keil\ARM_CM3;..\..\..\..\sdk\SDK\APS\middleware\netlink\at;..\..\..\..\sdk\SDK\APS\middleware\netlink\ble_controller_layer\inc;..\..\..\..\sdk\SDK\APS\middleware\netlink\cli;..\..\..\..\sdk\SDK\APS\middleware\netlink\common\sys_api;..\..\..\..\sdk\SDK\APS\middleware\netlink\common\sys_api\rom_if;..\..\..\..\sdk\SDK\APS\middleware\netlink\common\sys_ctrl;..\..\..\..\sdk\SDK\APS\middleware\netlink\controller_task;..\..\..\..\sdk\SDK\APS\middleware\netlink\data_flow;..\..\..\..\sdk\SDK\APS\middleware\netlink\diag_task;..\..\..\..\sdk\SDK\APS\middleware\netlink\msg;..\..\..\..\sdk\SDK\APS\middleware\netlink\mw_fim;..\..\..\..\sdk\SDK\APS\middleware\netlink\mw_ota;..\..\..\..\sdk\SDK\APS\middleware\netlink\ps_task;..\..\..\..\sdk\SDK\APS\middleware\netlink\wifi_controller_layer;..\..\..\..\sdk\SDK\APS\middleware\netlink\wifi_controller_layer\rom_if;..\..\..\..\sdk\SDK\APS\middleware\netlink\wifi_mac;..\..\..\..\sdk\SDK\APS\middleware\third_party\fatfs\src;..\..\..\..\sdk\SDK\APS\middleware\third_party\httpclient;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\lwip\src\include\;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\lwip\src\include\lwip;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\ports\freertos\include;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\ports\freertos\netif;..\..\..\..\sdk\SDK\APS\middleware\third_party\lwip-2.0.3\ports\rom_if;..\..\..\..\sdk\SDK\APS\middleware\third_party\mbedtls\configs;..\..\..\..\sdk\SDK\APS\middleware\third_party\mbedtls\include;..\..\..\..\sdk\SDK\APS\middleware\third_party\mbedtls\port\include;..\..\..\..\sdk\SDK\APS\middleware\third_party\tinycrypt\include\tinycrypt;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\ap;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\common;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\crypto;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\drivers;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\eapol_auth;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\eapol_supp;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\eap_common;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\eap_peer;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\eap_server;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\l2_packet;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\radius;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\rsn_supp;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\tls;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\utils;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\src\wps;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\wpa_supplicant;..\..\..\..\sdk\SDK\APS\middleware\third_party\wpa_supplicant-0.7.3\wpa_supplicant\dbus;..\..\..\..\sdk\SDK\APS\project\common;..\..\..\..\sdk\SDK\APS\project\opl1000\boot_sequence;..\..\..\..\sdk\SDK\APS\project\opl1000\include;..\..\..\..\sdk\SDK\APS\project\opl1000\startup;..\..\..\..\sdk\SDK\APS\apps\le_app\cmd_app;..\..\..\..\sdk\SDK\APS\apps\le_app\include;..\..\..\..\sdk\SDK\APS\apps\le_app\mtc_app;..\..\..\..\sdk\SDK\APS\apps\le_app\pts_app;..\..\..\..\sdk\SDK\APS\apps\wifi_app;..\..\..\..\sdk\SDK\APS_PATCH\apps\le_app\include;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_auxadc;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_dbg_uart;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_dma;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_i2c;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_patch;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_pwm;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_spi;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_system;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_tick;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_tmr;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_uart;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_vic;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\hal_wdt;..\..\..\..\sdk\SDK\APS_PATCH\driver\chip\opl1000\securityipdriver;..\..\..\..\sdk\SDK\APS_PATCH\driver\CMSIS\Device\opl1000\Include;..\..\..\..\sdk\SDK\APS_PATCH\driver\CMSIS\Include;..\..\..\..\sdk\SDK\APS_PATCH\FreeRtos\Source\include;..\..\..\..\sdk\SDK\APS_PATCH\FreeRtos\Source\portable\Keil\ARM_CM3;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\at;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\ble_controller_layer\inc;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\cli;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\common\sys_api;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\common\sys_api\rom_if;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\common\sys_ctrl;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\controller_task;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\data_flow;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\diag_task;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\msg;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\mw_fim;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\mw_ota;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\ps_task;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\wifi_controller_layer;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\wifi_controller_layer\rom_if;..\..\..\..\sdk\SDK\APS_PATCH\middleware\netlink\wifi_mac;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\fatfs\src;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\httpclient;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3\lwip\src\include;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3\lwip\src\include\lwip;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3\ports\freertos\include;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3\ports\freertos\netif;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\lwip-2.0.3\ports\rom_if;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\mbedtls\configs;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\mbedtls\include;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\mbedtls\port\include;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\tinycrypt\include\tinycrypt;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\ap;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\common;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\crypto;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\drivers;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\eapol_auth;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\eapol_supp;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\eap_common;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\eap_peer;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\eap_server;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\l2_packet;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\radius;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\rsn_supp;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\tls;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\utils;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\src\wps;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\wpa_supplicant;..\..\..\..\sdk\SDK\APS_PATCH\middleware\third_party\wpa_supplicant-0.7.3\wpa_supplicant\dbus;..\..\..\..\sdk\SDK\APS_PATCH\project\common;..\..\..\..\sdk\SDK\APS_PATCH\project\opl1000\boot_sequence;..\..\..\..\sdk\SDK\APS_PATCH\project\opl1000\include;..\..\..\..\sdk\SDK\APS_PATCH\project\opl1000\startup;..\..\..\..\quick_dev;..\..\..\..\quick_dev\app_ref\ble_data_prot\opl_data;..\..\..\..\quick_dev\app_ref\ble_services;..\..\..\..\quick_dev\app_ref\cloud;..\..\..\..\quick_dev\app_ref\cloud\mqtt_cloud;..\..\..\..\quick_dev\app_ref\cloud\mqtt_cloud\aws-iot-device-sdk-embedded-C-3.0.1\include;..\..\..\..\quick_dev\app_ref\cloud\mqtt_cloud\aws-iot-device-sdk-embedded-C-3.0.1\platform\linux;..\..\..\..\quick_dev\app_ref\cloud\mqtt_cloud\aws-iot-device-sdk-embedded-C-3.0.1\platform\linux\common;..\..\..\..\quick_dev\app_ref\cloud\mqtt_cloud\aws-iot-device-sdk-embedded-C-3.0.1\platform\linux\mbedtls;..\..\..\..\quick_dev\app_ref\cloud\mqtt_cloud\aws-iot-device-sdk-embedded-C-3.0.1\platform\linux\pthread;..\..\..\..\quick_dev\app_ref\cloud\mqtt_cloud\aws-iot-device-sdk-embedded-C-3.0.1\external_libs\jsmn;..\..\..\..\quick_dev\app_ref\mngr_api\ble_mngr_api;..\..\..\..\quick_dev\app_ref\mngr_api\net_mngr_api;..\..\..\..\quick_dev\app_ref\mngr_api\wifi_mngr_api;..\..\..\..\quick_dev\common\battery;..\..\..\..\quick_dev\common\error;..\..\..\..\quick_dev\common\evt_group;..\..\..\..\quick_dev\common\fsm;..\..\..\..\quick_dev\common\log;..\..\..\..\quick_dev\common\mp;..\..\..\..\quick_dev\common\ota;..\..\..\..\quick_dev\common\config\ps_config;..\..\..\..\quick_dev\common\pwr_save;..\..\..\..\quick_dev\common\rf_pwr;..\..\..\..\quick_dev\common\time_stmp;..\..\..\..\quick_dev\middleware\ble_mngr;..\..\..\..\quick_dev\middleware\net_mngr;..\..\..\..\quick_dev\middleware\wifi_mngr;..\..\..\..\quick_dev\middleware\wifi_mngr\wifi_autocon;..\..\..\..\quick_dev\middleware\wifi_mngr\wifi_agent;..\..\..\..\quick_dev\middleware\wifi_mngr\wifi_pro_rec;..\main;..\main\hal;..\main\sys_config;.\hal;.\board</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -1236,10 +1236,10 @@
             <TextAddressRange></TextAddressRange>
             <DataAddressRange></DataAddressRange>
             <pXoBase></pXoBase>
-            <ScatterFile>.\at_master.sct</ScatterFile>
+            <ScatterFile>.\at_slave.sct</ScatterFile>
             <IncludeLibs></IncludeLibs>
             <IncludeLibsPath></IncludeLibsPath>
-            <Misc>--datacompressor off --any_contingency --entry=__Patch_EntryPoint</Misc>
+            <Misc>--datacompressor off --entry=__Patch_EntryPoint</Misc>
             <LinkerInputFile></LinkerInputFile>
             <DisabledWarnings></DisabledWarnings>
           </LDads>
@@ -1317,17 +1317,17 @@
             <File>
               <FileName>symdefs.o</FileName>
               <FileType>3</FileType>
-              <FilePath>..\..\..\..\sdk\SDK\APS\targets\opl2500\object\symdefs.o</FilePath>
+              <FilePath>..\..\..\..\sdk\SDK\APS\targets\opl1000\object\symdefs.o</FilePath>
             </File>
             <File>
-              <FileName>opl2500_patch_aps.lib</FileName>
+              <FileName>opl1000_sdk_m3.lib</FileName>
               <FileType>4</FileType>
-              <FilePath>..\..\..\..\sdk\SDK\APS\targets\opl2500\Output\Objects\opl2500_patch_aps.lib</FilePath>
+              <FilePath>..\..\..\..\sdk\SDK\APS\targets\opl1000\Output\Objects\opl1000_sdk_m3.lib</FilePath>
             </File>
             <File>
-              <FileName>opl2500_sdk_aps.lib</FileName>
+              <FileName>opl1000_patch_m3.lib</FileName>
               <FileType>4</FileType>
-              <FilePath>..\..\..\..\sdk\SDK\APS\targets\opl2500\Output\Objects\opl2500_sdk_aps.lib</FilePath>
+              <FilePath>..\..\..\..\sdk\SDK\APS\targets\opl1000\Output\Objects\opl1000_patch_m3.lib</FilePath>
             </File>
           </Files>
         </Group>

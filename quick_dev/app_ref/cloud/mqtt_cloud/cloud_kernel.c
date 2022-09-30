@@ -42,6 +42,7 @@ Head Block of The File
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
 
 #define CLOUD_EG_BIT_ONLINE                             (0x00000001U)
+#define CLOUD_EG_BIT_NETWORK                            (0x00000002U)
 
 /********************************************
 Declaration of data structure
@@ -71,6 +72,8 @@ static T_CloudTxEvtHandlerTbl g_tCloudTxEvtHandlerTbl[] =
     {CLOUD_EVT_TYPE_KEEP_ALIVE,             Cloud_KeepAliveHandler},
     {CLOUD_EVT_TYPE_ACK,                    Cloud_AckHandler},
     {CLOUD_EVT_TYPE_POST,                   Cloud_PostHandler},
+    {CLOUD_EVT_TYPE_REGIS_TOPIC,            Cloud_RegisterTopicHandler},
+    {CLOUD_EVT_TYPE_UNREGIS_TOPIC,          Cloud_UnRegisterTopicHandler},
 #if (CLOUD_TX_DATA_BACKUP_ENABLED == 1)
     {CLOUD_EVT_TYPE_POST_BACKUP,            Cloud_PostBackupHandler},
 #endif
@@ -117,6 +120,65 @@ void Cloud_SwResetTimeoutCallback(void const *argu)
 {
     tracer_drct_printf("SW RESET!!!\r\n");
     Hal_Sys_SwResetAll();
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_NetworkStatusSet
+*
+* DESCRIPTION:
+*   set wifi network status
+*
+* PARAMETERS
+*   blNetworkUp :   [IN] true -> wifi network up
+*                        false -> wifi networ down
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_NetworkStatusSet(bool blNetworkUp)
+{
+    EG_StatusSet(g_tCloudEventGroup, CLOUD_EG_BIT_NETWORK, (uint8_t)blNetworkUp);
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_NetworkStatusGet
+*
+* DESCRIPTION:
+*   get wifi network status
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   bool :          [OUT] true -> wifi network up
+*                         false -> wifi network down
+*
+*************************************************************************/
+bool Cloud_NetworkStatusGet(void)
+{
+    return (bool)EG_StatusGet(g_tCloudEventGroup, CLOUD_EG_BIT_NETWORK);
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_NetworkStatusWait
+*
+* DESCRIPTION:
+*   waiting wifi network connection
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_NetworkStatusWait(void)
+{
+    return EG_StatusWait(g_tCloudEventGroup, CLOUD_EG_BIT_NETWORK, 0xFFFFFFFF);
 }
 
 /*************************************************************************
@@ -254,7 +316,7 @@ T_OplErr Cloud_MsgSend(uint32_t u32EventId, uint8_t *pu8Data, uint32_t u32DataLe
 *   none
 *
 *************************************************************************/
-void Cloud_Init(void)
+void Cloud_Init(T_CloudConnInfo *tCloudInitConnInfo)
 {
     // create event group
     EG_Create(&g_tCloudEventGroup);
@@ -276,7 +338,7 @@ void Cloud_Init(void)
 #endif
 
     // trigger init handler
-    Cloud_MsgSend(CLOUD_EVT_TYPE_INIT, NULL, 0);
+    Cloud_MsgSend(CLOUD_EVT_TYPE_INIT, (uint8_t *)tCloudInitConnInfo, sizeof(T_CloudConnInfo));
 }
 
 /*************************************************************************

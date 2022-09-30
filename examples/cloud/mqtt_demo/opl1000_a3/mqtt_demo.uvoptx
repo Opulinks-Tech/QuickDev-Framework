@@ -110,7 +110,7 @@
         <tDllPa></tDllPa>
         <tDlgDll></tDlgDll>
         <tDlgPa></tDlgPa>
-        <tIfile>.\opl1000_app_m3.ini</tIfile>
+        <tIfile>.\mqtt_demo.ini</tIfile>
         <pMon>Segger\JL2CM3.dll</pMon>
       </DebugOpt>
       <TargetDriverDllRegistry>
@@ -941,6 +941,18 @@
     <File>
       <GroupNumber>13</GroupNumber>
       <FileNumber>54</FileNumber>
+      <FileType>1</FileType>
+      <tvExp>0</tvExp>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <bDave2>0</bDave2>
+      <PathWithFileName>..\..\..\..\quick_dev\app_ref\cloud\mqtt_cloud\aws-iot-device-sdk-embedded-C-3.0.1\platform\linux\pthread\threads_pthread_wrapper.c</PathWithFileName>
+      <FilenameWithoutPath>threads_pthread_wrapper.c</FilenameWithoutPath>
+      <RteFlg>0</RteFlg>
+      <bShared>0</bShared>
+    </File>
+    <File>
+      <GroupNumber>13</GroupNumber>
+      <FileNumber>55</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>

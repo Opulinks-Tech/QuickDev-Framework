@@ -236,7 +236,7 @@ T_OplErr Opl_Ble_Stop_Req(void);
 
 /*************************************************************************
 * FUNCTION:
-*   Opl_Ble_Stop_Req
+*   Opl_Ble_Uslctd_CB_Reg
 *
 * DESCRIPTION:
 *   register unsolicited callback for ble manager

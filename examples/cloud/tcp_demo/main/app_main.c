@@ -106,7 +106,7 @@ void APP_TaskInit(void);
 void APP_BleInit(void);
 void APP_NetInit(void);
 void APP_CldInit(void);
-void APP_HostModeInit(void);
+void APP_UserAtInit(void);
 
 /***********
 C Functions
@@ -478,9 +478,8 @@ void APP_CldInit(void)
     Cloud_Init();
 }
 
-void APP_HostModeInit(void)
+void APP_UserAtInit(void)
 {
-    // TODO: host mode implement
     // add at cmd and enable CR/LF
     AT_CmdListAdd(1);  // #define CRLF_ENABLE (1)
 }
@@ -663,7 +662,7 @@ void APP_MainInit(void)
 
     APP_CldInit();
 
-    APP_HostModeInit();
+    APP_UserAtInit();
     
     // enter smart sleep after 5s
 #if (PS_ENABLED == 1)

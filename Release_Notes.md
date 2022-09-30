@@ -1,5 +1,18 @@
 ## Release Version:
 State : RC
+Version : v0.2.2
+
+## Release Date: 2022/09/30
+
+## Descript
+1. Fix mqtt cloud watch-dog timeout and receive concurrency issue
+2. Optimize mqtt cloud power consumption
+3. Fix the memory leakage issue due to tcp cloud socket close incorrect issue
+4. Fix mcu halt issue due to semaphore init timing
+5. Modify ini file linker in each example
+
+## Release Version:
+State : RC
 Version : v0.2.1
 
 ## Release Date: 2022/08/09

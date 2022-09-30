@@ -156,7 +156,13 @@ typedef enum {
 	/** Some limit has been exceeded, e.g. the maximum number of subscriptions has been reached */
 			LIMIT_EXCEEDED_ERROR = -51,
 	/** Invalid input topic type */
-			INVALID_TOPIC_TYPE_ERROR = -52
+			INVALID_TOPIC_TYPE_ERROR = -52,
+#if 1
+	/** Still waiting PUBACK */
+			MQTT_WAITING_PUBACK = -54,
+	/** Still waiting PINGRESP */
+			MQTT_WAITING_PINGRESP = -55,
+#endif
 } IoT_Error_t;
 
 #ifdef __cplusplus

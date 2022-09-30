@@ -588,7 +588,7 @@ static IoT_Error_t _aws_iot_mqtt_internal_handle_publish(AWS_IoT_Client *pClient
 	}
 
     // disable skip dtim
-    Cloud_MqttSkipDtimSet(false);
+    Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_PUBLISH, false);
 
 	rc = aws_iot_mqtt_internal_send_packet(pClient, len, pTimer);
 	if(SUCCESS != rc) {
@@ -603,19 +603,21 @@ static IoT_Error_t _aws_iot_mqtt_internal_handle_publish(AWS_IoT_Client *pClient
             }
             osDelay(100);
 	    }
-         }
-         if(SUCCESS != rc)
-        {
-            printf(" Send PUBACK failed patch\r\n");
+	}
+	if(SUCCESS != rc)
+	{
+		printf(" Send PUBACK failed patch\r\n");
 
-			// enable skip dtim
-			Cloud_MqttSkipDtimSet(true);
+		// enable skip dtim
+		osDelay(100);
+		Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_PUBLISH, true);
 
-            FUNC_EXIT_RC(rc);
-         }
+		FUNC_EXIT_RC(rc);
+	}
 
     // enable skip dtim
-    Cloud_MqttSkipDtimSet(true);
+	osDelay(100);
+    Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_PUBLISH, true);
 
 	FUNC_EXIT_RC(SUCCESS);
 }
@@ -648,6 +650,14 @@ IoT_Error_t aws_iot_mqtt_internal_cycle_read(AWS_IoT_Client *pClient, Timer *pTi
 	}
 #endif
 
+	if(MQTT_NOTHING_TO_READ == rc) {
+		/* Nothing to read, not a cycle failure */
+		return SUCCESS;
+	} else if(SUCCESS != rc) {
+		return rc;
+	}
+
+#if 0
 	if(MQTT_NOTHING_TO_READ == rc) {
 		/* Nothing to read, not a cycle failure */
 		return SUCCESS;
@@ -699,6 +709,120 @@ IoT_Error_t aws_iot_mqtt_internal_cycle_read(AWS_IoT_Client *pClient, Timer *pTi
 			break;
 		}
 	}
+#else
+	if(MQTT_NOTHING_TO_READ == rc)
+	{
+		return SUCCESS;
+	}
+	else if(SUCCESS == rc)
+	{
+		switch(*pPacketType)
+		{
+			case CONNACK:
+			/* SDK is blocking, these responses will be forwarded to calling function to process */
+				break;
+
+			case PUBACK:
+			{
+				if(true == pClient->clientStatus.isWaitPubAck)
+				{
+					IOT_INFO("Recv PUBACK\r\n");
+
+					// start the skip dtim delay timer
+    				Cloud_TimerStart(CLOUD_TMR_PUB_SKIP_DTIM_EN, 100);
+
+					// stop the data post timer
+					Cloud_TimerStop(CLOUD_TMR_DATA_POST_TIMEOUT);
+
+#ifdef _ENABLE_THREAD_SUPPORT_
+					threadRc = aws_iot_mqtt_client_lock_mutex(pClient, &(pClient->clientData.wait_pub_ack_change_mutex));
+					if(SUCCESS != threadRc) {
+						FUNC_EXIT_RC(threadRc);
+					}
+#endif
+
+					pClient->clientStatus.isWaitPubAck = false;
+
+#ifdef _ENABLE_THREAD_SUPPORT_
+					threadRc = aws_iot_mqtt_client_unlock_mutex(pClient, &(pClient->clientData.wait_pub_ack_change_mutex));
+					if(SUCCESS != threadRc) {
+						return threadRc;
+					}
+#endif
+
+					unsigned char dup, type;
+					uint16_t packet_id;
+
+					rc = aws_iot_mqtt_internal_deserialize_ack(&type, &dup, &packet_id, pClient->clientData.readBuf, pClient->clientData.readBufSize);
+
+					if(SUCCESS != rc)
+					{
+						FUNC_EXIT_RC(rc);
+					}
+				}
+
+				break;
+			}
+
+			case SUBACK:
+			case UNSUBACK:
+			/* SDK is blocking, these responses will be forwarded to calling function to process */
+				break;
+			
+			case PUBLISH:
+			{
+				IOT_INFO("Recv PUBLISH\r\n");
+				rc = _aws_iot_mqtt_internal_handle_publish(pClient, pTimer);
+				break;
+			}
+
+			case PUBREC:
+			case PUBCOMP:
+				/* QoS2 not supported at this time */
+				break;
+
+			case PINGRESP: 
+			{
+				if(true == pClient->clientStatus.isWaitPingResp)
+				{
+					IOT_INFO("Recv PINGRESP\r\n");
+
+					// start the skip dtim delay timer
+					Cloud_TimerStart(CLOUD_TMR_KEEP_ALIVE_SKIP_DTIM_EN, 100);
+
+					// stop the keep alive timer
+					Cloud_TimerStop(CLOUD_TMR_KEEP_ALIVE_TIMEOUT);
+
+#ifdef _ENABLE_THREAD_SUPPORT_
+					threadRc = aws_iot_mqtt_client_lock_mutex(pClient, &(pClient->clientData.wait_ping_resp_change_mutex));
+					if(SUCCESS != threadRc) {
+						FUNC_EXIT_RC(threadRc);
+					}
+#endif
+
+					pClient->clientStatus.isWaitPingResp = false;
+
+#ifdef _ENABLE_THREAD_SUPPORT_
+					threadRc = aws_iot_mqtt_client_unlock_mutex(pClient, &(pClient->clientData.wait_ping_resp_change_mutex));
+					if(SUCCESS != threadRc) {
+						return threadRc;
+					}
+#endif
+				}
+
+				break;
+			}
+
+			default:
+			{
+				/* Either unknown packet type or Failure occurred
+			     * Should not happen */
+				rc = MQTT_RX_MESSAGE_PACKET_TYPE_INVALID_ERROR;
+				break;
+			}
+		}
+	}
+#endif
 
 	return rc;
 }

@@ -111,6 +111,10 @@ IoT_Error_t aws_iot_mqtt_connect(AWS_IoT_Client *pClient, IoT_Client_Connect_Par
 IoT_Error_t aws_iot_mqtt_publish(AWS_IoT_Client *pClient, const char *pTopicName, uint16_t topicNameLen,
 								 IoT_Publish_Message_Params *pParams);
 
+#if 1
+IoT_Error_t aws_iot_mqtt_restore_wait_pub_ack(AWS_IoT_Client *pClient);
+#endif
+
 /**
  * @brief Subscribe to an MQTT topic.
  *
@@ -189,7 +193,11 @@ IoT_Error_t aws_iot_mqtt_disconnect(AWS_IoT_Client *pClient);
  *         If this call results in an error it is likely the MQTT connection has dropped.
  *         iot_is_mqtt_connected can be called to confirm.
  */
+#if 1
+IoT_Error_t aws_iot_mqtt_yield(AWS_IoT_Client *pClient);
+#else
 IoT_Error_t aws_iot_mqtt_yield(AWS_IoT_Client *pClient, uint32_t timeout_ms);
+#endif
 
 /**
  * @brief Send keep alive packet
@@ -204,6 +212,10 @@ IoT_Error_t aws_iot_mqtt_yield(AWS_IoT_Client *pClient, uint32_t timeout_ms);
  *         iot_is_mqtt_connected can be called to confirm.
  */
 IoT_Error_t aws_iot_mqtt_keep_alive(AWS_IoT_Client *pClient);
+
+#if 1
+IoT_Error_t aws_iot_mqtt_restore_keep_alive_skip_dtim(AWS_IoT_Client *pClient);
+#endif
 
 /**
  * @brief MQTT Manual Re-Connection Function

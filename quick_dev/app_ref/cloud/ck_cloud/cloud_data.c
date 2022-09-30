@@ -235,12 +235,12 @@ SHM_DATA void PostToCloudDirectly(int8_t *u8pProperty_Payload, uint32_t u32Offse
                         
     ws_encode(szBodyFmt, &ulTotalBodyLen, (char *)u8pProperty_Payload, u32Offset);  // build the websocket data packet with header and encrypt key
     
-    osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+    ws_sem_lock(osWaitForever);
     if(g_tx_ID!=g_tcp_hdl_ID)
     {
         g_tx_ID = g_tcp_hdl_ID;
     }
-    osSemaphoreRelease(g_tAppSemaphoreId);
+    ws_sem_unlock();
     
     // BleWifi_Wifi_SetDTIM(0);
     
@@ -264,7 +264,7 @@ SHM_DATA void PostToCloudDirectly(int8_t *u8pProperty_Payload, uint32_t u32Offse
     }
     else
     {        
-        osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);    
+        ws_sem_lock(osWaitForever);    
         Cloud_TimerStop(CLOUD_TMR_REQ_DATE);                
         // osTimerStop(g_tAppHeartbeatTimerId);
         // osTimerStop(g_tmr_req_date);
@@ -287,11 +287,11 @@ SHM_DATA void PostToCloudDirectly(int8_t *u8pProperty_Payload, uint32_t u32Offse
 
             Cloud_ConnectRetry();
 
-            osSemaphoreRelease(g_tAppSemaphoreId);
+            ws_sem_unlock();
         }
         else
         {
-           osSemaphoreRelease(g_tAppSemaphoreId);
+           ws_sem_unlock();
         }
 
         // BleWifi_Wifi_SetDTIM(BleWifi_Ctrl_DtimTimeGet());                                                       
@@ -323,10 +323,10 @@ void PostToCloudDirectly(int8_t *u8pProperty_Payload, uint32_t u32Offset)
 
     ws_encode(szBodyFmt, &ulTotalBodyLen, (char *)u8pProperty_Payload, u32Offset);  // build the websocket data packet with header and encrypt key
 
-    osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+    ws_sem_lock(osWaitForever);
     if(g_tcp_hdl_ID == -1)
     {
-        osSemaphoreRelease(g_tAppSemaphoreId);
+        ws_sem_unlock();
         return;
     }
 
@@ -334,21 +334,21 @@ void PostToCloudDirectly(int8_t *u8pProperty_Payload, uint32_t u32Offset)
     {
         g_tx_ID = g_tcp_hdl_ID;
     }
-    osSemaphoreRelease(g_tAppSemaphoreId);
+    ws_sem_unlock();
 
     int ret = ws_write(szBodyFmt, ulTotalBodyLen);
     if(ret>0)
     {
        if(0 == u8IsDateReq)
        {
-        //    OPL_LOG_INFO(CLOUD, "WIFI Send Reply success(%llu, %d)", g_msgid, strstr((char *)u8pProperty_Payload, "date"));
+           OPL_LOG_INFO(CLOUD, "WIFI Send Reply success(%llu, %d)", g_msgid, strstr((char *)u8pProperty_Payload, "date"));
        }
     }
     else
     {
         if(0 == u8IsDateReq)
         {
-            // OPL_LOG_WARN(CLOUD, "WIFI Send Reply fail(%llu)", g_msgid);
+            OPL_LOG_WARN(CLOUD, "WIFI Send Reply fail(%llu)", g_msgid);
         }
         else
         {
@@ -361,7 +361,7 @@ void PostToCloudDirectly(int8_t *u8pProperty_Payload, uint32_t u32Offset)
         //     free(IoT_Properity.pu8Data);
         // }
 
-        osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+        ws_sem_lock(osWaitForever);
 
         Cloud_TimerStop(CLOUD_TMR_REQ_DATE);
 
@@ -397,11 +397,11 @@ void PostToCloudDirectly(int8_t *u8pProperty_Payload, uint32_t u32Offset)
 
             Cloud_ConnectRetry();
 
-            osSemaphoreRelease(g_tAppSemaphoreId);
+            ws_sem_unlock();
         }
         else
         {
-           osSemaphoreRelease(g_tAppSemaphoreId);
+           ws_sem_unlock();
         }
     }
 
@@ -637,6 +637,9 @@ void Cloud_DataConstruct(uint8_t *pInData, uint32_t u32InDataLen, uint8_t *pOutD
     if(0 == pstSensorData->rssi) //Has the rssi been updated?
     {
 #if defined(OPL1000_A2) || defined(OPL1000_A3)
+        Opl_Wifi_Rssi_Get(&rssi);
+
+        OPL_LOG_INFO(CLOUD, "Original RSSI is %d", rssi);
         // OPL_LOG_INFO(CLOUD, "Original RSSI is %d", wpa_driver_netlink_get_rssi());
         // rssi = wpa_driver_netlink_get_rssi() + BLEWIFI_COM_RF_RSSI_ADJUST;
 
@@ -649,7 +652,7 @@ void Cloud_DataConstruct(uint8_t *pInData, uint32_t u32InDataLen, uint8_t *pOutD
 #elif defined(OPL2500_A0)
         Opl_Wifi_Rssi_Get(&rssi);
 
-        // OPL_LOG_INFO(CLOUD, "Original RSSI is %d", rssi);
+        OPL_LOG_INFO(CLOUD, "Original RSSI is %d", rssi);
 
         int8_t i8RssiOffset = 0;
         RF_PwrRssiOffsetGet(&i8RssiOffset);
@@ -791,7 +794,7 @@ int8_t Cloud_DataParser(uint8_t *pInData, uint16_t u32InDataLen)
 
     if(0!=Decode_len)
     {
-        // OPL_LOG_INFO(CLOUD, "WIFI Rcv data success(len=%d)\npayload:%s", Decode_len, szDecodeBuf);
+        OPL_LOG_INFO(CLOUD, "WIFI Rcv data success(len=%d)\npayload:%s", Decode_len, szDecodeBuf);
     }
 
     if(strstr(szDecodeBuf, "action")!=0)
@@ -1120,10 +1123,10 @@ coollink_ws_result_t Coollink_ws_process_error(uint8_t *szOutBuf, uint16_t out_l
                     }
                 }
 
-                osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+                ws_sem_lock(osWaitForever);
                 g_u8PostRetry_KeepAlive_Cnt = 0;
                 g_u8PostRetry_KeepAlive_Fail_Round = 0;
-                osSemaphoreRelease(g_tAppSemaphoreId);
+                ws_sem_unlock();
             }
             else if(IOT_DATA_WAITING_TYPE_DATA_POST == g_u8WaitingRspType)
             {
@@ -1143,14 +1146,14 @@ coollink_ws_result_t Coollink_ws_process_error(uint8_t *szOutBuf, uint16_t out_l
 
                 // OPL_LOG_INFO(CLOUD, "post cnt = %u success" , (g_u8PostRetry_IotRbData_Cnt + 1));
 
-                osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+                ws_sem_lock(osWaitForever);
                 g_u8PostRetry_IotRbData_Cnt = 0;
-                osSemaphoreRelease(g_tAppSemaphoreId);
+                ws_sem_unlock();
             }
 
-            osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+            ws_sem_lock(osWaitForever);
             g_u8WaitingRspType = IOT_DATA_WAITING_TYPE_NONE;
-            osSemaphoreRelease(g_tAppSemaphoreId);
+            ws_sem_unlock();
 
             if(1 == IsPrntPostRlt)
             {

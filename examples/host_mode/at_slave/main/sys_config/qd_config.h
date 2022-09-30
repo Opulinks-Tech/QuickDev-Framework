@@ -158,7 +158,7 @@ static uint32_t g_u32WmAcRetryIntvlTbl[5] =
 
 // <o> BLE_GAP_PF_DEVICE_NAME - device name shows in GAP service
 #ifndef BLE_GAP_PF_DEVICE_NAME
-#define BLE_GAP_PF_DEVICE_NAME                  "MAX_APP"
+#define BLE_GAP_PF_DEVICE_NAME                  "OPL_APP"
 #endif
 
 // </h>

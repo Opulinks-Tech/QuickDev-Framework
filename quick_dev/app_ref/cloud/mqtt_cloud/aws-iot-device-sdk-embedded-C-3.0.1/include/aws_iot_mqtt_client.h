@@ -207,7 +207,10 @@ typedef enum _ClientState {
 	CLIENT_STATE_DISCONNECTING = 10,
 	CLIENT_STATE_DISCONNECTED_ERROR = 11,
 	CLIENT_STATE_DISCONNECTED_MANUALLY = 12,
-	CLIENT_STATE_PENDING_RECONNECT = 13
+	CLIENT_STATE_PENDING_RECONNECT = 13,
+#if 1
+	CLIENT_STATE_CONNECTED_KEEPALIVE_IN_PROGRESS = 14,
+#endif
 } ClientState;
 
 /**
@@ -246,6 +249,11 @@ typedef struct _ClientStatus {
 	ClientState clientState;
 	bool isPingOutstanding;
 	bool isAutoReconnectEnabled;
+#if 1
+	bool isRecvInProgress;
+	bool isWaitPubAck;
+	bool isWaitPingResp;
+#endif
 } ClientStatus;
 
 /**
@@ -276,6 +284,10 @@ typedef struct _ClientData {
 #ifdef _ENABLE_THREAD_SUPPORT_
 	bool isBlockOnThreadLockEnabled;
 	IoT_Mutex_t state_change_mutex;
+#if 1
+	IoT_Mutex_t wait_pub_ack_change_mutex;
+	IoT_Mutex_t wait_ping_resp_change_mutex;
+#endif
 	IoT_Mutex_t tls_read_mutex;
 	IoT_Mutex_t tls_write_mutex;
 #endif

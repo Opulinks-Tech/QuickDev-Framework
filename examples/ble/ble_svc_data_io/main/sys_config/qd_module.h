@@ -293,30 +293,6 @@ extern "C" {
 
 // </h>
 
-//==========================================================
-// <h> Host mode
-//==========================================================
-
-// <e> HOST_MODE_ENABLED - host mode
-//==========================================================
-#ifndef HOST_MODE_ENABLED
-#define HOST_MODE_ENABLED                       (0)
-#endif
-
-// <o> HOST_MODE_LOG_ENABLED - host mode log enable
-#ifndef HOST_MODE_LOG_ENABLED
-#define HOST_MODE_LOG_ENABLED                   (0)
-#endif
-
-// <o> HOST_MODE_USE_AT - at cmd mode
-#ifndef HOST_MODE_USE_AT
-#define HOST_MODE_USE_AT                        (0)
-#endif
-
-// </e>
-
-// </h>
-
 /********************************************
 Declaration of data structure
 ********************************************/

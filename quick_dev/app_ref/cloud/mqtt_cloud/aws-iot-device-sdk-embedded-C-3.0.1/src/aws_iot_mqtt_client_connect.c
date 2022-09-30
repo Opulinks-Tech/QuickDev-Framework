@@ -44,7 +44,10 @@ extern "C" {
 #include <aws_iot_mqtt_client.h>
 #include "aws_iot_mqtt_client_interface.h"
 #include "aws_iot_mqtt_client_common_internal.h"
-// #include "blewifi_configuration.h"
+
+#if 1
+#include "cloud_ctrl.h"
+#endif
 
 
 typedef union {
@@ -492,18 +495,48 @@ IoT_Error_t aws_iot_mqtt_connect(AWS_IoT_Client *pClient, IoT_Client_Connect_Par
 		FUNC_EXIT_RC(NETWORK_ALREADY_CONNECTED_ERROR);
 	}
 
+#if 1
+	int nPublish = 40;
+
+	while((true == pClient->clientStatus.isRecvInProgress))
+	{
+		nPublish--;
+		if(nPublish <= 0)
+		{
+			IOT_INFO("[%s]recv still in progress[%d]\r\n", __func__, pClient->clientStatus.isRecvInProgress);
+			FUNC_EXIT_RC(MQTT_CLIENT_NOT_IDLE_ERROR);
+		}
+		else
+		{
+			osDelay(100);
+		}
+	}
+#endif
+
 	aws_iot_mqtt_set_client_state(pClient, clientState, CLIENT_STATE_CONNECTING);
 
+	// disable skip dtim
+	Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_CONN, false);
+	
 	rc = _aws_iot_mqtt_internal_connect(pClient, pConnectParams);
 
 	if(SUCCESS != rc) {
 		pClient->networkStack.disconnect(&(pClient->networkStack));
 		disconRc = pClient->networkStack.destroy(&(pClient->networkStack));
+
+		// enable skip dtim
+		osDelay(100);
+		Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_CONN, true);
+
 		if (SUCCESS != disconRc) {
 			FUNC_EXIT_RC(NETWORK_DISCONNECTED_ERROR);
 		}
 		aws_iot_mqtt_set_client_state(pClient, CLIENT_STATE_CONNECTING, CLIENT_STATE_DISCONNECTED_ERROR);
 	} else {
+		// enable skip dtim
+		osDelay(100);
+		Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_CONN, true);
+
 		aws_iot_mqtt_set_client_state(pClient, CLIENT_STATE_CONNECTING, CLIENT_STATE_CONNECTED_IDLE);
 	}
 
@@ -547,6 +580,7 @@ IoT_Error_t _aws_iot_mqtt_internal_disconnect(AWS_IoT_Client *pClient) {
 	/* Clean network stack */
 	pClient->networkStack.disconnect(&(pClient->networkStack));
 	rc = pClient->networkStack.destroy(&(pClient->networkStack));
+
 	if(0 != rc) {
 		/* TLS Destroy failed, return error */
 		FUNC_EXIT_RC(FAILURE);
@@ -587,7 +621,14 @@ IoT_Error_t aws_iot_mqtt_disconnect(AWS_IoT_Client *pClient) {
 		FUNC_EXIT_RC(rc);
 	}
 
+	// disable skip dtim
+	Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_DISCONN, false);
+
 	rc = _aws_iot_mqtt_internal_disconnect(pClient);
+
+	// disable skip dtim
+	osDelay(100);
+	Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_DISCONN, true);
 
 	if(SUCCESS != rc) {
 		pClient->clientStatus.clientState = clientState;
@@ -636,6 +677,36 @@ IoT_Error_t aws_iot_mqtt_attempt_reconnect(AWS_IoT_Client *pClient) {
 
 	rc = aws_iot_mqtt_resubscribe(pClient);
 	if(SUCCESS != rc) {
+#if 1
+		// trigger disconnect due to re-subscribe fail represent to re-connect fail
+
+		IoT_Error_t disconRc;
+		ClientState clientState;
+
+		clientState = aws_iot_mqtt_get_client_state(pClient);
+		aws_iot_mqtt_set_client_state(pClient, clientState, CLIENT_STATE_DISCONNECTING);
+
+		// disable skip dtim
+		Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_DISCONN, false);
+
+		pClient->networkStack.disconnect(&(pClient->networkStack));
+		disconRc = pClient->networkStack.destroy(&(pClient->networkStack));
+
+		// enable skip dtim
+		osDelay(100);
+		Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_DISCONN, true);
+
+		if (SUCCESS != disconRc)
+		{
+			aws_iot_mqtt_set_client_state(pClient, CLIENT_STATE_DISCONNECTING, CLIENT_STATE_DISCONNECTED_ERROR);
+			FUNC_EXIT_RC(NETWORK_DISCONNECTED_ERROR);
+		}
+		else
+		{
+			aws_iot_mqtt_set_client_state(pClient, CLIENT_STATE_DISCONNECTING, CLIENT_STATE_PENDING_RECONNECT);
+		}
+#endif
+
 		FUNC_EXIT_RC(rc);
 	}
 

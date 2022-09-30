@@ -244,6 +244,7 @@ IoT_Error_t iot_tls_connect(Network *pNetwork, TLSConnectParams *params) {
 
     mbedtls_ssl_setup_preference_ciphersuites(ciphersuite_preference);
 
+    mbedtls_ssl_config_max_content_len(1024*6);
 #ifdef ENABLE_IOT_DEBUG
 	unsigned char buf[MBEDTLS_DEBUG_BUFFER_SIZE];
 #endif
@@ -495,7 +496,9 @@ IoT_Error_t iot_tls_read(Network *pNetwork, unsigned char *pMsg, size_t len, Tim
 	size_t rxLen = 0;
 	int ret;
 
+#if 0
 	while (len > 0) {
+#endif
 		// This read will timeout after IOT_SSL_READ_TIMEOUT if there's no data to be read
 		ret = mbedtls_ssl_read(ssl, pMsg, len);
 		if (ret > 0) {
@@ -509,11 +512,13 @@ IoT_Error_t iot_tls_read(Network *pNetwork, unsigned char *pMsg, size_t len, Tim
 
 		// Evaluate timeout after the read to make sure read is done at least once
 
+#if 0
 		if (has_timer_expired(timer)) {
             //IOT_INFO(" %s <-----> expired  %d  %d", __FUNCTION__, timer->end_time.tv_sec, timer->end_time.tv_usec);
 			break;
 		}
 	}
+#endif
 
 	if (len == 0) {
 		*read_len = rxLen;

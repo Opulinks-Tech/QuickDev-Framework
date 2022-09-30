@@ -75,7 +75,9 @@ typedef enum E_AppEvtId
     APP_EVT_NETWORK_DOWN,
     APP_EVT_NETWORK_RESET,
 
-    APP_EVT_CLOUD_CONNECT_IND,
+    APP_EVT_CLOUD_CONNECT_DONE_IND,
+    APP_EVT_CLOUD_CONNECT_FAIL_IND,
+    APP_EVT_CLOUD_RECONNECT_DONE_IND,
     APP_EVT_CLOUD_DISCONNECT_IND,
 
     APP_EVT_SYS_TIMER_TIMEOUT,
@@ -194,7 +196,9 @@ static void APP_EvtHandler_BleDataInd(uint32_t u32EventId, void *pData, uint32_t
 static void APP_EvtHandler_NetworkUp(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_NetworkDown(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_NetworkReset(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
-static void APP_EvtHandler_CloudConnectInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
+static void APP_EvtHandler_CloudConnectDoneInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
+static void APP_EvtHandler_CloudConnectFailInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
+static void APP_EvtHandler_CloudReconnectDoneInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_CloudDisconnectInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_SysTimerTimeout(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 

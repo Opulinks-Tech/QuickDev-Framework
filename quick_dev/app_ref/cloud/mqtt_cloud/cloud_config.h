@@ -76,27 +76,26 @@ extern "C" {
 //---- configuration of MQTT ----//
 
 // keep alive time
-#define CLOUD_KEEP_ALIVE_TIME                           (60000) //ms
+#define CLOUD_KEEP_ALIVE_TIME                           (120000) //ms
 
 // tx task watchdog reset time
 #define SW_RESET_TIME                                   (300000) //ms
 
 // mqtt macro group
-#define MQTT_HOST_URL                                   "broker.emqx.io"
+#define MQTT_HOST_URL                                   "mqtt.eclipseprojects.io" //"broker.emqx.io"
 #define MQTT_HOST_PORT                                  (8883)
 #define MQTT_AUTO_RECONN_TIME                           (1000)
 // #define MQTT_AUTO_RECONN_EN                             (true)
 #define MQTT_SSL_HOST_NAME_VERF                         (false)
 #define MQTT_COMMAND_TIMEOUT                            (5000)
 #define MQTT_TLS_HANDSHAKE_TIMEOUT                      (20000)
-#define MQTT_YIELD_TIMEOUT                              (1000)
-#define MQTT_YIELD_ROUND_DELAY                          (5000)
-
-#define MQTT_CLIENT_ID                                  ("OPL_MQTT_ID_1")
-#define MQTT_CLIENT_ID_LEN                              (15)
+#define MQTT_CLIENT_ID                                  ("OPL_MQTT")
+#define MQTT_CLIENT_ID_LEN                              (32)
 
 #define MQTT_USERNAME                                   ("opulinks")
 #define MQTT_PASSWORD                                   ("12345678")
+
+#define MQTT_RETRY_COUNTS                               (3)
 
 #define BLEWIFI_ENHANCE_AWS
 // #define BLEWIFI_ENABLE_KEEPALIVE

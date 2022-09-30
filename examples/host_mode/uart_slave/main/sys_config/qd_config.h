@@ -172,7 +172,7 @@ static uint32_t g_u32WmAcRetryIntvlTbl[5] =
 // <0=> using smart sleep
 // <1=> using deep sleep
 #ifndef APP_HOST_MODE_PWR_SAVE_DEMO
-#define APP_HOST_MODE_PWR_SAVE_DEMO             (1)
+#define APP_HOST_MODE_PWR_SAVE_DEMO             (0)
 #endif
 
 // </h>

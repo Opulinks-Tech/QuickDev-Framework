@@ -81,10 +81,10 @@ int32_t Coolkit_Cloud_Send(uint8_t *u8aPayload, uint32_t u32PayloadLen)
 
     ws_encode(szBodyFmt, &ulTotalBodyLen, (char *)&u8aPayload[0], u32PayloadLen);  // build the websocket data packet with header and encrypt key
 
-    osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+    ws_sem_lock(osWaitForever);
     if(g_tcp_hdl_ID == -1)
     {
-        osSemaphoreRelease(g_tAppSemaphoreId);
+        ws_sem_unlock();
         return IOT_DATA_POST_RET_STOP_KEEP;
     }
 
@@ -92,14 +92,14 @@ int32_t Coolkit_Cloud_Send(uint8_t *u8aPayload, uint32_t u32PayloadLen)
     {
         g_tx_ID = g_tcp_hdl_ID;
     }
-    osSemaphoreRelease(g_tAppSemaphoreId);
+    ws_sem_unlock();
 
     int ret = ws_write(szBodyFmt, ulTotalBodyLen);
     if(ret<=0)
     {
         //Jeff App_Ctrl_MsgSend(APP_CTRL_MSG_DATA_POST_FAIL , NULL , 0);
 
-        osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+        ws_sem_lock(osWaitForever);
         Cloud_TimerStop(CLOUD_TMR_REQ_DATE);
         // osTimerStop(g_tmr_req_date);
 
@@ -130,11 +130,11 @@ int32_t Coolkit_Cloud_Send(uint8_t *u8aPayload, uint32_t u32PayloadLen)
             Cloud_OnlineStatusSet(false);
             // EG_StatusSet(g_tIotDataEventGroup, IOT_DATA_EVENT_BIT_CLOUD_CONNECTED, false);
             Cloud_ConnectRetry();
-            osSemaphoreRelease(g_tAppSemaphoreId);
+            ws_sem_unlock();
         }
         else
         {
-            osSemaphoreRelease(g_tAppSemaphoreId);
+            ws_sem_unlock();
         }
 
         return IOT_DATA_POST_RET_STOP_KEEP;
@@ -147,9 +147,9 @@ int32_t Coolkit_Cloud_Send(uint8_t *u8aPayload, uint32_t u32PayloadLen)
         Cloud_TimerStart(CLOUD_TMR_WAIT_RX_RSP, CLOUD_TX_WAIT_TIMEOUT);
         // osTimerStop(g_iot_tx_wait_timeout_timer);
         // osTimerStart(g_iot_tx_wait_timeout_timer , CLOUD_TX_WAIT_TIMEOUT);
-        osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+        ws_sem_lock(osWaitForever);
         g_u8WaitingRspType = IOT_DATA_WAITING_TYPE_DATA_POST;
-        osSemaphoreRelease(g_tAppSemaphoreId);
+        ws_sem_unlock();
 
         EG_StatusSet(g_tIotDataEventGroup, IOT_DATA_EVENT_BIT_WAITING_RX_RSP, true);
 #endif
@@ -166,11 +166,11 @@ int32_t Coolkit_Cloud_Recv(uint8_t *u8RecvBuf, uint32_t *s32Len)
 {
     int32_t ret=0;
 
-    osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+    ws_sem_lock(osWaitForever);
 
     if(g_tcp_hdl_ID == -1)
     {
-        osSemaphoreRelease(g_tAppSemaphoreId);
+        ws_sem_unlock();
         return -1;
     }
 
@@ -178,7 +178,7 @@ int32_t Coolkit_Cloud_Recv(uint8_t *u8RecvBuf, uint32_t *s32Len)
     {
         g_rx_ID = g_tcp_hdl_ID;
     }
-    osSemaphoreRelease(g_tAppSemaphoreId);
+    ws_sem_unlock();
 
 
     memset(u8RecvBuf,0, sizeof((char*)u8RecvBuf));
@@ -186,7 +186,7 @@ int32_t Coolkit_Cloud_Recv(uint8_t *u8RecvBuf, uint32_t *s32Len)
     if(ret<0)
     {
         printf("[ATS]WIFI Rcv data fail\r\n");
-        osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+        ws_sem_lock(osWaitForever);
         Cloud_TimerStop(CLOUD_TMR_REQ_DATE);
 
         if (true == EG_StatusGet(g_tIotDataEventGroup, IOT_DATA_EVENT_BIT_WAITING_RX_RSP))
@@ -215,11 +215,11 @@ int32_t Coolkit_Cloud_Recv(uint8_t *u8RecvBuf, uint32_t *s32Len)
             Cloud_OnlineStatusSet(false);
             // EG_StatusSet(g_tIotDataEventGroup, IOT_DATA_EVENT_BIT_CLOUD_CONNECTED, false);
             Cloud_ConnectRetry();
-            osSemaphoreRelease(g_tAppSemaphoreId);
+            ws_sem_unlock();
         }
         else
         {
-            osSemaphoreRelease(g_tAppSemaphoreId);
+            ws_sem_unlock();
         }
         goto fail;
     }
@@ -231,7 +231,21 @@ fail:
     return ret;
 }
 
+void ws_sem_lock(uint32_t u32LockTime)
+{
+    if(NULL != g_tAppSemaphoreId)
+    {
+        osSemaphoreWait(g_tAppSemaphoreId, u32LockTime);
+    }
+}
 
+void ws_sem_unlock(void)
+{
+    if(NULL != g_tAppSemaphoreId)
+    {
+        osSemaphoreRelease(g_tAppSemaphoreId);
+    }
+}
 
 void ws_init()
 {
@@ -918,9 +932,9 @@ int Connect_coolkit_wss(void)
                     g_IsInitPost = 1;
 
                     #if 1
-                    osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+                    ws_sem_lock(osWaitForever);
                     g_u8PostRetry_IotRbData_Cnt = 0;
-                    osSemaphoreRelease(g_tAppSemaphoreId);
+                    ws_sem_unlock();
 
                     Cloud_RingBufReset(&g_stIotRbData);
 
@@ -1021,7 +1035,7 @@ uint8_t ws_KeepAlive(void)
     {
         //Jeff App_Ctrl_MsgSend(APP_CTRL_MSG_DATA_POST_FAIL , NULL , 0);
 
-        osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+        ws_sem_lock(osWaitForever);
 
         Cloud_TimerStop(CLOUD_TMR_REQ_DATE);
 
@@ -1057,20 +1071,20 @@ uint8_t ws_KeepAlive(void)
 
             Cloud_ConnectRetry();
 
-            osSemaphoreRelease(g_tAppSemaphoreId);
+            ws_sem_unlock();
         }
         else
         {
-            osSemaphoreRelease(g_tAppSemaphoreId);
+            ws_sem_unlock();
         }
     }
     else
     {
         Cloud_TimerStart(CLOUD_TMR_WAIT_RX_RSP, CLOUD_TX_WAIT_TIMEOUT);
 
-        osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+        ws_sem_lock(osWaitForever);
         g_u8WaitingRspType = IOT_DATA_WAITING_TYPE_KEEPALIVE;
-        osSemaphoreRelease(g_tAppSemaphoreId);
+        ws_sem_unlock();
 
         EG_StatusSet(g_tIotDataEventGroup, IOT_DATA_EVENT_BIT_WAITING_RX_RSP, true);
 

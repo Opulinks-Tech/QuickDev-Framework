@@ -260,10 +260,33 @@ IoT_Error_t aws_iot_mqtt_init(AWS_IoT_Client *pClient, IoT_Client_Init_Params *p
         (void)aws_iot_thread_mutex_destroy(&(pClient->clientData.state_change_mutex));
         FUNC_EXIT_RC(rc);
     }
+#if 1
+    rc = aws_iot_thread_mutex_init(&(pClient->clientData.wait_pub_ack_change_mutex));
+    if(SUCCESS != rc) {
+        (void)aws_iot_thread_mutex_destroy(&(pClient->clientData.tls_write_mutex));
+        (void)aws_iot_thread_mutex_destroy(&(pClient->clientData.tls_read_mutex));
+        (void)aws_iot_thread_mutex_destroy(&(pClient->clientData.state_change_mutex));
+        FUNC_EXIT_RC(rc);
+    }
+    rc = aws_iot_thread_mutex_init(&(pClient->clientData.wait_ping_resp_change_mutex));
+    if(SUCCESS != rc) {
+        (void)aws_iot_thread_mutex_destroy(&(pClient->clientData.wait_pub_ack_change_mutex));
+        (void)aws_iot_thread_mutex_destroy(&(pClient->clientData.tls_write_mutex));
+        (void)aws_iot_thread_mutex_destroy(&(pClient->clientData.tls_read_mutex));
+        (void)aws_iot_thread_mutex_destroy(&(pClient->clientData.state_change_mutex));
+        FUNC_EXIT_RC(rc);
+    }
+#endif
 #endif
 
     pClient->clientStatus.isPingOutstanding = 0;
     pClient->clientStatus.isAutoReconnectEnabled = pInitParams->enableAutoReconnect;
+
+#if 1
+    pClient->clientStatus.isRecvInProgress = 0;
+    pClient->clientStatus.isWaitPubAck = 0;
+    pClient->clientStatus.isWaitPingResp = 0;
+#endif
 
     rc = iot_tls_init(&(pClient->networkStack), pInitParams->pRootCALocation, pInitParams->pDeviceCertLocation,
                       pInitParams->pDevicePrivateKeyLocation, pInitParams->pHostURL, pInitParams->port,

@@ -59,10 +59,51 @@ typedef enum E_CloudTimerIdx
     // *
     CLOUD_TMR_CONN_RETRY = 0,
     CLOUD_TMR_KEEP_ALIVE,
+    CLOUD_TMR_DATA_POST_TIMEOUT,
+    CLOUD_TMR_KEEP_ALIVE_TIMEOUT,
+    CLOUD_TMR_PUB_SKIP_DTIM_EN,
+    CLOUD_TMR_KEEP_ALIVE_SKIP_DTIM_EN,
     // *
 
     CLOUD_TMR_MAX,
 } T_CloudTimerIdx;
+
+typedef enum E_CloudStatus
+{
+    // user implement
+    // *
+    CLOUD_CB_STA_INIT_DONE = 0,
+    CLOUD_CB_STA_INIT_FAIL,
+    CLOUD_CB_STA_CONN_DONE,
+    CLOUD_CB_STA_CONN_FAIL,
+    CLOUD_CB_STA_RECONN_DONE,
+    CLOUD_CB_STA_DISCONN,
+    CLOUD_CB_STA_SUB_DONE,
+    CLOUD_CB_STA_SUB_FAIL,
+    CLOUD_CB_STA_UNSUB_DONE,
+    CLOUD_CB_STA_UNSUB_FAIL,
+    CLOUD_CB_STA_PUB_DONE,
+    CLOUD_CB_STA_PUB_FAIL,
+    // *
+
+    CLOUD_CB_STA_MAX,
+} T_CloudStatus;
+
+typedef enum E_CloudSkipDtimIdx
+{
+    CLOUD_SKIP_DTIM_CONN,
+    CLOUD_SKIP_DTIM_DISCONN,
+    CLOUD_SKIP_DTIM_PUBLIC,
+    CLOUD_SKIP_DTIM_PUBLISH,
+    CLOUD_SKIP_DTIM_SUBSCRIBE,
+    CLOUD_SKIP_DTIM_UNSUBSCRIBE,
+    CLOUD_SKIP_DTIM_KEEPALIVE,
+
+    CLOUD_SKIP_DTIM_MAX,
+} T_CloudSkipDtimIdx;
+
+// cloud status callback prototype
+typedef void (* T_CloudStatusCbFp)(T_CloudStatus tCloudStatus, void *pData, uint32_t u32DataLen);
 
 //---- for event use ----//
 // cloud connction information
@@ -89,6 +130,7 @@ typedef struct S_CloudTopicRegInfo
     uint8_t u8TopicIndex;                               // topic index (range define to CLOUD_TOPIC_NUMBER in cloud_config.h)
     uint8_t u8IsTopicRegisted;                          // register status
     uint8_t u8aTopicName[CLOUD_TOPIC_NAME_LEN];         // topic name in string type
+    void *fpFunc;                                        // function pointer of callback
 } T_CloudTopicRegInfo;
 
 // cloud topic register information pointer
@@ -102,16 +144,6 @@ typedef struct S_CloudPayloadFmt
     uint8_t u8aPayloadBuf[CLOUD_PAYLOAD_LEN];           // payload
 } T_CloudPayloadFmt;
 
-
-// typedef struct S_CloudMqttPublishData
-// {
-//     QoS tQos;
-//     char *pcPubTopic;
-//     uint16_t u16PubTopicLen;
-// 	uint16_t payloadLen;
-//     uint8_t payload[150];
-// } T_CloudMqttPublishData;
-
 /********************************************
 Declaration of Global Variables & Functions
 ********************************************/
@@ -119,9 +151,155 @@ Declaration of Global Variables & Functions
 
 // Sec 5: declaration of global function prototype
 
-T_OplErr Cloud_TxTopicRegister(T_CloudTopicRegInfo *tCloudTopicRegInfo, void *vCallback);
-T_OplErr Cloud_RxTopicRegister(T_CloudTopicRegInfo *tCloudTopicRegInfo, void *vCallback);
+/*************************************************************************
+* FUNCTION:
+*   Cloud_StatusCallbackRegister
+*
+* DESCRIPTION:
+*   register cloud status callback function
+*
+* PARAMETERS
+*   tCloudStatusCbFp :
+*                   [IN] function pointer
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_StatusCallbackRegister(T_CloudStatusCbFp tCloudStatusCbFp);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_TxTopicRegisterDyn
+*
+* DESCRIPTION:
+*   dynamice way to register tx topic
+*
+* PARAMETERS
+*   tCloudTopicRegInfo :
+*                   [IN] topic structure
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_TxTopicRegisterDyn(T_CloudTopicRegInfo *tCloudTopicRegInfo);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_TxTopicRegisterSta
+*
+* DESCRIPTION:
+*   static way to subscribe tx topic
+*
+* PARAMETERS
+*   tCloudTopicRegInfo :
+*                   [IN] topic structure
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_TxTopicRegisterSta(T_CloudTopicRegInfo *tCloudTopicRegInfo);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_TxTopicUnRegisterDyn
+*
+* DESCRIPTION:
+*   un-subscribe tx topic
+*
+* PARAMETERS
+*   u8TopicIndex :  [IN] topic index
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_TxTopicUnRegisterDyn(uint8_t u8TopicIndex);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RxTopicRegisterDyn
+*
+* DESCRIPTION:
+*   dynamice way to register rx topic
+*
+* PARAMETERS
+*   tCloudTopicRegInfo :
+*                   [IN] topic structure
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_RxTopicRegisterDyn(T_CloudTopicRegInfo *tCloudTopicRegInfo);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RxTopicRegisterSta
+*
+* DESCRIPTION:
+*   static way to register rx topic
+*
+* PARAMETERS
+*   tCloudTopicRegInfo :
+*                   [IN] topic structure
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_RxTopicRegisterSta(T_CloudTopicRegInfo *tCloudTopicRegInfo);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RxTopicUnRegisterDyn
+*
+* DESCRIPTION:
+*   un-subscribe rx topic
+*
+* PARAMETERS
+*   u8TopicIndex :  [IN] topic index
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_RxTopicUnRegisterDyn(uint8_t u8TopicIndex);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_TxTopicGet
+*
+* DESCRIPTION:
+*   get current tx topic global table
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   T_CloudTopicRegInfoPtr :
+*                   [OUT] pointer of global tx topic table
+*
+*************************************************************************/
 T_CloudTopicRegInfoPtr Cloud_TxTopicGet(void);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RxTopicGet
+*
+* DESCRIPTION:
+*   get current rx topic global table
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   T_CloudTopicRegInfoPtr :
+*                   [OUT] pointer of global rx topic table
+*
+*************************************************************************/
 T_CloudTopicRegInfoPtr Cloud_RxTopicGet(void);
 
 /*************************************************************************
@@ -141,7 +319,7 @@ T_CloudTopicRegInfoPtr Cloud_RxTopicGet(void);
 *   none
 *
 *************************************************************************/
-void Cloud_MqttSubscribeTopic(char *cTopic, uint16_t u16TopicLen, QoS tQoS, pApplicationHandler_t fpFunc);
+T_OplErr Cloud_MqttSubscribeTopic(char *cTopic, uint16_t u16TopicLen, QoS tQoS, pApplicationHandler_t fpFunc);
 
 /*************************************************************************
 * FUNCTION:
@@ -158,7 +336,7 @@ void Cloud_MqttSubscribeTopic(char *cTopic, uint16_t u16TopicLen, QoS tQoS, pApp
 *   none
 *
 *************************************************************************/
-void Cloud_MqttUnsubscribeTopic(char *cTopic, uint16_t u16TopicLen);
+T_OplErr Cloud_MqttUnsubscribeTopic(char *cTopic, uint16_t u16TopicLen);
 
 /*************************************************************************
 * FUNCTION:
@@ -210,7 +388,7 @@ bool Cloud_RxProcessGoingStateGet(void);
 *   none
 *
 *************************************************************************/
-void Cloud_MqttSkipDtimSet(uint8_t u8Enable);
+void Cloud_MqttSkipDtimSet(T_CloudSkipDtimIdx tCloudSkipDtimIdx, uint8_t u8Enable);
 
 /*************************************************************************
 * FUNCTION:
@@ -388,6 +566,59 @@ void Cloud_AckHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 *
 *************************************************************************/
 void Cloud_PostHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RegisterTopicHandler
+*
+* DESCRIPTION:
+*   register topic to cloud (CLOUD_EVT_TYPE_REGIST_TOPIC event)
+*
+* PARAMETERS
+*   u32EventId :    [IN] event ID
+*   pData :         [IN] message data
+*   u32DataLen :    [IN] message data lens
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_RegisterTopicHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_UnRegisterTopicHandler
+*
+* DESCRIPTION:
+*   un-register topuc from cloud (CLOUD_EVT_TYPE_UNREGIST_TOPIC event)
+*
+* PARAMETERS
+*   u32EventId :    [IN] event ID
+*   pData :         [IN] message data
+*   u32DataLen :    [IN] message data lens
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_UnRegisterTopicHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_Init
+*
+* DESCRIPTION:
+*   cloud initiate function
+*
+* PARAMETERS
+*   tCloudInitConnInfo :
+*                   [IN] 
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_Init(T_CloudConnInfo *tCloudInitConnInfo);
 
 #if (CLOUD_TX_DATA_BACKUP_ENABLED == 1)
 /*************************************************************************

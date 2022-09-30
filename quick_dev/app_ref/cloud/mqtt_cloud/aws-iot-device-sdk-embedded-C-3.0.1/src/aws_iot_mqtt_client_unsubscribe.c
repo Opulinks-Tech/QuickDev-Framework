@@ -41,6 +41,10 @@ extern "C" {
 
 #include "aws_iot_mqtt_client_common_internal.h"
 
+#if 1
+#include "cloud_ctrl.h"
+#endif
+
 /**
   * Serializes the supplied unsubscribe data into the supplied buffer, ready for sending
   * @param pTxBuf the raw buffer data, of the correct length determined by the remaining length field
@@ -223,10 +227,29 @@ IoT_Error_t aws_iot_mqtt_unsubscribe(AWS_IoT_Client *pClient, const char *pTopic
 		return NETWORK_DISCONNECTED_ERROR;
 	}
 
+#if 1
+	int nPublish = 40;
+
+	while((CLIENT_STATE_CONNECTED_IDLE != clientState) && (CLIENT_STATE_CONNECTED_WAIT_FOR_CB_RETURN != clientState) || (true == pClient->clientStatus.isRecvInProgress))
+	{
+		clientState = aws_iot_mqtt_get_client_state(pClient);
+		nPublish--;
+		if(nPublish <= 0)
+		{
+			IOT_INFO("[%s]client state not in idle[%d][%d]\r\n", __func__, clientState, pClient->clientStatus.isRecvInProgress);
+			FUNC_EXIT_RC(MQTT_CLIENT_NOT_IDLE_ERROR);
+		}
+		else
+		{
+			osDelay(100);
+		}
+	}
+#else
 	clientState = aws_iot_mqtt_get_client_state(pClient);
 	if(CLIENT_STATE_CONNECTED_IDLE != clientState && CLIENT_STATE_CONNECTED_WAIT_FOR_CB_RETURN != clientState) {
-		return MQTT_CLIENT_NOT_IDLE_ERROR;
+		FUNC_EXIT_RC(MQTT_CLIENT_NOT_IDLE_ERROR);
 	}
+#endif
 
 	rc = aws_iot_mqtt_set_client_state(pClient, clientState, CLIENT_STATE_CONNECTED_UNSUBSCRIBE_IN_PROGRESS);
 	if(SUCCESS != rc) {
@@ -234,7 +257,14 @@ IoT_Error_t aws_iot_mqtt_unsubscribe(AWS_IoT_Client *pClient, const char *pTopic
 		return rc;
 	}
 
+	// disable skip dtim
+	Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_UNSUBSCRIBE, false);
+
 	unsubRc = _aws_iot_mqtt_internal_unsubscribe(pClient, pTopicFilter, topicFilterLen);
+
+	// enable skip dtim
+	osDelay(100);
+	Cloud_MqttSkipDtimSet(CLOUD_SKIP_DTIM_UNSUBSCRIBE, true);
 
 	rc = aws_iot_mqtt_set_client_state(pClient, CLIENT_STATE_CONNECTED_UNSUBSCRIBE_IN_PROGRESS, clientState);
 	if(SUCCESS == unsubRc && SUCCESS != rc) {

@@ -311,12 +311,12 @@ static void Iot_Data_CloudDataPost(void)
                 ws_encode(g_szBodyFmt, &ulTotalBodyLen, (char *)&u8aStatusBuf[0], u32StatusBufLen);  // build the websocket data packet with header and encrypt key
                 // WS_build_data_packet(g_szBodyFmt, &ulTotalBodyLen, (char *)&u8aStatusBuf[0], u32StatusBufLen);  // build the websocket data packet with header and encrypt key
                 
-                osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+                ws_sem_lock(osWaitForever);
                 if(g_tx_ID!=g_tcp_hdl_ID)
                 {
                     g_tx_ID = g_tcp_hdl_ID;
                 }
-                osSemaphoreRelease(g_tAppSemaphoreId);
+                ws_sem_unlock();
                 
                 // BleWifi_Wifi_SetDTIM(0);
                 Opl_Wifi_Skip_Dtim_Set(g_u16IotDtimTxUse, false);
@@ -353,7 +353,7 @@ static void Iot_Data_CloudDataPost(void)
                     Cloud_RingBufReadIdxUpdate(&g_stIotRbData);
                     // IoT_Ring_Buffer_ReadIdxUpdate(&g_stIotRbData);
                     
-                    osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);                    
+                    ws_sem_lock(osWaitForever);                    
 
                     Cloud_TimerStop(CLOUD_TMR_REQ_DATE);
 
@@ -371,11 +371,11 @@ static void Iot_Data_CloudDataPost(void)
                         Cloud_OnlineStatusSet(false);
                         // EG_StatusSet(g_tIotDataEventGroup, IOT_DATA_EVENT_BIT_CLOUD_CONNECTED, false);
                         Cloud_ConnectRetry();
-                        osSemaphoreRelease(g_tAppSemaphoreId);
+                        ws_sem_unlock();
                     }
                     else
                     {
-                        osSemaphoreRelease(g_tAppSemaphoreId);
+                        ws_sem_unlock();
                     }
 
                     // osTimerStop(g_tAppHeartbeatTimerId);
@@ -386,7 +386,7 @@ static void Iot_Data_CloudDataPost(void)
     //                     printf("wt: http_close(ret=%d)\n", ret);
     //                     g_tx_ID = -1;
     //                     g_tcp_hdl_ID = -1;
-    //                     osSemaphoreRelease(g_tAppSemaphoreId); 
+    //                     ws_sem_unlock(); 
     //                     BleWifi_Ctrl_EventStatusSet(BLEWIFI_CTRL_EVENT_BIT_WSS_CONN, false);
     // //                    Iot_Data_TxTask_MsgSend(IOT_DATA_TX_MSG_EST_COOLKIT_HTTP_CONNECTION,NULL, 0);
     //                     Iot_Data_TxTask_MsgSend(IOT_DATA_TX_MSG_EST_COOLKIT_WSS_CONNECTION,NULL, 0);
@@ -394,7 +394,7 @@ static void Iot_Data_CloudDataPost(void)
     //                 }
     //                 else
     //                 {
-    //                    osSemaphoreRelease(g_tAppSemaphoreId); 
+    //                    ws_sem_unlock(); 
     //                 }                        
 
                     Opl_Wifi_Skip_Dtim_Set(g_u16IotDtimTxUse, true);
@@ -600,15 +600,15 @@ static void Cloud_WaitRxRspTimeoutHandler(void)
 
         if(IOT_DATA_WAITING_TYPE_KEEPALIVE == g_u8WaitingRspType)
         {
-            osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+            ws_sem_lock(osWaitForever);
             g_u8PostRetry_KeepAlive_Cnt ++;
-            osSemaphoreRelease(g_tAppSemaphoreId);
+            ws_sem_unlock();
 
             if(g_u8PostRetry_KeepAlive_Cnt >= IOT_DATA_KEEP_ALIVE_RETRY_MAX)
             {
-                osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+                ws_sem_lock(osWaitForever);
                 g_u8PostRetry_KeepAlive_Fail_Round++;
-                osSemaphoreRelease(g_tAppSemaphoreId);
+                ws_sem_unlock();
 
                 if (false == Cloud_RingBufCheckEmpty(&g_stKeepAliveQ))
                 {
@@ -621,15 +621,15 @@ static void Cloud_WaitRxRspTimeoutHandler(void)
                     }
                 }
                 
-                osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+                ws_sem_lock(osWaitForever);
                 g_u8PostRetry_KeepAlive_Cnt = 0;
-                osSemaphoreRelease(g_tAppSemaphoreId);
+                ws_sem_unlock();
 
                 if(g_u8PostRetry_KeepAlive_Fail_Round >= IOT_DATA_KEEP_ALIVE_FAIL_ROUND_MAX)
                 {
                     // OPL_LOG_INFO(CLOUD, "keep alive fail round >= %u , cloud disconnect", IOT_DATA_KEEP_ALIVE_FAIL_ROUND_MAX);
 
-                    osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+                    ws_sem_lock(osWaitForever);
                     g_u8PostRetry_KeepAlive_Fail_Round = 0; //reset
 
                     if(true == Cloud_OnlineStatusGet())
@@ -638,15 +638,15 @@ static void Cloud_WaitRxRspTimeoutHandler(void)
                         Cloud_MsgSend(CLOUD_EVT_TYPE_DISCONNECT, NULL, 0);
                         Cloud_MsgSend(CLOUD_EVT_TYPE_ESTABLISH, NULL, 0);
                     }
-                    osSemaphoreRelease(g_tAppSemaphoreId);
+                    ws_sem_unlock();
                 }
             }
         }
         else if(IOT_DATA_WAITING_TYPE_DATA_POST == g_u8WaitingRspType)
         {
-            osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+            ws_sem_lock(osWaitForever);
             g_u8PostRetry_IotRbData_Cnt ++;
-            osSemaphoreRelease(g_tAppSemaphoreId);
+            ws_sem_unlock();
 
             Cloud_RingBufGetQueueCount(&g_stIotRbData , &u16QueueCount);
 
@@ -658,7 +658,7 @@ static void Cloud_WaitRxRspTimeoutHandler(void)
 #if 0
                 if(g_u8PostRetry_IotRbData_Cnt == IOT_DATA_POST_RETRY_MAX)
                 {
-                    osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+                    ws_sem_lock(osWaitForever);
     //                EG_StatusSet(g_tIotDataEventGroup, IOT_DATA_EVENT_BIT_POST_FAIL_RECONNECT, true);
     //                if(true == Cloud_OnlineStatusGet())
     //                // if (true == EG_StatusGet(g_tIotDataEventGroup, IOT_DATA_EVENT_BIT_CLOUD_CONNECTED))
@@ -667,7 +667,7 @@ static void Cloud_WaitRxRspTimeoutHandler(void)
     //                    Iot_Data_TxTask_MsgSend(IOT_DATA_TX_MSG_CLOUD_DISCONNECTION, NULL, 0);
     //                    Iot_Data_TxTask_MsgSend(IOT_DATA_TX_MSG_CLOUD_CONNECTION, NULL, 0);
     //                }
-                    osSemaphoreRelease(g_tAppSemaphoreId);
+                    ws_sem_unlock();
                 }
                 else
 #endif
@@ -689,9 +689,9 @@ static void Cloud_WaitRxRspTimeoutHandler(void)
                             free(ptProperity.pu8Data);
                         }
                     }
-                    osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+                    ws_sem_lock(osWaitForever);
                     g_u8PostRetry_IotRbData_Cnt = 0;
-                    osSemaphoreRelease(g_tAppSemaphoreId);
+                    ws_sem_unlock();
                 }
 
                 if(false == u8Discard)
@@ -716,7 +716,7 @@ static void Cloud_WaitRxRspTimeoutHandler(void)
                             free(ptProperity.pu8Data);
                         }
                     }
-                    osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+                    ws_sem_lock(osWaitForever);
                     g_u8PostRetry_IotRbData_Cnt = 0;
     //                EG_StatusSet(g_tIotDataEventGroup, IOT_DATA_EVENT_BIT_POST_FAIL_RECONNECT, true);
     //                if(true == Cloud_OnlineStatusGet())
@@ -726,7 +726,7 @@ static void Cloud_WaitRxRspTimeoutHandler(void)
     //                    Iot_Data_TxTask_MsgSend(IOT_DATA_TX_MSG_CLOUD_DISCONNECTION, NULL, 0);
     //                    Iot_Data_TxTask_MsgSend(IOT_DATA_TX_MSG_CLOUD_CONNECTION, NULL, 0);
     //                }
-                    osSemaphoreRelease(g_tAppSemaphoreId);
+                    ws_sem_unlock();
                 }
 
                 if(false == u8Discard)
@@ -737,9 +737,9 @@ static void Cloud_WaitRxRspTimeoutHandler(void)
         }
     }
 
-    osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+    ws_sem_lock(osWaitForever);
     g_u8WaitingRspType = IOT_DATA_WAITING_TYPE_NONE;
-    osSemaphoreRelease(g_tAppSemaphoreId);
+    ws_sem_unlock();
 
     // Iot_Data_TxTask_MsgSend(IOT_DATA_TX_MSG_CLOUD_POST, NULL, 0);
     Cloud_MsgSend(CLOUD_EVT_TYPE_POST, NULL, 0);
@@ -948,9 +948,9 @@ fail:
 
         Cloud_RingBufGetQueueCount(&g_stIotRbData , &u16QueueCount);
 
-        osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+        ws_sem_lock(osWaitForever);
         g_u8PostRetry_IotRbData_Cnt ++;
-        osSemaphoreRelease(g_tAppSemaphoreId);
+        ws_sem_unlock();
 
         if(IOT_DATA_QUEUE_LAST_DATA_CNT == u16QueueCount) // last data
         {
@@ -969,9 +969,9 @@ fail:
                         free(ptProperity.pu8Data);
                     }
                 }
-                osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+                ws_sem_lock(osWaitForever);
                 g_u8PostRetry_IotRbData_Cnt = 0;
-                osSemaphoreRelease(g_tAppSemaphoreId);
+                ws_sem_unlock();
 
                 EG_StatusSet(g_tIotDataEventGroup, IOT_DATA_EVENT_BIT_POST_FAIL_RECONNECT, false);
 
@@ -1007,9 +1007,9 @@ fail:
                         free(ptProperity.pu8Data);
                     }
                 }
-                osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+                ws_sem_lock(osWaitForever);
                 g_u8PostRetry_IotRbData_Cnt = 0;
-                osSemaphoreRelease(g_tAppSemaphoreId);
+                ws_sem_unlock();
             }
 
             osDelay(100);
@@ -1051,7 +1051,7 @@ void Cloud_DisconnectHandler(uint32_t u32EventId, void *pData, uint32_t u32DataL
 
     Cloud_OnlineStatusSet(false);
 #else
-    osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+    ws_sem_lock(osWaitForever);
 
     Cloud_TimerStop(CLOUD_TMR_REQ_DATE);
 
@@ -1085,11 +1085,11 @@ void Cloud_DisconnectHandler(uint32_t u32EventId, void *pData, uint32_t u32DataL
         // 2. change the connection status
         Cloud_OnlineStatusSet(false);
 
-        osSemaphoreRelease(g_tAppSemaphoreId);
+        ws_sem_unlock();
     }
     else
     {
-        osSemaphoreRelease(g_tAppSemaphoreId);
+        ws_sem_unlock();
     }
 #endif
 }
@@ -1385,12 +1385,12 @@ SHM_DATA void Cloud_ReceiveHandler(void)
     memset(szOutBuf,0,1664);
     int out_length=0;
 
-    osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+    ws_sem_lock(osWaitForever);
     if(g_rx_ID!=g_tcp_hdl_ID)
     {
         g_rx_ID = g_tcp_hdl_ID;
     }
-    osSemaphoreRelease(g_tAppSemaphoreId);
+    ws_sem_unlock();
     
     int ret = ws_recv(szBuf, 1664);
 //                printf("xxxhttp read ret = %d\r\n", ret);
@@ -1427,7 +1427,7 @@ SHM_DATA void Cloud_ReceiveHandler(void)
         ATS_CLEAN_FAIL_STATS
         #endif
         
-        osSemaphoreWait(g_tAppSemaphoreId, osWaitForever);
+        ws_sem_lock(osWaitForever);
 
         Cloud_TimerStop(CLOUD_TMR_REQ_DATE);
         if(((g_tcp_hdl_ID!=-1)
@@ -1443,11 +1443,11 @@ SHM_DATA void Cloud_ReceiveHandler(void)
             Cloud_OnlineStatusSet(false);
             // EG_StatusSet(g_tIotDataEventGroup, IOT_DATA_EVENT_BIT_CLOUD_CONNECTED, false);
             Cloud_ConnectRetry();
-            osSemaphoreRelease(g_tAppSemaphoreId);
+            ws_sem_unlock();
         }
         else
         {
-            osSemaphoreRelease(g_tAppSemaphoreId);
+            ws_sem_unlock();
         }
 //         osTimerStop(g_tAppHeartbeatTimerId);
 //         osTimerStop(g_tmr_req_date);
@@ -1458,7 +1458,7 @@ SHM_DATA void Cloud_ReceiveHandler(void)
             
 //             g_rx_ID = -1;
 //             g_tcp_hdl_ID = -1;
-//             osSemaphoreRelease(g_tAppSemaphoreId);
+//             ws_sem_unlock();
 //             BleWifi_Ctrl_EventStatusSet(BLEWIFI_CTRL_EVENT_BIT_WSS_CONN, false);
 // //                        Iot_Data_TxTask_MsgSend(IOT_DATA_TX_MSG_EST_COOLKIT_HTTP_CONNECTION,NULL, 0);
 //             Iot_Data_TxTask_MsgSend(IOT_DATA_TX_MSG_EST_COOLKIT_WSS_CONNECTION,NULL, 0);
@@ -1466,7 +1466,7 @@ SHM_DATA void Cloud_ReceiveHandler(void)
 //         }
 //         else
 //         {
-//             osSemaphoreRelease(g_tAppSemaphoreId);
+//             ws_sem_unlock();
 //         }                        
         // BleWifi_Wifi_SetDTIM(BleWifi_Ctrl_DtimTimeGet());
         

@@ -112,7 +112,7 @@ typedef enum E_HostModeReqCmdList
     AT_CMD_REQ_CLOUD_TX_POST,
 
     // add your command here
-    
+
     AT_CMD_REQ_EMPTY,
     AT_CMD_REQ_MAX,
 } T_HostModeReqCmdList;
@@ -120,7 +120,8 @@ typedef enum E_HostModeReqCmdList
 // host mode ack command list
 typedef enum E_HostModeAckCmdList
 {
-    AT_CMD_ACK_DEVICE_READY = 0,
+    AT_CMD_ACK_BOOT_UP = 0,
+    AT_CMD_ACK_DEVICE_READY,
     AT_CMD_ACK_WAKEUP_FROM_SLEEP,
     AT_CMD_ACK_PROVISION,
     AT_CMD_ACK_BLE_STATUS,

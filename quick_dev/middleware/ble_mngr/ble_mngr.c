@@ -63,8 +63,10 @@ Declaration of static Global Variables & Functions
 ***************************************************/
 // Sec 6: declaration of static global variable
 
+#if 0
 osSemaphoreId g_tBmUslctedCbRegSemId;
 osSemaphoreId g_tBmSvcAssignRegSemId;
+#endif
 
 // definition for ble task
 static BLE_APP_DATA_T g_tTheBle = {0};
@@ -822,8 +824,6 @@ static void BM_AppMsgHandler(TASK task, MESSAGEID id, MESSAGE message)
 *************************************************************************/
 static void BM_TaskHandler(TASK task, MESSAGEID id, MESSAGE message)
 {
-    printf("ble task msg id %d\r\n", id);
-
     if ((id >= LE_GATT_MSG_BASE) && (id < LE_GATT_MSG_TOP))
     {
         BM_GattMsgHandler(task, id, message);
@@ -1174,18 +1174,24 @@ T_OplErr BM_ServiceAssign(T_BmSvcHandle *tBmSvcHandle)
 
     while (u8Count != BM_SVC_NUM_MAX)
     {
+#if 0
         osSemaphoreWait(g_tBmSvcAssignRegSemId, osWaitForever);
+#endif
 
         if (false == BM_ServiceIsAssigned(u8Count))
         {
             g_patBmSvcHandle[u8Count] = tBmSvcHandle;
 
+#if 0
             osSemaphoreRelease(g_tBmSvcAssignRegSemId);
+#endif
 
             return OPL_OK;
         }
 
+#if 0
         osSemaphoreRelease(g_tBmSvcAssignRegSemId);
+#endif
 
         u8Count ++;
     }
@@ -1209,18 +1215,24 @@ T_OplErr BM_ServiceAssign(T_BmSvcHandle *tBmSvcHandle)
 *************************************************************************/
 T_OplErr BM_UslctedCbReg(T_BmUslctedCbFp fpUslctedCb)
 {
+#if 0
     osSemaphoreWait(g_tBmUslctedCbRegSemId, osWaitForever);
+#endif
 
     if (NULL == tBmUnslctedCb)
     {
         tBmUnslctedCb = fpUslctedCb;
 
+#if 0
         osSemaphoreRelease(g_tBmUslctedCbRegSemId);
+#endif
 
         return OPL_OK;
     }
 
+#if 0
     osSemaphoreRelease(g_tBmUslctedCbRegSemId);
+#endif
 
     return OPL_ERR_USLCTED_CB_REG_INVALID;
 }
@@ -1312,8 +1324,10 @@ BLE_APP_DATA_T *BM_EntityGet(void)
 *************************************************************************/
 void BM_TaskInit(void)
 {
+#if 0
     osSemaphoreDef_t tSemaphoreDef;
     tSemaphoreDef.dummy = 0;
+#endif
 
     // state initialize
     g_tTheBle.u16CurrentState = BM_ST_NULL;
@@ -1325,6 +1339,7 @@ void BM_TaskInit(void)
     g_tTheBle.latency  = DEFAULT_DESIRED_SLAVE_LATENCY;
     g_tTheBle.sv_tmo   = DEFAULT_DESIRED_SUPERVERSION_TIMEOUT;
 
+#if 0
     // create semaphore
     g_tBmUslctedCbRegSemId = osSemaphoreCreate(&tSemaphoreDef, 1);
 
@@ -1340,7 +1355,7 @@ void BM_TaskInit(void)
     {
         BM_LOG_ERRO("Create svc semaphore fail");
     }
-
+#endif
     
     LeHostCreateTask(&g_tTheBle.task, BM_TaskHandler);
 

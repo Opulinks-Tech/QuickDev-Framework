@@ -64,7 +64,9 @@ Declaration of static Global Variables & Functions
 
 osThreadId g_tWmTaskId;
 osMessageQId g_tWmQueueId;
+#if 0
 osSemaphoreId g_tWmUslctedCbRegSemId;
+#endif
 
 static bool g_blWifiInited = false;
 
@@ -105,7 +107,7 @@ int WM_WifiEventHandlerCb(wifi_event_id_t event_id, void *data, uint16_t length)
             WM_LOG_DEBG("WIFI_EVENT_STA_START");
 
             /* Tcpip stack and net interface initialization,  dhcp client process initialization. */
-            lwip_network_init(WIFI_MODE_STA);
+            // lwip_network_init(WIFI_MODE_STA);
 
             WM_SendMessage(WM_EVT_INIT_IND, NULL, 0, NULL);
             break;
@@ -256,18 +258,24 @@ T_OplErr WM_UslctedCbReg(T_WmUslctedCbFp fpUslctedCb)
 
     while (u8Count != WM_USLCTED_CB_REG_NUM)
     {
+#if 0
         osSemaphoreWait(g_tWmUslctedCbRegSemId, osWaitForever);
+#endif
 
         if (false == WM_UslctedCbIsReg(u8Count))
         {
             g_tWmUslctedCbFp[u8Count] = fpUslctedCb;
 
+#if 0
             osSemaphoreRelease(g_tWmUslctedCbRegSemId);
+#endif
 
             return OPL_OK;
         }
 
+#if 0
         osSemaphoreRelease(g_tWmUslctedCbRegSemId);
+#endif
 
         u8Count ++;
     }
@@ -612,7 +620,9 @@ void WM_TaskInit(void)
 {
     osThreadDef_t tTaskDef;
     osMessageQDef_t tQueueDef;
+#if 0
     osSemaphoreDef_t tSemaphoreDef;
+#endif
 
     // create message queue
     tQueueDef.item_sz = sizeof(T_WmMessage);
@@ -624,6 +634,7 @@ void WM_TaskInit(void)
         WM_LOG_ERRO("Create msg queue fail")
     }
 
+#if 0
     // create semaphore
     tSemaphoreDef.dummy = 0;
     g_tWmUslctedCbRegSemId = osSemaphoreCreate(&tSemaphoreDef, 1);
@@ -632,6 +643,7 @@ void WM_TaskInit(void)
     {
         WM_LOG_ERRO("Create uslcted semaphore fail");
     }
+#endif
 
     // create task
     tTaskDef.name = "WIFI Manager";
