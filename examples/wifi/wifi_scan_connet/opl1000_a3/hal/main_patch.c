@@ -139,11 +139,7 @@ void __Patch_EntryPoint(void)
     MwFim_FlashLayoutUpdate = Main_FlashLayoutUpdate;
     
     // the initial of driver part for cold and warm boot
-#if defined(OPL1000_A2)
-    Sys_MiscDriverConfigSetup = Main_MiscDriverConfigSetup;
-#elif defined(OPL1000_A3)
     Sys_MiscModulesInit = Main_MiscDriverConfigSetup;
-#endif
     
     // update the switch AT UART / dbg UART function
     at_cmd_switch_uart1_dbguart = Main_AtUartDbgUartSwitch;

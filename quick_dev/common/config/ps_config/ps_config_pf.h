@@ -63,7 +63,7 @@ extern "C" {
 
 // <o> WM_DTIM_PERIOD_TIME
 #ifndef WM_DTIM_PERIOD_TIME
-#define WM_DTIM_PERIOD_TIME                     (100)
+#define WM_DTIM_PERIOD_TIME                     (1000)
 #endif
 
 // <o> WM_AC_RETRY_INTVL_TBL - auto-connect in wifi manager retry interval table (ms)
@@ -72,11 +72,11 @@ extern "C" {
 
 static uint32_t g_u32WmAcRetryIntvlTbl[5] =
 {
-    30000,
-    30000,
-    60000,
-    60000,
-    900000,
+    5000,
+    5000,
+    5000,
+    10000,
+    10000,
 };
 
 #define WM_AC_RETRY_INTVL_TBL                   (g_u32WmAcRetryIntvlTbl)

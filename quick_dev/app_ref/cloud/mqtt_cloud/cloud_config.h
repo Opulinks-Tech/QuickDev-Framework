@@ -48,11 +48,6 @@ extern "C" {
 #define CLOUD_TX_DATA_BACKUP_ENABLED                    (0)
 #endif
 
-// WI-FI ota enable (OTA_ENABLE and OTA_Init() must required)
-#ifndef CLOUD_OTA_ENABLED
-#define CLOUD_OTA_ENABLED                               (1)
-#endif
-
 // maximum host url/ip address length
 #ifndef CLOUD_HOST_URL_LEN
 #define CLOUD_HOST_URL_LEN                              (128)
@@ -73,17 +68,23 @@ extern "C" {
 #define CLOUD_PAYLOAD_LEN                               (256)
 #endif
 
-//---- configuration of MQTT ----//
-
-// keep alive time
+// keep alive time : set 0 will disable the keep alive behavior
+#ifndef CLOUD_KEEP_ALIVE_TIME
 #define CLOUD_KEEP_ALIVE_TIME                           (120000) //ms
+#endif
 
 // tx task watchdog reset time
+#ifndef SW_RESET_TIME
 #define SW_RESET_TIME                                   (300000) //ms
+#endif
 
-// mqtt macro group
-#define MQTT_HOST_URL                                   "mqtt.eclipseprojects.io" //"broker.emqx.io"
+//---- configuration of MQTT ----//
+
+// MQTT server setup
+#define MQTT_HOST_URL                                   "broker.emqx.io"
 #define MQTT_HOST_PORT                                  (8883)
+
+// MQTT macro group
 #define MQTT_AUTO_RECONN_TIME                           (1000)
 // #define MQTT_AUTO_RECONN_EN                             (true)
 #define MQTT_SSL_HOST_NAME_VERF                         (false)

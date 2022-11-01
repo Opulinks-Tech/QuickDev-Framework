@@ -48,6 +48,10 @@ Head Block of The File
 #include "aws_iot_version.h"
 #include "opl_aws_iot_config.h"
 
+#if (CLOUD_TX_DATA_BACKUP_ENABLED == 1)
+#include "ring_buffer.h"
+#endif /* CLOUD_TX_DATA_BACKUP_ENABLED */
+
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
 
 #define CLOUD_MQTT_EG_BIT_RX_PROC                       (0x00000001U)
@@ -381,7 +385,7 @@ T_OplErr Cloud_RxTopicUnRegisterDyn(uint8_t u8TopicIndex)
 
     // un-register topic from cloud
     // *
-    // send message to cloud kernel to process un-subscribe topic
+    // send message to cloud kernel to process un-register topic
     tEvtRst = Cloud_MsgSend(CLOUD_EVT_TYPE_UNREGIS_TOPIC, &u8TopicIndex, sizeof(uint8_t));
     // *
 
@@ -1472,6 +1476,7 @@ void Cloud_BackupRingBufInit(void)
 {
     // user implement
     // 1. initialize ring buffer
+    // RingBuf_Init(arg1, arg2);
 }
 
 /*************************************************************************
@@ -1493,7 +1498,7 @@ void Cloud_BackupRingBufInit(void)
 *************************************************************************/
 void Cloud_PostBackupHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
-    // 1. create your own scenario to post backup data by using RingBuf (Cloud_RingBuf___)
+    // 1. create your own scenario to post backup data by using RingBuf
 
     // 2. construct data for post (if required)
 

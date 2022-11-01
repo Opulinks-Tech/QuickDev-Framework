@@ -12,7 +12,7 @@
 /******************************************************************************
 *  Filename:
 *  ---------
-*  iot_data.h
+*  cloud_kernel.h
 *
 *  Project:
 *  --------
@@ -35,20 +35,14 @@ Head Block of The File
 // Sec 1: Include File
 
 #include "cmsis_os.h"
-#include "cloud_ctrl.h"
 #include "cloud_config.h"
-#include "cloud_data.h"
-#include "cloud_ota_http.h"
 #include "log.h"
 #include "opl_err.h"
-#if (CLOUD_TX_DATA_BACKUP_ENABLED == 1)
-#include "ring_buffer.h"
-#endif /* CLOUD_TX_DATA_BACKUP_ENABLED */
 
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
 
-#ifndef __IOT_DATA_H__
-#define __IOT_DATA_H__
+#ifndef __CLOUD_KERNEL_H__
+#define __CLOUD_KERNEL_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -99,44 +93,6 @@ typedef struct S_CloudDataMsg
     uint32_t u32DataLen;
     uint8_t u8aData[];
 } T_CloudDataMsg;
-
-//---- for event activate use ----//
-// cloud connction information
-typedef struct S_CloudConnInfo
-{
-    uint8_t u8AutoConn;                                 // cloud auto-connect after unsolicited disconnect event
-                                                        // <0> NOT do auto-connect after cloud disconnect (DEFAULT)
-                                                        // <1> do auto-connect after cloud disconnect
-
-    uint8_t u8Security;                                 // TLS or SSL connection security type (only activate if connection is a security type)
-                                                        // <0> MBEDTLS_SSL_VERIFY_NONE (DEFAULT)
-                                                        // <1> MBEDTLS_SSL_VERIFY_OPTIONAL
-                                                        // <2> MBEDTLS_SSL_VERIFY_REQUIRED
-                                                        // <3> MBEDTLS_SSL_VERIFY_UNSET
-
-    uint8_t u8aHostAddr[CLOUD_HOST_URL_LEN];            // host ip address or url address
-
-    uint16_t u16HostPort;                               // host port
-} T_CloudConnInfo;
-
-// cloud topic register information
-typedef struct S_CloudTopicRegInfo
-{
-    uint8_t u8TopicIndex;                               // topic index (range define to CLOUD_TOPIC_NUMBER in cloud_config.h)
-    uint8_t u8IsTopicRegisted;                          // register status
-    uint8_t u8aTopicName[CLOUD_TOPIC_NAME_LEN];         // topic name in string type
-} T_CloudTopicRegInfo;
-
-// cloud topic register information pointer
-typedef T_CloudTopicRegInfo *T_CloudTopicRegInfoPtr;
-
-// cloud payload format
-typedef S_CloudPayloadFmt
-{
-    uint8_t u8TopicIndex;                               // topic index (range define to CLOUD_TOPIC_NUMBER in cloud_config.h)
-    uint32_t u32PayloadLen;                             // payload lens
-    uint8_t u8aPayloadBuf[CLOUD_PAYLOAD_LEN];           // payload
-} T_CloudPayloadFmt;
 
 /********************************************
 Declaration of Global Variables & Functions
@@ -245,4 +201,4 @@ C Functions
 }
 #endif
 
-#endif /* __IOT_DATA_H__ */
+#endif /* __CLOUD_KERNEL_H__ */

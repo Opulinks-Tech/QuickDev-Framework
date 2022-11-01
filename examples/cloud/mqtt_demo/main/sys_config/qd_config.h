@@ -161,6 +161,16 @@ static uint32_t g_u32WmAcRetryIntvlTbl[5] =
 #define BLE_GAP_PF_DEVICE_NAME                  "OPL_APP"
 #endif
 
+// <o> MQTT_DEMO_PERI_POST_EN - enable periodic post data
+#ifndef MQTT_DEMO_PERI_POST_EN
+#define MQTT_DEMO_PERI_POST_EN                  (1)
+#endif
+
+// <o> MQTT_DEMO_PERI_POST_INTERVAL - periodic post data interval time (ms)
+#ifndef MQTT_DEMO_PERI_POST_INTERVAL
+#define MQTT_DEMO_PERI_POST_INTERVAL            (20000)
+#endif
+
 // </h>
 
 //==========================================================

@@ -39,6 +39,10 @@ Head Block of The File
 #include "cloud_kernel.h"
 #include "wifi_agent_api.h"
 
+#if (CLOUD_TX_DATA_BACKUP_ENABLED == 1)
+#include "ring_buffer.h"
+#endif /* CLOUD_TX_DATA_BACKUP_ENABLED */
+
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
 
 /********************************************
@@ -73,6 +77,224 @@ C Functions
 //////////////////////////////////// 
 //// User created Functions
 ////////////////////////////////////
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_StatusCallbackRegister
+*
+* DESCRIPTION:
+*   register cloud status callback function
+*
+* PARAMETERS
+*   tCloudStatusCbFp :
+*                   [IN] function pointer
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_StatusCallbackRegister(T_CloudStatusCbFp tCloudStatusCbFp)
+{
+    g_tCloudStatusCbFp = tCloudStatusCbFp;
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_StatusCallback
+*
+* DESCRIPTION:
+*   calling cloud status callback function
+*
+* PARAMETERS
+*   tCloudStatus :  [IN] cloud status type
+*   pData :         [IN] data
+*   u32DataLen :    [IN] data lens
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_StatusCallback(T_CloudStatus tCloudStatus, void *pData, uint32_t u32DataLen)
+{
+    if(NULL != g_tCloudStatusCbFp)
+    {
+        g_tCloudStatusCbFp(tCloudStatus, pData, u32DataLen);
+    }
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_TxTopicRegisterDyn
+*
+* DESCRIPTION:
+*   dynamice way to register tx topic
+*
+* PARAMETERS
+*   tCloudTopicRegInfo :
+*                   [IN] topic structure
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_TxTopicRegisterDyn(T_CloudTopicRegInfo *tCloudTopicRegInfo)
+{
+    T_OplErr tEvtRst = OPL_ERR;
+
+    // user implement
+
+    return tEvtRst;    
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_TxTopicRegisterSta
+*
+* DESCRIPTION:
+*   static way to subscribe tx topic
+*
+* PARAMETERS
+*   tCloudTopicRegInfo :
+*                   [IN] topic structure
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_TxTopicRegisterSta(T_CloudTopicRegInfo *tCloudTopicRegInfo)
+{
+    // user implement
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_TxTopicUnRegisterDyn
+*
+* DESCRIPTION:
+*   un-subscribe tx topic
+*
+* PARAMETERS
+*   u8TopicIndex :  [IN] topic index
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_TxTopicUnRegisterDyn(uint8_t u8TopicIndex)
+{
+    T_OplErr tEvtRst = OPL_ERR;
+
+    // user implement
+    
+    return tEvtRst;
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RxTopicRegisterDyn
+*
+* DESCRIPTION:
+*   dynamice way to register rx topic
+*
+* PARAMETERS
+*   tCloudTopicRegInfo :
+*                   [IN] topic structure
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_RxTopicRegisterDyn(T_CloudTopicRegInfo *tCloudTopicRegInfo)
+{
+    T_OplErr tEvtRst = OPL_ERR;
+
+    // user implement
+
+    return tEvtRst;
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RxTopicRegisterSta
+*
+* DESCRIPTION:
+*   static way to register rx topic
+*
+* PARAMETERS
+*   tCloudTopicRegInfo :
+*                   [IN] topic structure
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_RxTopicRegisterSta(T_CloudTopicRegInfo *tCloudTopicRegInfo)
+{
+    // user implement
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RxTopicUnRegisterDyn
+*
+* DESCRIPTION:
+*   un-subscribe rx topic
+*
+* PARAMETERS
+*   u8TopicIndex :  [IN] topic index
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_RxTopicUnRegisterDyn(uint8_t u8TopicIndex)
+{
+    T_OplErr tEvtRst = OPL_ERR;
+
+    // user implement
+
+    return tEvtRst;
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_TxTopicGet
+*
+* DESCRIPTION:
+*   get current tx topic global table
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   T_CloudTopicRegInfoPtr :
+*                   [OUT] pointer of global tx topic table
+*
+*************************************************************************/
+T_CloudTopicRegInfoPtr Cloud_TxTopicGet(void)
+{
+    return g_tTxTopicTab;
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RxTopicGet
+*
+* DESCRIPTION:
+*   get current rx topic global table
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   T_CloudTopicRegInfoPtr :
+*                   [OUT] pointer of global rx topic table
+*
+*************************************************************************/
+T_CloudTopicRegInfoPtr Cloud_RxTopicGet(void)
+{
+    return g_tRxTopicTab;
+}
 
 /*************************************************************************
 * FUNCTION:
@@ -412,7 +634,7 @@ void Cloud_PostHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 
     // user implement
 #if (CLOUD_TX_DATA_BACKUP_ENABLED == 1)
-    // 1. create your own scenario to backup data by using RingBuf (Cloud_RingBuf___)
+    // 1. create your own scenario to backup data by using RingBuf
 
     // 2. construct data for post (if required)
     // Cloud_DataConstruct(pData, u32DataLen);
@@ -448,6 +670,7 @@ void Cloud_BackupRingBufInit(void)
 {
     // user implement
     // 1. initialize ring buffer
+    // RingBuf_Init(arg1, arg2);
 }
 
 /*************************************************************************
@@ -469,7 +692,7 @@ void Cloud_BackupRingBufInit(void)
 *************************************************************************/
 void Cloud_PostBackupHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
-    // 1. create your own scenario to post backup data by using RingBuf (Cloud_RingBuf___)
+    // 1. create your own scenario to post backup data by using RingBuf
 
     // 2. construct data for post (if required)
 

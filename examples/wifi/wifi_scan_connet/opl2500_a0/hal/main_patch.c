@@ -37,7 +37,6 @@ Head Block of The File
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#if defined(OPL2500_A0)
 #include "event_loop.h"
 #include "wifi_api.h"
 #include "wifi_event.h"
@@ -49,7 +48,6 @@ Head Block of The File
 #include "at_cmd_app.h"
 #include "at_cmd_property.h"
 #include "at_cmd_msg_ext.h"
-#endif
 #include "sys_init.h"
 #include "sys_init_patch.h"
 #include "sys_cfg.h"

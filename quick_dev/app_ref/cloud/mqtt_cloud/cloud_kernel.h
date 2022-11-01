@@ -12,7 +12,7 @@
 /******************************************************************************
 *  Filename:
 *  ---------
-*  iot_data.h
+*  cloud_kernel.h
 *
 *  Project:
 *  --------
@@ -36,18 +36,13 @@ Head Block of The File
 
 #include "cmsis_os.h"
 #include "cloud_config.h"
-#include "cloud_data.h"
-#include "cloud_ota_http.h"
 #include "log.h"
 #include "opl_err.h"
-#if (CLOUD_TX_DATA_BACKUP_ENABLED == 1)
-#include "ring_buffer.h"
-#endif /* CLOUD_TX_DATA_BACKUP_ENABLED */
 
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
 
-#ifndef __IOT_DATA_H__
-#define __IOT_DATA_H__
+#ifndef __CLOUD_KERNEL_H__
+#define __CLOUD_KERNEL_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -259,4 +254,4 @@ C Functions
 }
 #endif
 
-#endif /* __IOT_DATA_H__ */
+#endif /* __CLOUD_KERNEL_H__ */

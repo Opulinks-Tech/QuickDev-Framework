@@ -42,6 +42,10 @@ Head Block of The File
 #include "tcp_client.h"
 #include "wifi_mngr_api.h"
 
+#if (CLOUD_TX_DATA_BACKUP_ENABLED == 1)
+#include "ring_buffer.h"
+#endif /* CLOUD_TX_DATA_BACKUP_ENABLED */
+
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
 
 /********************************************
@@ -74,7 +78,8 @@ static uintptr_t g_ptrCloudTcpHdlId = 0;
 uint16_t g_u16CloudTcpSkipDtimId = 0;
 uint32_t g_u32CloudKeepAliveDuration = CLOUD_KEEP_ALIVE_TIME;
 
-// static uint32_t g_u32CloudKeepAliveCount = 0;
+// global cloud status callback fp
+T_CloudStatusCbFp g_tCloudStatusCbFp = NULL;
 
 // global cloud configure information
 T_CloudConnInfo g_tCloudConnInfo = 
@@ -101,72 +106,225 @@ C Functions
 //// User created Functions
 ////////////////////////////////////
 
-T_OplErr Cloud_TxTopicRegister(T_CloudTopicRegInfo *tCloudTopicRegInfo, void *vCallback)
+/*************************************************************************
+* FUNCTION:
+*   Cloud_StatusCallbackRegister
+*
+* DESCRIPTION:
+*   register cloud status callback function
+*
+* PARAMETERS
+*   tCloudStatusCbFp :
+*                   [IN] function pointer
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_StatusCallbackRegister(T_CloudStatusCbFp tCloudStatusCbFp)
 {
-    T_OplErr tEvtRst = OPL_ERR;
-
-    uint8_t u8TopicIndex = tCloudTopicRegInfo->u8TopicIndex;
-
-    if(CLOUD_TOPIC_NUMBER <= u8TopicIndex)
-    {
-        return OPL_ERR_PARAM_INVALID;
-    }
-
-    // register topic to cloud
-    // *
-    // tcp no need the tx topic registeration
-    // copy the tx topic register information to global registeration table
-    tEvtRst = OPL_OK;
-    // *
-
-    if(OPL_OK == tEvtRst)
-    {
-        memcpy(&g_tTxTopicTab[u8TopicIndex], tCloudTopicRegInfo, sizeof(T_CloudTopicRegInfo));
-        g_tTxTopicTab[u8TopicIndex].u8IsTopicRegisted = true;
-    }
-
-		return tEvtRst;
+    g_tCloudStatusCbFp = tCloudStatusCbFp;
 }
 
-T_OplErr Cloud_RxTopicRegister(T_CloudTopicRegInfo *tCloudTopicRegInfo, void *vCallback)
+/*************************************************************************
+* FUNCTION:
+*   Cloud_StatusCallback
+*
+* DESCRIPTION:
+*   calling cloud status callback function
+*
+* PARAMETERS
+*   tCloudStatus :  [IN] cloud status type
+*   pData :         [IN] data
+*   u32DataLen :    [IN] data lens
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_StatusCallback(T_CloudStatus tCloudStatus, void *pData, uint32_t u32DataLen)
+{
+    if(NULL != g_tCloudStatusCbFp)
+    {
+        g_tCloudStatusCbFp(tCloudStatus, pData, u32DataLen);
+    }
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_TxTopicRegisterDyn
+*
+* DESCRIPTION:
+*   dynamice way to register tx topic
+*
+* PARAMETERS
+*   tCloudTopicRegInfo :
+*                   [IN] topic structure
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_TxTopicRegisterDyn(T_CloudTopicRegInfo *tCloudTopicRegInfo)
 {
     T_OplErr tEvtRst = OPL_ERR;
 
-    uint8_t u8TopicIndex = tCloudTopicRegInfo->u8TopicIndex;
+    // user implement
+    // since the tcp demo not have the topic, no activity in this function
 
-    if(CLOUD_TOPIC_NUMBER <= u8TopicIndex)
-    {
-        return OPL_ERR_PARAM_INVALID;
-    }
+    return tEvtRst;    
+}
 
-    tracer_drct_printf("reg rx: %s (%d)\r\n", tCloudTopicRegInfo->u8aTopicName, strlen((char *)tCloudTopicRegInfo->u8aTopicName));
+/*************************************************************************
+* FUNCTION:
+*   Cloud_TxTopicRegisterSta
+*
+* DESCRIPTION:
+*   static way to subscribe tx topic
+*
+* PARAMETERS
+*   tCloudTopicRegInfo :
+*                   [IN] topic structure
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_TxTopicRegisterSta(T_CloudTopicRegInfo *tCloudTopicRegInfo)
+{
+    // user implement
+    // since the tcp demo not have the topic, no activity in this function
+}
 
-    memcpy(&g_tRxTopicTab[u8TopicIndex], tCloudTopicRegInfo, sizeof(T_CloudTopicRegInfo));
+/*************************************************************************
+* FUNCTION:
+*   Cloud_TxTopicUnRegisterDyn
+*
+* DESCRIPTION:
+*   un-subscribe tx topic
+*
+* PARAMETERS
+*   u8TopicIndex :  [IN] topic index
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_TxTopicUnRegisterDyn(uint8_t u8TopicIndex)
+{
+    T_OplErr tEvtRst = OPL_ERR;
 
-    // register topic to cloud
-    // *
-    // tcp no need the rx topic registeration
-    // copy the rx topic register information to global registeration table
-    tEvtRst = OPL_OK;
-    // *
+    // user implement
+    // since the tcp demo not have the topic, no activity in this function
+    
+    return tEvtRst;
+}
 
-    if(OPL_OK == tEvtRst)
-    {
-        g_tRxTopicTab[u8TopicIndex].u8IsTopicRegisted = true;
-    }
-    else
-    {
-        memset(&g_tRxTopicTab[u8TopicIndex], 0, sizeof(T_CloudTopicRegInfo));
-    }
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RxTopicRegisterDyn
+*
+* DESCRIPTION:
+*   dynamice way to register rx topic
+*
+* PARAMETERS
+*   tCloudTopicRegInfo :
+*                   [IN] topic structure
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_RxTopicRegisterDyn(T_CloudTopicRegInfo *tCloudTopicRegInfo)
+{
+    T_OplErr tEvtRst = OPL_ERR;
+
+    // user implement
+    // since the tcp demo not have the topic, no activity in this function
 
     return tEvtRst;
 }
 
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RxTopicRegisterSta
+*
+* DESCRIPTION:
+*   static way to register rx topic
+*
+* PARAMETERS
+*   tCloudTopicRegInfo :
+*                   [IN] topic structure
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_RxTopicRegisterSta(T_CloudTopicRegInfo *tCloudTopicRegInfo)
+{
+    // user implement
+    // since the tcp demo not have the topic, no activity in this function
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RxTopicUnRegisterDyn
+*
+* DESCRIPTION:
+*   un-subscribe rx topic
+*
+* PARAMETERS
+*   u8TopicIndex :  [IN] topic index
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_RxTopicUnRegisterDyn(uint8_t u8TopicIndex)
+{
+    T_OplErr tEvtRst = OPL_ERR;
+
+    // user implement
+    // since the tcp demo not have the topic, no activity in this function
+
+    return tEvtRst;
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_TxTopicGet
+*
+* DESCRIPTION:
+*   get current tx topic global table
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   T_CloudTopicRegInfoPtr :
+*                   [OUT] pointer of global tx topic table
+*
+*************************************************************************/
 T_CloudTopicRegInfoPtr Cloud_TxTopicGet(void)
 {
     return g_tTxTopicTab;
 }
 
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RxTopicGet
+*
+* DESCRIPTION:
+*   get current rx topic global table
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   T_CloudTopicRegInfoPtr :
+*                   [OUT] pointer of global rx topic table
+*
+*************************************************************************/
 T_CloudTopicRegInfoPtr Cloud_RxTopicGet(void)
 {
     return g_tRxTopicTab;
@@ -215,10 +373,9 @@ void Cloud_PostData(uint8_t *pu8Data, uint32_t u32DataLen)
             (true == Cloud_OnlineStatusGet()))
         {
             uint8_t u8ReConnect = true;
+
             Cloud_MsgSend(CLOUD_EVT_TYPE_DISCONNECT, &u8ReConnect, sizeof(u8ReConnect));
 
-            // g_ptrCloudTcpHdlId = (uintptr_t)-1;
-            // g_i32TcpHdlId = -1;
             g_i32TcpTxId = -1;
         }
 
@@ -255,7 +412,12 @@ void Cloud_KeepAliveDurationSet(uint32_t u32Duration)
     {
         g_u32CloudKeepAliveDuration = u32Duration;
 
-        Cloud_TimerStart(CLOUD_TMR_KEEP_ALIVE, g_u32CloudKeepAliveDuration);
+        Cloud_TimerStop(CLOUD_TMR_KEEP_ALIVE);
+
+        if(0 != g_u32CloudKeepAliveDuration)
+        {
+            Cloud_TimerStart(CLOUD_TMR_KEEP_ALIVE, g_u32CloudKeepAliveDuration);
+        }
     }
 }
 
@@ -432,9 +594,12 @@ void Cloud_EstablishHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLe
         {
             osSemaphoreRelease(g_tCloudSemaphoreId);
             
-            OPL_LOG_WARN(CLOUD, "tcp connect fail, retry connection..");
+            OPL_LOG_WARN(CLOUD, "tcp connect fail, retry connection after %d ms..", TCP_RECONN_TIME);
 
-            Cloud_TimerStart(CLOUD_TMR_CONN_RETRY, 5000);
+            // notify to application
+            Cloud_StatusCallback(CLOUD_CB_STA_CONN_FAIL, NULL, 0);
+
+            Cloud_TimerStart(CLOUD_TMR_CONN_RETRY, TCP_RECONN_TIME);
         }
         else
         {
@@ -446,11 +611,14 @@ void Cloud_EstablishHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLe
             osSemaphoreRelease(g_tCloudSemaphoreId);
 
             // notify to application
-            APP_SendMessage(APP_EVT_CLOUD_CONNECT_IND, NULL, 0);
+            Cloud_StatusCallback(CLOUD_CB_STA_CONN_DONE, NULL, 0);
 
-            Cloud_TimerStart(CLOUD_TMR_KEEP_ALIVE, g_u32CloudKeepAliveDuration);
+            if(0 != g_u32CloudKeepAliveDuration)
+            {
+                Cloud_TimerStart(CLOUD_TMR_KEEP_ALIVE, g_u32CloudKeepAliveDuration);
+            }
 
-            OPL_LOG_INFO(CLOUD, "tcp connect pass, start keep alive..");
+            OPL_LOG_INFO(CLOUD, "tcp connect pass, keep alive duation (%d)", g_u32CloudKeepAliveDuration);
         }
 
         Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpSkipDtimId, true);
@@ -506,7 +674,7 @@ void Cloud_DisconnectHandler(uint32_t u32EventId, void *pData, uint32_t u32DataL
         Cloud_OnlineStatusSet(false);
 
         // notify to application
-        APP_SendMessage(APP_EVT_CLOUD_DISCONNECT_IND, NULL, 0);
+        Cloud_StatusCallback(CLOUD_CB_STA_DISCONN, NULL, 0);
     }
 
     g_ptrCloudTcpHdlId = (uintptr_t)-1;
@@ -633,7 +801,6 @@ void Cloud_KeepAliveHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLe
         uint8_t u8PostData[TCP_TX_BUF_SIZE] = {0};
         uint32_t u32PostDataLen = 0;
 
-        // u32PostDataLen += sprintf((char *)u8PostData, "%s%d", u8KeepAliveData, g_u32CloudKeepAliveCount++);
         u32PostDataLen += sprintf((char *)u8PostData, "%s", u8KeepAliveData);
 
         Cloud_PostData(u8PostData, u32PostDataLen);
@@ -707,7 +874,7 @@ void Cloud_PostHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
     {
         // user implement
 #if (CLOUD_TX_DATA_BACKUP_ENABLED == 1)
-        // 1. create your own scenario to backup data by using RingBuf (Cloud_RingBuf___)
+        // 1. create your own scenario to backup data by using RingBuf
 
         // 2. construct data for post (if required)
 
@@ -752,6 +919,7 @@ void Cloud_BackupRingBufInit(void)
 {
     // user implement
     // 1. initialize ring buffer
+    // RingBuf_Init(arg1, arg2);
 }
 
 /*************************************************************************
@@ -773,7 +941,7 @@ void Cloud_BackupRingBufInit(void)
 *************************************************************************/
 void Cloud_PostBackupHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
-    // 1. create your own scenario to post backup data by using RingBuf (Cloud_RingBuf___)
+    // 1. create your own scenario to post backup data by using RingBuf
 
     // 2. construct data for post (if required)
 
@@ -829,7 +997,8 @@ void Cloud_ReceiveHandler(void)
 
         Cloud_DataParser((uint8_t *)databuf, strlen(databuf));
 
-        APP_SendMessage(APP_EVT_CLOUD_RECV_IND, (uint8_t *)databuf, strlen(databuf));
+        // notify to application
+        Cloud_StatusCallback(CLOUD_CB_STA_RECV_IND, (uint8_t *)databuf, strlen(databuf));
     }
     else if(i8Ret < 0)
     {
@@ -845,10 +1014,9 @@ void Cloud_ReceiveHandler(void)
             (true == Cloud_OnlineStatusGet()))
         {
             uint8_t u8ReConnect = true;
+            
             Cloud_MsgSend(CLOUD_EVT_TYPE_DISCONNECT, &u8ReConnect, sizeof(u8ReConnect));
 
-            // g_ptrCloudTcpHdlId = (uintptr_t)-1;
-            // g_i32TcpHdlId = -1;
             g_i32TcpRxId = -1;
         }
 

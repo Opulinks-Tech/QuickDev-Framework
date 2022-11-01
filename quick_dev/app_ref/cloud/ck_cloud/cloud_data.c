@@ -40,7 +40,6 @@ Head Block of The File
 #include "cloud_ctrl.h"
 #include "cloud_kernel.h"
 #include "cloud_config.h"
-#include "cloud_ota_http.h"
 #if defined(MAGIC_LED)
 #include "ck_svc.h"
 #include "cloud_cmd_data.h"
@@ -53,7 +52,8 @@ Head Block of The File
 #include "datetime\date_time.h"
 #include "etharp.h"
 #include "evt_group.h"
-#include "httpclient.h"
+#include "http_ota.h"
+#include "httpclient_exp.h"
 #include "infra_cjson.h"
 #include "mw_fim_default_group12_project.h"
 #include "ota_mngr.h"
@@ -91,7 +91,7 @@ char OTA_FULL_URL[256] = {0};
 float g_fBatteryVoltage = 0;
 
 #if CLOUD_HTTP_POST_ENHANCEMENT
-    httpclient_t g_client = {0};
+    httpclient_exp_t g_client = {0};
 #else
     //httpclient_t client = {0};
 #endif
@@ -300,7 +300,7 @@ SHM_DATA void PostToCloudDirectly(int8_t *u8pProperty_Payload, uint32_t u32Offse
 #else
 void PostToCloudDirectly(int8_t *u8pProperty_Payload, uint32_t u32Offset)
 {
-    // T_CloudRingBufData IoT_Properity;
+    // T_RingBufData IoT_Properity;
     uint32_t ulTotalBodyLen=0;
     char szBodyFmt[BUFFER_SIZE]={0};
     uint8_t u8IsDateReq=0;
@@ -427,7 +427,7 @@ void PostToCloudDirectly(int8_t *u8pProperty_Payload, uint32_t u32Offset)
 #if defined(MAGIC_LED)
 void Cloud_SendCloudRspHandle(uint8_t u8CtrlSource)
 {
-    T_CloudRingBufData tProperity = {0};
+    T_RingBufData tProperity = {0};
     char property_payload[300] = {0};
     unsigned char iv[IV_SIZE + 1] = {0};
     unsigned char ucCbcEncData[256];
@@ -436,7 +436,7 @@ void Cloud_SendCloudRspHandle(uint8_t u8CtrlSource)
     size_t uBaseLen = 0;
     uint32_t u32Offset = 0;
 
-    if (OPL_OK == Cloud_RingBufPop(&g_stCloudRspQ, &tProperity))
+    if (OPL_OK == RingBuf_Pop(&g_stCloudRspQ, &tProperity))
     {                
         u32Offset = sprintf( (char*)property_payload, "{\"error\":%d,\"deviceid\":\"%s\",\"apikey\":\"%s\",\"userAgent\":\"device\",\"sequence\":\"%s\"}", 
         0,
@@ -449,9 +449,8 @@ void Cloud_SendCloudRspHandle(uint8_t u8CtrlSource)
         {
             if(true == APP_BleStatusGet())
             {
-#if defined(MAXLIAO)
                 // CK_DataSendProtocolCmd((uint8_t *)&property_payload, u32Offset);
-#endif
+
                 // printf("[ATS]BLE Send Reply success\r\n");
                 memset(iv, '0' , IV_SIZE); //iv = "0000000000000000"
                 _CK_DataWifiCbcEncrypt((void *)property_payload , u32Offset , iv , g_ucSecretKey , (void *)ucCbcEncData);
@@ -482,7 +481,7 @@ void Cloud_SendCloudRspHandle(uint8_t u8CtrlSource)
         }
         
         //remove from Q
-        Cloud_RingBufReadIdxUpdate(&g_stCloudRspQ);
+        RingBuf_ReadIdxUpdate(&g_stCloudRspQ);
 
         if(tProperity.pu8Data != NULL)
         {
@@ -495,20 +494,20 @@ void Cloud_SendCloudRspHandle(uint8_t u8CtrlSource)
 #else
 void Cloud_SendCloudRspHandle(void)
 {
-    T_CloudRingBufData tProperity = {0};
+    T_RingBufData tProperity = {0};
 
     Opl_Wifi_Skip_Dtim_Set(g_u16IotDtimTxCloudAckPost, false);
 
     lwip_one_shot_arp_enable();
 
-    if (OPL_OK == Cloud_RingBufPop(&g_stCloudRspQ, &tProperity))
+    if (OPL_OK == RingBuf_Pop(&g_stCloudRspQ, &tProperity))
     {
         PostToCloudDirectly((int8_t *)tProperity.pu8Data, tProperity.u32DataLen);
 
         Cloud_TimerStart(CLOUD_TMR_ACK_POST, CLOUD_ACK_POST_TIMEOUT);
 
         //remove from Q
-        Cloud_RingBufReadIdxUpdate(&g_stCloudRspQ);
+        RingBuf_ReadIdxUpdate(&g_stCloudRspQ);
 
         if(tProperity.pu8Data != NULL)
         {
@@ -532,7 +531,7 @@ void Cloud_SendCloudRspHandle(void)
 *   int8_t :        [OUT] cloud send result
 *
 *************************************************************************/
-int8_t Cloud_ConstructPostDataAndSend(T_CloudRingBufData *ptProperity)
+int8_t Cloud_ConstructPostDataAndSend(T_RingBufData *ptProperity)
 {
     uint8_t u8aPayload[BUFFER_SIZE] = {0};
     uint32_t u32PayloadLen = 0;
@@ -857,7 +856,7 @@ coollink_ws_result_t Coollink_ws_process_update(uint8_t *szOutBuf, uint16_t out_
     int8_t s8Enable =-1;
     int8_t s8Switchon = -1;
     int16_t s16Time = -1;
-    T_CloudRingBufData stCloudRsp = {0};
+    T_RingBufData stCloudRsp = {0};
 
     /* Parse Request */
     if (lite_cjson_parse((char*)szOutBuf, out_length, &tRoot))
@@ -957,7 +956,7 @@ coollink_ws_result_t Coollink_ws_process_update(uint8_t *szOutBuf, uint16_t out_
 
     stCloudRsp.u32DataLen = u32Offset;
 
-    if(OPL_OK == Cloud_RingBufPush(&g_stCloudRspQ, &stCloudRsp))
+    if(OPL_OK == RingBuf_Push(&g_stCloudRspQ, &stCloudRsp))
     {
         Cloud_MsgSend(CLOUD_EVT_TYPE_POST, NULL, 0);
     }
@@ -1029,7 +1028,7 @@ coollink_ws_result_t Coollink_ws_process_upgrade(uint8_t *szOutBuf, uint16_t out
                 // OPL_LOG_INFO(CLOUD, "\n OTA_FULL_URL = %s", OTA_FULL_URL);
 
 #if (OTA_ENABLED == 1)
-                Cloud_OtaTriggerReq(CLOUD_OTA_EVT_TYPE_DOWNLOAD, (uint8_t *)OTA_FULL_URL, strlen(OTA_FULL_URL));
+                HTTP_OtaTriggerReq(HTTP_OTA_EVT_TYPE_DOWNLOAD, (uint8_t *)OTA_FULL_URL, strlen(OTA_FULL_URL));
 #endif
             }
         }
@@ -1046,7 +1045,7 @@ coollink_ws_result_t Coollink_ws_process_error(uint8_t *szOutBuf, uint16_t out_l
     lite_cjson_t tDate = {0};
     uint64_t result = 0;
     uint8_t IsPrntPostRlt = 1;
-    T_CloudRingBufData ptProperity  = {0};
+    T_RingBufData ptProperity  = {0};
 
     /* Parse Request */
     if (lite_cjson_parse((char*)szOutBuf, out_length, &tRoot))
@@ -1112,10 +1111,10 @@ coollink_ws_result_t Coollink_ws_process_error(uint8_t *szOutBuf, uint16_t out_l
 
             if(IOT_DATA_WAITING_TYPE_KEEPALIVE == g_u8WaitingRspType)
             {
-                if (false == Cloud_RingBufCheckEmpty(&g_stKeepAliveQ))
+                if (false == RingBuf_CheckEmpty(&g_stKeepAliveQ))
                 {
-                    Cloud_RingBufPop(&g_stKeepAliveQ , &ptProperity);
-                    Cloud_RingBufReadIdxUpdate(&g_stKeepAliveQ);
+                    RingBuf_Pop(&g_stKeepAliveQ , &ptProperity);
+                    RingBuf_ReadIdxUpdate(&g_stKeepAliveQ);
 
                     if(ptProperity.pu8Data!=NULL)
                     {
@@ -1133,10 +1132,10 @@ coollink_ws_result_t Coollink_ws_process_error(uint8_t *szOutBuf, uint16_t out_l
                 // if clear the flag for last post retry after keep alive
                 EG_StatusSet(g_tIotDataEventGroup, IOT_DATA_EVENT_BIT_LAST_POST_RETRY, false);
 
-                if (false == Cloud_RingBufCheckEmpty(&g_stIotRbData))
+                if (false == RingBuf_CheckEmpty(&g_stIotRbData))
                 {
-                    Cloud_RingBufPop(&g_stIotRbData , &ptProperity);
-                    Cloud_RingBufReadIdxUpdate(&g_stIotRbData);
+                    RingBuf_Pop(&g_stIotRbData , &ptProperity);
+                    RingBuf_ReadIdxUpdate(&g_stIotRbData);
 
                     if(ptProperity.pu8Data!=NULL)
                     {

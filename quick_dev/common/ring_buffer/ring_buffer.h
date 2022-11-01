@@ -78,7 +78,7 @@ Declaration of Global Variables & Functions
 
 /*************************************************************************
 * FUNCTION:
-*   Cloud_RingBufPush
+*   RingBuf_Push
 *
 * DESCRIPTION:
 *   push data into ring buffer
@@ -95,7 +95,7 @@ T_OplErr RingBuf_Push(T_RingBuf *ptRingBuf, T_RingBufData *ptRingBufData);
 
 /*************************************************************************
 * FUNCTION:
-*   Cloud_RingBufPop
+*   RingBuf_Pop
 *
 * DESCRIPTION:
 *   pop data from ring buffer
@@ -112,7 +112,7 @@ T_OplErr RingBuf_Pop(T_RingBuf *ptRingBuf, T_RingBufData *ptRingBufData);
 
 /*************************************************************************
 * FUNCTION:
-*   Cloud_RingBufReset
+*   RingBuf_Reset
 *
 * DESCRIPTION:
 *   clear all data in ring buffer
@@ -128,7 +128,7 @@ void RingBuf_Reset(T_RingBuf *ptRingBuf);
 
 /*************************************************************************
 * FUNCTION:
-*   Cloud_RingBufReadIdxUpdate
+*   RingBuf_ReadIdxUpdate
 *
 * DESCRIPTION:
 *   update the read index of ring buffer (follow after ring buffer pop)
@@ -144,7 +144,7 @@ void RingBuf_ReadIdxUpdate(T_RingBuf *ptRingBuf);
 
 /*************************************************************************
 * FUNCTION:
-*   Cloud_RingBufCheckEmpty
+*   RingBuf_CheckEmpty
 *
 * DESCRIPTION:
 *   check ring buffer is empty
@@ -161,7 +161,7 @@ bool RingBuf_CheckEmpty(T_RingBuf *ptRingBuf);
 
 /*************************************************************************
 * FUNCTION:
-*   Cloud_RingBufCheckFull
+*   RingBuf_CheckFull
 *
 * DESCRIPTION:
 *   check ring buffer is full
@@ -178,7 +178,7 @@ bool RingBuf_CheckFull(T_RingBuf *ptRingBuf);
 
 /*************************************************************************
 * FUNCTION:
-*   Cloud_RingBufGetQueueCount
+*   RingBuf_QueueCount
 *
 * DESCRIPTION:
 *   get current queue count of ring buffer
@@ -195,7 +195,7 @@ void RingBuf_QueueCount(T_RingBuf *ptRingBuf, uint16_t *u16QueueCount);
 
 /*************************************************************************
 * FUNCTION:
-*   Cloud_RingBufInit
+*   RingBuf_Init
 *
 * DESCRIPTION:
 *   ring buffer initiate function

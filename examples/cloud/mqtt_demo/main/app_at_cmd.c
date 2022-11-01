@@ -47,10 +47,6 @@ Head Block of The File
 #include "at_cmd_data_process.h"
 #include "agent.h"
 #endif
-#include "cloud_ctrl.h"
-#include "cloud_config.h"
-#include "cloud_kernel.h"
-#include "cloud_ota_http.h"
 #include "mw_fim.h"
 #include "mw_fim_default_group12_project.h"
 #include "opl_err.h"
@@ -96,7 +92,6 @@ at_command_t g_taAppAtCmd[] =
     {"at+readfim",         AT_CmdFimWriteHandler,               "Read FIM data" },
 #endif
     {"at+ckcfg",           AT_CmdSysCkCfgHandler,               "CoolKit Configuration"},
-    {"at+ota",             AT_CmdOtaTestHandler,                "Test OTA (URL)"},
     {"at+smartsleep",      AT_CmdSmartSleepHandler,             "Enter/Exit smart sleep"},
     // *
 
@@ -597,56 +592,6 @@ done:
     {
         AT_LOG("ERROR\r\n");
     }
-
-    return iRet;
-}
-
-/*************************************************************************
-* FUNCTION:
-*   none
-*
-* DESCRIPTION:
-*   none
-*
-* PARAMETERS
-*   none
-*
-* RETURNS
-*   none
-*
-*************************************************************************/
-int AT_CmdOtaTestHandler(char *buf, int len, int mode)
-{
-    int iRet = 0;
-
-    // IF WANT TO ENABLED THIS AT CMD, PLEASE INCLUDE "cloud_ota_config" AND "cloud_ota_http"
-#if (CLOUD_OTA_ENABLED == 1)
-    int argc = 0;
-    char *argv[AT_MAX_CMD_ARGS] = {0};
-
-    if (AT_CMD_MODE_SET == mode)
-    {
-        if (!at_cmd_buf_to_argc_argv(buf, &argc, argv, AT_MAX_CMD_ARGS))
-        {
-            return false;
-        }
-
-        Cloud_OtaTriggerReq(CLOUD_OTA_EVT_TYPE_DOWNLOAD, (uint8_t *)(argv[1]), strlen(argv[1]));
-    }
-
-    iRet = 1;
-
-    if(iRet)
-    {
-        AT_LOG("OK\r\n");
-    }
-    else
-    {
-        AT_LOG("ERROR\r\n");
-    }
-#else
-    AT_LOG("OTA at cmd not support\r\n");
-#endif
 
     return iRet;
 }

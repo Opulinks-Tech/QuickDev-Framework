@@ -93,7 +93,7 @@ extern "C" {
 // <2=> Power mode - Performance
 // <else> User define
 #ifndef SYS_CFG_PS_MODE
-#define SYS_CFG_PS_MODE                         (2)
+#define SYS_CFG_PS_MODE                         (0)
 #endif
 
 //----------------------------------------------------------
@@ -159,6 +159,16 @@ static uint32_t g_u32WmAcRetryIntvlTbl[5] =
 // <o> BLE_GAP_PF_DEVICE_NAME - device name shows in GAP service
 #ifndef BLE_GAP_PF_DEVICE_NAME
 #define BLE_GAP_PF_DEVICE_NAME                  "OPL_APP"
+#endif
+
+// <o> TCP_DEMO_PERI_POST_EN - enable periodic post data
+#ifndef TCP_DEMO_PERI_POST_EN
+#define TCP_DEMO_PERI_POST_EN                   (1)
+#endif
+
+// <o> TCP_DEMO_PERI_POST_INTERVAL - periodic post data interval time (ms)
+#ifndef TCP_DEMO_PERI_POST_INTERVAL
+#define TCP_DEMO_PERI_POST_INTERVAL             (20000)
 #endif
 
 // </h>

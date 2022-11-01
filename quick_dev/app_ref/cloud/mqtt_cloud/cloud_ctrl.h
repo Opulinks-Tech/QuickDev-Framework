@@ -130,7 +130,7 @@ typedef struct S_CloudTopicRegInfo
     uint8_t u8TopicIndex;                               // topic index (range define to CLOUD_TOPIC_NUMBER in cloud_config.h)
     uint8_t u8IsTopicRegisted;                          // register status
     uint8_t u8aTopicName[CLOUD_TOPIC_NAME_LEN];         // topic name in string type
-    void *fpFunc;                                        // function pointer of callback
+    void *fpFunc;                                       // function pointer of callback
 } T_CloudTopicRegInfo;
 
 // cloud topic register information pointer

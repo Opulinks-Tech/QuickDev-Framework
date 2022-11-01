@@ -45,19 +45,38 @@ extern "C" {
 
 // enable back up the post data
 #ifndef CLOUD_TX_DATA_BACKUP_ENABLED
-#define CLOUD_TX_DATA_BACKUP_ENABLED                    (1)
+#define CLOUD_TX_DATA_BACKUP_ENABLED                    (0)
 #endif
 
-// WI-FI ota enable (OTA_ENABLE and OTA_Init() must required)
-#ifndef CLOUD_OTA_ENABLED
-#define CLOUD_OTA_ENABLED                               (1)
+// maximum host url/ip address length
+#ifndef CLOUD_HOST_URL_LEN
+#define CLOUD_HOST_URL_LEN                              (128)
 #endif
 
-// keep alive time
-#define CLOUD_KEEP_ALIVE_TIME                           (60000) //ms
+// maximum topic name length 
+#ifndef CLOUD_TOPIC_NAME_LEN
+#define CLOUD_TOPIC_NAME_LEN                            (128)
+#endif
+
+// maximum number of topic which can be reigstered
+#ifndef CLOUD_TOPIC_NUMBER
+#define CLOUD_TOPIC_NUMBER                              (8)
+#endif
+
+// maximum paylaod data length
+#ifndef CLOUD_PAYLOAD_LEN
+#define CLOUD_PAYLOAD_LEN                               (256)
+#endif
+
+// keep alive time : set 0 will disable the keep alive behavior
+#ifndef CLOUD_KEEP_ALIVE_TIME
+#define CLOUD_KEEP_ALIVE_TIME                           (120000) //ms
+#endif
 
 // tx task watchdog reset time
+#ifndef SW_RESET_TIME
 #define SW_RESET_TIME                                   (300000) //ms
+#endif
 
 /********************************************
 Declaration of data structure

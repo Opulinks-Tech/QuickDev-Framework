@@ -50,7 +50,6 @@ Head Block of The File
 #include "cloud_ctrl.h"
 #include "cloud_config.h"
 #include "cloud_kernel.h"
-#include "cloud_ota_http.h"
 #include "mw_fim.h"
 #include "mw_fim_default_group12_project.h"
 #include "net_mngr_api.h"
@@ -112,7 +111,6 @@ at_command_t g_taAppAtCmd[] =
     {"at+readfim",         AT_CmdFimWriteHandler,               "Read FIM data" },
 #endif
     {"at+ckcfg",           AT_CmdSysCkCfgHandler,               "CoolKit Configuration"},
-    {"at+ota",             AT_CmdOtaTestHandler,                "Test OTA (URL)"},
 
     // request cmd list
     {"at+fwkver",          AT_CmdFwkVerHandler,                 "Get QD_FWK version"},
@@ -647,56 +645,6 @@ done:
     return iRet;
 }
 
-/*************************************************************************
-* FUNCTION:
-*   none
-*
-* DESCRIPTION:
-*   none
-*
-* PARAMETERS
-*   none
-*
-* RETURNS
-*   none
-*
-*************************************************************************/
-int AT_CmdOtaTestHandler(char *buf, int len, int mode)
-{
-    int iRet = 0;
-
-    // IF WANT TO ENABLED THIS AT CMD, PLEASE INCLUDE "cloud_ota_config" AND "cloud_ota_http"
-#if (CLOUD_OTA_ENABLED == 1)
-    int argc = 0;
-    char *argv[AT_MAX_CMD_ARGS] = {0};
-
-    if (AT_CMD_MODE_SET == mode)
-    {
-        if (!at_cmd_buf_to_argc_argv(buf, &argc, argv, AT_MAX_CMD_ARGS))
-        {
-            return false;
-        }
-
-        Cloud_OtaTriggerReq(CLOUD_OTA_EVT_TYPE_DOWNLOAD, (uint8_t *)(argv[1]), strlen(argv[1]));
-    }
-
-    iRet = 1;
-
-    if(iRet)
-    {
-        AT_LOG("OK\r\n");
-    }
-    else
-    {
-        AT_LOG("ERROR\r\n");
-    }
-#else
-    AT_LOG("OTA at cmd not support\r\n");
-#endif
-
-    return iRet;
-}
-
 int AT_CmdFwkVerHandler(char *buf, int len, int mode)
 {
     int iRet = 0;
@@ -811,36 +759,6 @@ int AT_CmdWifiScanHandler(char *buf, int len, int mode)
 
     AT_RETURN(iRet);
 }
-
-#ifndef MAXLIAO
-// TODO: is require?
-bool WM_CheckStringIsBssidOrSsid(uint8_t *u8Buf, uint16_t u16BufLen)
-{
-    uint8_t u16Count = 0;
-    uint8_t u8ColonCount = 0;
-
-    // 17 = XX:XX:XX:XX:XX:XX
-    if(u16BufLen != 17)
-    {
-        return false; // ssid
-    }
-
-    for(; u16Count < 17; u16Count ++)
-    {
-        if(u8Buf[u16Count] == 0x3A)
-        {
-            u8ColonCount ++;
-
-            if(u8ColonCount == 5)
-            {
-                return true; // bssid
-            }
-        }
-    }
-
-    return false; // ssid
-}
-#endif
 
 int AT_CmdWifiConnectHandler(char *buf, int len, int mode)
 {
@@ -960,7 +878,7 @@ int AT_CmdCloudConnectHandler(char *buf, int len, int mode)
             goto done;
         }
 
-        if(argc < 4)
+        if(argc < 2)
         {
             goto done;
         }
@@ -968,8 +886,12 @@ int AT_CmdCloudConnectHandler(char *buf, int len, int mode)
         T_CloudConnInfo tCloudConnInfo = {0};
 
         tCloudConnInfo.u8AutoConn = (uint8_t)strtoul(argv[1], NULL, 0);
-        tCloudConnInfo.u16HostPort = (uint16_t)strtoul(argv[3], NULL, 0);
-        memcpy(tCloudConnInfo.u8aHostAddr, argv[2], strlen(argv[2]));
+
+        if(argc >= 4)
+        {
+            tCloudConnInfo.u16HostPort = (uint16_t)strtoul(argv[3], NULL, 0);
+            memcpy(tCloudConnInfo.u8aHostAddr, argv[2], strlen(argv[2]));
+        }
 
         // if have security value
         if(argc == 5)
@@ -1028,9 +950,7 @@ int AT_CmdCloudTxTopicHandler(char *buf, int len, int mode)
         tCloudTopicRegInfo.u8TopicIndex = (uint8_t)strtoul(argv[1], NULL, 0);
         memcpy(tCloudTopicRegInfo.u8aTopicName, argv[2], strlen(argv[2]));
         
-        // send to APP or call api directly?
-
-        if(OPL_OK == Cloud_TxTopicRegister(&tCloudTopicRegInfo, NULL))
+        if(OPL_OK == Cloud_TxTopicRegisterDyn(&tCloudTopicRegInfo))
         {
             iRet = 1;
         }
@@ -1099,12 +1019,15 @@ int AT_CmdCloudRxTopicHandler(char *buf, int len, int mode)
         memcpy(tCloudTopicRegInfo.u8aTopicName, argv[2], strlen(argv[2]));
 
 #if defined(HOST_MODE_TCP)
-				if(OPL_OK == Cloud_RxTopicRegister(&tCloudTopicRegInfo, NULL))
-				{
-				    iRet = 1;
-				}
+        if(OPL_OK == Cloud_RxTopicRegisterDyn(&tCloudTopicRegInfo))
+        {
+            iRet = 1;
+        }
 #elif defined(HOST_MODE_MQTT)
-        if(OPL_OK == Cloud_RxTopicRegister(&tCloudTopicRegInfo, MQTT_RxTopicCallback))
+        // in mqtt protocol will need to carried the receive callback function
+        tCloudTopicRegInfo.fpFunc = MQTT_RxTopicCallback;
+
+        if(OPL_OK == Cloud_RxTopicRegisterDyn(&tCloudTopicRegInfo))
         {
             iRet = 1;
         }

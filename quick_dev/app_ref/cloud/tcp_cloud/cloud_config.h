@@ -48,11 +48,6 @@ extern "C" {
 #define CLOUD_TX_DATA_BACKUP_ENABLED                    (0)
 #endif
 
-// WI-FI ota enable (OTA_ENABLE and OTA_Init() must required)
-#ifndef CLOUD_OTA_ENABLED
-#define CLOUD_OTA_ENABLED                               (0)
-#endif
-
 // maximum host url/ip address length
 #ifndef CLOUD_HOST_URL_LEN
 #define CLOUD_HOST_URL_LEN                              (128)
@@ -73,24 +68,31 @@ extern "C" {
 #define CLOUD_PAYLOAD_LEN                               (256)
 #endif
 
-//---- configuration of TCP ----//
-
-// keep alive time
-#define CLOUD_KEEP_ALIVE_TIME                           (60000) //ms
+// keep alive time : set 0 will disable the keep alive behavior
+#ifndef CLOUD_KEEP_ALIVE_TIME
+#define CLOUD_KEEP_ALIVE_TIME                           (120000) //ms
+#endif
 
 // tx task watchdog reset time
+#ifndef SW_RESET_TIME
 #define SW_RESET_TIME                                   (300000) //ms
+#endif
+
+//---- configuration of TCP ----//
 
 // TCP server setup
-#define TCP_HOST_IP                                     ("192.168.123.123")
+#define TCP_HOST_IP                                     ("192.168.0.100")
 #define TCP_HOST_IP_SIZE                                (15)
-#define TCP_HOST_PORT                                   (7000)
+#define TCP_HOST_PORT                                   (21)
 
 // TCP post/recv configuration
 #define TCP_TX_POST_TIMEOUT                             (30000)
 #define TCP_TX_BUF_SIZE                                 (256)
 #define TCP_RX_RECV_TIMEOUT                             (5000)
 #define TCP_RX_BUF_SIZE                                 (1024)
+
+// TCP re-connect time
+#define TCP_RECONN_TIME                                 (5000)
 
 // TCP host information (backup for retry connection)
 typedef struct S_CloudTcpHostInfo

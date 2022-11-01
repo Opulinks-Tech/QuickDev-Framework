@@ -39,7 +39,6 @@ Head Block of The File
 #include "cloud_config.h"
 #include "cloud_ctrl.h"
 #include "cloud_kernel.h"
-#include "cloud_http.h"
 #if defined(MAGIC_LED)
 #include "app_main.h"
 #include "ck_svc.h"
@@ -51,7 +50,12 @@ Head Block of The File
 #include "etharp.h"
 #include "evt_group.h"
 #include "hal_system.h"
+#include "httpclient_exp.h"
 #include "wifi_mngr_api.h"
+
+#if (CLOUD_TX_DATA_BACKUP_ENABLED == 1)
+#include "ring_buffer.h"
+#endif /* CLOUD_TX_DATA_BACKUP_ENABLED */
 
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
 
@@ -67,12 +71,12 @@ Declaration of Global Variables & Functions
 ********************************************/
 // Sec 4: declaration of global variable
 
-extern httpclient_t g_client;
+extern httpclient_exp_t g_client;
 
 // Queue priority g_stCloudRspQ > g_stKeepAliveQ > g_stIotRbData
-T_CloudRingBuf g_stCloudRspQ = {0};
-T_CloudRingBuf g_stKeepAliveQ = {0};
-T_CloudRingBuf g_stIotRbData = {0};
+T_RingBuf g_stCloudRspQ = {0};
+T_RingBuf g_stKeepAliveQ = {0};
+T_RingBuf g_stIotRbData = {0};
 
 uint8_t g_u8WaitingRspType = IOT_DATA_WAITING_TYPE_NONE;
 uint8_t g_u8PostRetry_KeepAlive_Cnt = 0;
@@ -228,11 +232,11 @@ void Cloud_TimerStop(T_CloudTimerIdx tTmrIdx)
 *
 *************************************************************************/
 #if defined(MAGIC_LED)
-#ifndef MAXLIAO
+#if 1
 static void Iot_Data_CloudDataPost(void)
 {
         //data from ring buffer
-    T_CloudRingBufData IoT_Properity;
+    T_RingBufData IoT_Properity;
     uint32_t ulTotalBodyLen=0;
     unsigned char iv[IV_SIZE + 1] = {0};
     unsigned char ucCbcEncData[BUFFER_SIZE];
@@ -248,7 +252,7 @@ static void Iot_Data_CloudDataPost(void)
 //    }
     
     // get the IoT data here, or the data are from *data and len parameters.
-    if (OPL_OK == Cloud_RingBufPop(&g_stIotRbData, &IoT_Properity))
+    if (OPL_OK == RingBuf_Pop(&g_stIotRbData, &IoT_Properity))
     // if (IOT_RB_DATA_OK == IoT_Ring_Buffer_Pop(&g_stIotRbData, &IoT_Properity))
     {
         
@@ -350,7 +354,7 @@ static void Iot_Data_CloudDataPost(void)
                     if(IoT_Properity.pu8Data!=NULL)
                         free(IoT_Properity.pu8Data);
 
-                    Cloud_RingBufReadIdxUpdate(&g_stIotRbData);
+                    RingBuf_ReadIdxUpdate(&g_stIotRbData);
                     // IoT_Ring_Buffer_ReadIdxUpdate(&g_stIotRbData);
                     
                     ws_sem_lock(osWaitForever);                    
@@ -407,7 +411,7 @@ static void Iot_Data_CloudDataPost(void)
         if(IoT_Properity.pu8Data!=NULL)
             free(IoT_Properity.pu8Data);
 
-        Cloud_RingBufReadIdxUpdate(&g_stIotRbData);
+        RingBuf_ReadIdxUpdate(&g_stIotRbData);
         // IoT_Ring_Buffer_ReadIdxUpdate(&g_stIotRbData);
 
         Cloud_MsgSend(CLOUD_EVT_TYPE_POST, NULL, 0);
@@ -419,7 +423,7 @@ static void Iot_Data_CloudDataPost(void)
 static void Iot_Data_CloudDataPost(void)
 {
     //data from ring buffer
-    T_CloudRingBufData IoT_Properity;
+    T_RingBufData IoT_Properity;
     
 //    if (IOT_RB_DATA_OK == IoT_Ring_Buffer_CheckEmpty(&g_stIotRbData))
 //    {   
@@ -428,7 +432,7 @@ static void Iot_Data_CloudDataPost(void)
 //    }
     
     // get the IoT data here, or the data are from *data and len parameters.
-    if (OPL_OK == Cloud_RingBufPop(&g_stIotRbData, &IoT_Properity))
+    if (OPL_OK == RingBuf_Pop(&g_stIotRbData, &IoT_Properity))
     {
         //printf("IoT_Properity.ubData[0]=%d\n", IoT_Properity.ubData[0]);    
         uint8_t u8aStatusBuf[BUFFER_SIZE]={0};
@@ -466,7 +470,7 @@ static void Iot_Data_CloudDataPost(void)
         //5. free the tx data from ring buffer
         // if ((u32Ret == IOT_DATA_POST_RET_CONTINUE_DELETE) || (u32Ret == IOT_DATA_POST_RET_STOP_DELETE))
         {
-            Cloud_RingBufReadIdxUpdate(&g_stIotRbData);
+            RingBuf_ReadIdxUpdate(&g_stIotRbData);
 
             if (IoT_Properity.pu8Data != NULL)
             {
@@ -486,7 +490,7 @@ static void Iot_Data_CloudDataPost(void)
 #elif defined(DOOR_SENSOR)
 static void Cloud_DataPost(void)
 {
-    T_CloudRingBufData tProperity = {0};
+    T_RingBufData tProperity = {0};
     uint32_t u32Ret;
 
     // send the data to cloud
@@ -496,10 +500,10 @@ static void Cloud_DataPost(void)
         true == Cloud_OnlineStatusGet())
     {
         //2. check ringbuffer is empty or not, get data from ring buffer
-        if (true == Cloud_RingBufCheckEmpty(&g_stIotRbData))
+        if (true == RingBuf_CheckEmpty(&g_stIotRbData))
             return;
 
-        if (OPL_OK != Cloud_RingBufPop(&g_stIotRbData, &tProperity))
+        if (OPL_OK != RingBuf_Pop(&g_stIotRbData, &tProperity))
             return;
 
         // check need waiting rx rsp
@@ -517,7 +521,7 @@ static void Cloud_DataPost(void)
         //5. free the tx data from ring buffer
         if ((u32Ret == IOT_DATA_POST_RET_CONTINUE_DELETE) || (u32Ret == IOT_DATA_POST_RET_STOP_DELETE))
         {
-            Cloud_RingBufReadIdxUpdate(&g_stIotRbData);
+            RingBuf_ReadIdxUpdate(&g_stIotRbData);
 
             if (tProperity.pu8Data != NULL)
             {
@@ -558,13 +562,13 @@ static void Cloud_WaitRxRspTimeoutHandler(void)
 
     if(IOT_DATA_WAITING_TYPE_KEEPALIVE == g_u8WaitingRspType)
     {
-        T_CloudRingBufData ptProperity;
+        T_RingBufData ptProperity;
 
-        if(false == Cloud_RingBufCheckEmpty(&g_stKeepAliveQ))
+        if(false == RingBuf_CheckEmpty(&g_stKeepAliveQ))
         // if (IOT_RB_DATA_OK != IoT_Ring_Buffer_CheckEmpty(&g_stKeepAliveQ))
         {
-            Cloud_RingBufPop(&g_stKeepAliveQ, &ptProperity);
-            Cloud_RingBufReadIdxUpdate(&g_stKeepAliveQ);
+            RingBuf_Pop(&g_stKeepAliveQ, &ptProperity);
+            RingBuf_ReadIdxUpdate(&g_stKeepAliveQ);
             // IoT_Ring_Buffer_Pop(&g_stKeepAliveQ , &ptProperity);
             // IoT_Ring_Buffer_ReadIdxUpdate(&g_stKeepAliveQ);
 
@@ -584,7 +588,7 @@ static void Cloud_WaitRxRspTimeoutHandler(void)
 #elif defined(DOOR_SENSOR)
 static void Cloud_WaitRxRspTimeoutHandler(void)
 {
-    T_CloudRingBufData ptProperity = {0};
+    T_RingBufData ptProperity = {0};
     uint16_t u16QueueCount = 0;
     uint8_t u8Discard = false;
 
@@ -610,10 +614,10 @@ static void Cloud_WaitRxRspTimeoutHandler(void)
                 g_u8PostRetry_KeepAlive_Fail_Round++;
                 ws_sem_unlock();
 
-                if (false == Cloud_RingBufCheckEmpty(&g_stKeepAliveQ))
+                if (false == RingBuf_CheckEmpty(&g_stKeepAliveQ))
                 {
-                    Cloud_RingBufPop(&g_stKeepAliveQ , &ptProperity);
-                    Cloud_RingBufReadIdxUpdate(&g_stKeepAliveQ);
+                    RingBuf_Pop(&g_stKeepAliveQ , &ptProperity);
+                    RingBuf_ReadIdxUpdate(&g_stKeepAliveQ);
 
                     if(ptProperity.pu8Data!=NULL)
                     {
@@ -648,7 +652,7 @@ static void Cloud_WaitRxRspTimeoutHandler(void)
             g_u8PostRetry_IotRbData_Cnt ++;
             ws_sem_unlock();
 
-            Cloud_RingBufGetQueueCount(&g_stIotRbData , &u16QueueCount);
+            RingBuf_QueueCount(&g_stIotRbData , &u16QueueCount);
 
             // OPL_LOG_INFO(CLOUD, "post retry cnt = %u", g_u8PostRetry_IotRbData_Cnt);
             // OPL_LOG_INFO(CLOUD, "WIFI Send data fail(%llu)", g_msgid);
@@ -679,10 +683,10 @@ static void Cloud_WaitRxRspTimeoutHandler(void)
                     u8Discard = true;
                     // OPL_LOG_INFO(CLOUD, "post cnt = %u discard", g_u8PostRetry_IotRbData_Cnt);
 
-                    if (false == Cloud_RingBufCheckEmpty(&g_stIotRbData))
+                    if (false == RingBuf_CheckEmpty(&g_stIotRbData))
                     {
-                        Cloud_RingBufPop(&g_stIotRbData , &ptProperity);
-                        Cloud_RingBufReadIdxUpdate(&g_stIotRbData);
+                        RingBuf_Pop(&g_stIotRbData , &ptProperity);
+                        RingBuf_ReadIdxUpdate(&g_stIotRbData);
 
                         if(ptProperity.pu8Data!=NULL)
                         {
@@ -706,10 +710,10 @@ static void Cloud_WaitRxRspTimeoutHandler(void)
                     u8Discard = true;
                     // OPL_LOG_INFO(CLOUD,"post cnt = %u discard", g_u8PostRetry_IotRbData_Cnt);
 
-                    if (false == Cloud_RingBufCheckEmpty(&g_stIotRbData))
+                    if (false == RingBuf_CheckEmpty(&g_stIotRbData))
                     {
-                        Cloud_RingBufPop(&g_stIotRbData , &ptProperity);
-                        Cloud_RingBufReadIdxUpdate(&g_stIotRbData);
+                        RingBuf_Pop(&g_stIotRbData , &ptProperity);
+                        RingBuf_ReadIdxUpdate(&g_stIotRbData);
 
                         if(ptProperity.pu8Data!=NULL)
                         {
@@ -944,9 +948,9 @@ fail:
     if (true == EG_StatusGet(g_tIotDataEventGroup, IOT_DATA_EVENT_BIT_POST_FAIL_RECONNECT))
     {
         uint16_t u16QueueCount = 0;
-        T_CloudRingBufData ptProperity = {0};
+        T_RingBufData ptProperity = {0};
 
-        Cloud_RingBufGetQueueCount(&g_stIotRbData , &u16QueueCount);
+        RingBuf_QueueCount(&g_stIotRbData , &u16QueueCount);
 
         ws_sem_lock(osWaitForever);
         g_u8PostRetry_IotRbData_Cnt ++;
@@ -959,10 +963,10 @@ fail:
                 u8Discard = true;
                 // OPL_LOG_INFO(CLOUD, "post cnt = %u discard", g_u8PostRetry_IotRbData_Cnt);
 
-                if (false == Cloud_RingBufCheckEmpty(&g_stIotRbData))
+                if (false == RingBuf_CheckEmpty(&g_stIotRbData))
                 {
-                    Cloud_RingBufPop(&g_stIotRbData , &ptProperity);
-                    Cloud_RingBufReadIdxUpdate(&g_stIotRbData);
+                    RingBuf_Pop(&g_stIotRbData , &ptProperity);
+                    RingBuf_ReadIdxUpdate(&g_stIotRbData);
 
                     if(ptProperity.pu8Data!=NULL)
                     {
@@ -997,10 +1001,10 @@ fail:
                 u8Discard = true;
                 // OPL_LOG_INFO(CLOUD, "post cnt = %u discard", g_u8PostRetry_IotRbData_Cnt);
 
-                if (false == Cloud_RingBufCheckEmpty(&g_stIotRbData))
+                if (false == RingBuf_CheckEmpty(&g_stIotRbData))
                 {
-                    Cloud_RingBufPop(&g_stIotRbData , &ptProperity);
-                    Cloud_RingBufReadIdxUpdate(&g_stIotRbData);
+                    RingBuf_Pop(&g_stIotRbData , &ptProperity);
+                    RingBuf_ReadIdxUpdate(&g_stIotRbData);
 
                     if(ptProperity.pu8Data!=NULL)
                     {
@@ -1194,9 +1198,9 @@ void Cloud_BindingHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 void Cloud_KeepAliveHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
     // 1. post keep alive data
-    T_CloudRingBufData stKeppAlive = {0}; //Keep alive has no data
+    T_RingBufData stKeppAlive = {0}; //Keep alive has no data
 
-    Cloud_RingBufPush(&g_stKeepAliveQ, &stKeppAlive);
+    RingBuf_Push(&g_stKeepAliveQ, &stKeppAlive);
 
     Cloud_MsgSend(CLOUD_EVT_TYPE_POST, NULL, 0);
 
@@ -1269,7 +1273,7 @@ void Cloud_PostHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 #endif
     {
         //Pri g_stCloudRspQ > g_stKeepAliveQ > g_stIotRbData
-        if(false == Cloud_RingBufCheckEmpty(&g_stCloudRspQ))
+        if(false == RingBuf_CheckEmpty(&g_stCloudRspQ))
         {
 #if defined(MAGIC_LED)
             uint8_t *u8CtrlSource = (uint8_t *)pData;
@@ -1281,11 +1285,11 @@ void Cloud_PostHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
         }
         else if (false == EG_StatusGet(g_tIotDataEventGroup, IOT_DATA_EVENT_BIT_WAITING_RX_RSP))
         {
-            if(false == Cloud_RingBufCheckEmpty(&g_stKeepAliveQ))
+            if(false == RingBuf_CheckEmpty(&g_stKeepAliveQ))
             {
                 Cloud_KeepAliveHandle();
             }
-            else if(false == Cloud_RingBufCheckEmpty(&g_stIotRbData))
+            else if(false == RingBuf_CheckEmpty(&g_stIotRbData))
             {
 #if defined(MAGIC_LED)
                 Iot_Data_CloudDataPost();
@@ -1315,9 +1319,9 @@ void Cloud_PostHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 void Cloud_BackupRingBufInit(void)
 {
     // initialize ring buffers
-    Cloud_RingBufInit(&g_stCloudRspQ, IOT_RB_CLOUD_RSP_COUNT);
-    Cloud_RingBufInit(&g_stKeepAliveQ, IOT_RB_KEEP_ALIVE_COUNT);
-    Cloud_RingBufInit(&g_stIotRbData, IOT_RB_COUNT);
+    RingBuf_Init(&g_stCloudRspQ, IOT_RB_CLOUD_RSP_COUNT);
+    RingBuf_Init(&g_stKeepAliveQ, IOT_RB_KEEP_ALIVE_COUNT);
+    RingBuf_Init(&g_stIotRbData, IOT_RB_COUNT);
 }
 
 /*************************************************************************
@@ -1339,7 +1343,7 @@ void Cloud_BackupRingBufInit(void)
 *************************************************************************/
 void Cloud_PostBackupHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
-    // 1. create your own scenario to post backup data by using RingBuf (Cloud_RingBuf___)
+    // 1. create your own scenario to post backup data by using RingBuf
 
     // 2. construct data for post (if required)
 

@@ -1,8 +1,6 @@
 #include "app_main.h"
-#include "httpclient.h"
 #include "infra_cjson.h"
 #include "coolkit_websocket.h"
-#include "cloud_http.h"
 #include "wifi_mngr_api.h"
 #include "mw_fim_default_group12_project.h"
 #include "cloud_ctrl.h"
@@ -11,17 +9,20 @@
 #include "mw_ota.h"
 #include "etharp.h"
 
+#include "httpclient_exp.h"
+
 #include "evt_group.h"
 #include "time_stmp.h"
 #include "qd_config.h"
 #include "qd_module.h"
+#include "ring_buffer.h"
 
 #if defined(MAGIC_LED)
 #include "cloud_cmd_data.h"
 #include "wifi_mngr_api.h"
 #endif
 
-extern httpclient_t g_client;
+extern httpclient_exp_t g_client;
 // extern osTimerId    g_tmr_req_date;
 
 int g_port = 0;
@@ -647,7 +648,7 @@ int Connect_coolkit_http(void)
     const uint8_t LEN = 128;
     int ret = -1;
     char URL[LEN] = {0};
-    httpclient_data_t client_data = {0};
+    httpclient_exp_data_t client_data = {0};
 
 
     g_client.timeout_ms = SSL_HANDSHAKE_TIMEOUT;
@@ -666,12 +667,15 @@ int Connect_coolkit_http(void)
     client_data.response_buf_len = LEN;
     client_data.is_chunked = true;
 
-    ret = HTTPCLIENT_ERROR_CONN;
+    ret = HTTPCLIENT_ERROR_CONN_T;
     // sprintf(URL, "https://as-dispd.coolkit.cc:443/dispatch/device");
     sprintf(URL , "https://%s%s" , g_tHostInfo.ubaHostInfoURL , g_tHostInfo.ubaHostInfoDIR);
+    
     printf("url:%s\n", URL);
-    ret = Cloud_Http_Get(&g_client, URL, &client_data);
-    if(HTTPCLIENT_OK == ret)
+    
+    ret = httpclient_exp_get(&g_client, URL, &client_data);
+    
+    if(HTTPCLIENT_OK_T == ret)
     {
         printf("client_data.response_buf:%.*s\n", client_data.response_buf_len, client_data.response_buf);
         if(CJSON_PARSE_OK == ParseCjson(client_data.response_buf, strlen(client_data.response_buf)))
@@ -695,7 +699,8 @@ Fail:
     {
         free(buf);
     }
-    Cloud_Http_Close(&g_client);
+
+    httpclient_exp_close(&g_client);
 
     Opl_Wifi_Skip_Dtim_Set(g_u16IotDtimTxUse, true);
 
@@ -849,7 +854,7 @@ int Connect_coolkit_wss(void)
     const unsigned char random_hash[20] = {0};
     unsigned char* base64 = NULL;
     size_t  nLen_base64 = 0;
-    T_CloudRingBufData stKeppAlive = {0}; //Keep alive has no data
+    T_RingBufData stKeppAlive = {0}; //Keep alive has no data
 
     sprintf(URL , "https://%s:%d/api/ws" , g_pSocket , g_port);
 
@@ -911,14 +916,14 @@ int Connect_coolkit_wss(void)
                     EG_StatusSet(g_tIotDataEventGroup, IOT_DATA_EVENT_BIT_WAITING_RX_RSP, false);
                     EG_StatusSet(g_tIotDataEventGroup, IOT_DATA_EVENT_BIT_LAST_POST_RETRY, false);
 
-                    Cloud_RingBufReset(&g_stCloudRspQ);
-                    Cloud_RingBufReset(&g_stKeepAliveQ);
+                    RingBuf_Reset(&g_stCloudRspQ);
+                    RingBuf_Reset(&g_stKeepAliveQ);
 
                     // when boot, need to query the time information at the 1st connection
                     if (false == EG_StatusGet(g_tIotDataEventGroup, IOT_DATA_EVENT_BIT_TIME_QUERY_WHEN_BOOT))
                     {
                         EG_StatusSet(g_tIotDataEventGroup, IOT_DATA_EVENT_BIT_TIME_QUERY_WHEN_BOOT, true);
-                        Cloud_RingBufPush(&g_stKeepAliveQ, &stKeppAlive);
+                        RingBuf_Push(&g_stKeepAliveQ, &stKeppAlive);
                     }
 
                     g_tcp_hdl_ID++;
@@ -936,7 +941,7 @@ int Connect_coolkit_wss(void)
                     g_u8PostRetry_IotRbData_Cnt = 0;
                     ws_sem_unlock();
 
-                    Cloud_RingBufReset(&g_stIotRbData);
+                    RingBuf_Reset(&g_stIotRbData);
 
 #if defined(DOOR_SENSOR)
                     APP_DoorSensorPostToCloud(TIMER_POST);

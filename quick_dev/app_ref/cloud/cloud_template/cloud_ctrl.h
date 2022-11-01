@@ -63,12 +63,217 @@ typedef enum E_CloudTimerIdx
     CLOUD_TMR_MAX,
 } T_CloudTimerIdx;
 
+typedef enum E_CloudStatus
+{
+    // user implement
+    // *
+    CLOUD_CB_STA_INIT_DONE = 0,
+    CLOUD_CB_STA_INIT_FAIL,
+    CLOUD_CB_STA_CONN_DONE,
+    CLOUD_CB_STA_CONN_FAIL,
+    CLOUD_CB_STA_RECONN_DONE,
+    CLOUD_CB_STA_DISCONN,
+    // *
+
+    CLOUD_CB_STA_MAX,
+} T_CloudStatus;
+
+//---- for event use ----//
+// cloud connction information
+typedef struct S_CloudConnInfo
+{
+    uint8_t u8AutoConn;                                 // cloud auto-connect after unsolicited disconnect event
+                                                        // <0> NOT do auto-connect after cloud disconnect (DEFAULT)
+                                                        // <1> do auto-connect after cloud disconnect
+
+    uint8_t u8Security;                                 // TLS or SSL connection security type (only activate if connection is a security type)
+                                                        // <0> MBEDTLS_SSL_VERIFY_NONE (DEFAULT)
+                                                        // <1> MBEDTLS_SSL_VERIFY_OPTIONAL
+                                                        // <2> MBEDTLS_SSL_VERIFY_REQUIRED
+                                                        // <3> MBEDTLS_SSL_VERIFY_UNSET
+
+    uint8_t u8aHostAddr[CLOUD_HOST_URL_LEN];            // host ip address or url address
+
+    uint16_t u16HostPort;                               // host port
+} T_CloudConnInfo;
+
+// cloud topic register information
+typedef struct S_CloudTopicRegInfo
+{
+    uint8_t u8TopicIndex;                               // topic index (range define to CLOUD_TOPIC_NUMBER in cloud_config.h)
+    uint8_t u8IsTopicRegisted;                          // register status
+    uint8_t u8aTopicName[CLOUD_TOPIC_NAME_LEN];         // topic name in string type
+    void *fpFunc;                                        // function pointer of callback
+} T_CloudTopicRegInfo;
+
+// cloud topic register information pointer
+typedef T_CloudTopicRegInfo *T_CloudTopicRegInfoPtr;
+
+// cloud payload format
+typedef struct S_CloudPayloadFmt
+{
+    uint8_t u8TopicIndex;                               // tx topic index (range define to CLOUD_TOPIC_NUMBER in cloud_config.h)
+    uint32_t u32PayloadLen;                             // payload lens
+    uint8_t u8aPayloadBuf[CLOUD_PAYLOAD_LEN];           // payload
+} T_CloudPayloadFmt;
+
 /********************************************
 Declaration of Global Variables & Functions
 ********************************************/
 // Sec 4: declaration of global variable
 
 // Sec 5: declaration of global function prototype
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_StatusCallbackRegister
+*
+* DESCRIPTION:
+*   register cloud status callback function
+*
+* PARAMETERS
+*   tCloudStatusCbFp :
+*                   [IN] function pointer
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_StatusCallbackRegister(T_CloudStatusCbFp tCloudStatusCbFp);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_TxTopicRegisterDyn
+*
+* DESCRIPTION:
+*   dynamice way to register tx topic
+*
+* PARAMETERS
+*   tCloudTopicRegInfo :
+*                   [IN] topic structure
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_TxTopicRegisterDyn(T_CloudTopicRegInfo *tCloudTopicRegInfo);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_TxTopicRegisterSta
+*
+* DESCRIPTION:
+*   static way to subscribe tx topic
+*
+* PARAMETERS
+*   tCloudTopicRegInfo :
+*                   [IN] topic structure
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_TxTopicRegisterSta(T_CloudTopicRegInfo *tCloudTopicRegInfo);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_TxTopicUnRegisterDyn
+*
+* DESCRIPTION:
+*   un-subscribe tx topic
+*
+* PARAMETERS
+*   u8TopicIndex :  [IN] topic index
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_TxTopicUnRegisterDyn(uint8_t u8TopicIndex);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RxTopicRegisterDyn
+*
+* DESCRIPTION:
+*   dynamice way to register rx topic
+*
+* PARAMETERS
+*   tCloudTopicRegInfo :
+*                   [IN] topic structure
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_RxTopicRegisterDyn(T_CloudTopicRegInfo *tCloudTopicRegInfo);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RxTopicRegisterSta
+*
+* DESCRIPTION:
+*   static way to register rx topic
+*
+* PARAMETERS
+*   tCloudTopicRegInfo :
+*                   [IN] topic structure
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_RxTopicRegisterSta(T_CloudTopicRegInfo *tCloudTopicRegInfo);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RxTopicUnRegisterDyn
+*
+* DESCRIPTION:
+*   un-subscribe rx topic
+*
+* PARAMETERS
+*   u8TopicIndex :  [IN] topic index
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_RxTopicUnRegisterDyn(uint8_t u8TopicIndex);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_TxTopicGet
+*
+* DESCRIPTION:
+*   get current tx topic global table
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   T_CloudTopicRegInfoPtr :
+*                   [OUT] pointer of global tx topic table
+*
+*************************************************************************/
+T_CloudTopicRegInfoPtr Cloud_TxTopicGet(void);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_RxTopicGet
+*
+* DESCRIPTION:
+*   get current rx topic global table
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   T_CloudTopicRegInfoPtr :
+*                   [OUT] pointer of global rx topic table
+*
+*************************************************************************/
+T_CloudTopicRegInfoPtr Cloud_RxTopicGet(void);
 
 /*************************************************************************
 * FUNCTION:

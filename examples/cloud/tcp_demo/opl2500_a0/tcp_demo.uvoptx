@@ -805,18 +805,6 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\quick_dev\app_ref\cloud\tcp_cloud\cloud_ota_http.c</PathWithFileName>
-      <FilenameWithoutPath>cloud_ota_http.c</FilenameWithoutPath>
-      <RteFlg>0</RteFlg>
-      <bShared>0</bShared>
-    </File>
-    <File>
-      <GroupNumber>12</GroupNumber>
-      <FileNumber>44</FileNumber>
-      <FileType>1</FileType>
-      <tvExp>0</tvExp>
-      <tvExpOptDlg>0</tvExpOptDlg>
-      <bDave2>0</bDave2>
       <PathWithFileName>..\..\..\..\quick_dev\app_ref\cloud\tcp_cloud\tcp_client\tcp_client.c</PathWithFileName>
       <FilenameWithoutPath>tcp_client.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
@@ -824,7 +812,7 @@
     </File>
     <File>
       <GroupNumber>12</GroupNumber>
-      <FileNumber>45</FileNumber>
+      <FileNumber>44</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>

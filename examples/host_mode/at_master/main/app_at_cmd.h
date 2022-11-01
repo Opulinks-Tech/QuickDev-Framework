@@ -81,12 +81,9 @@ Declaration of static Global Variables & Functions
 
 // Sec 7: declaration of static function prototype
 
-#if 0
 int AT_CmdFimWriteHandler(char *buf, int len, int mode);
 int AT_CmdFimReadHandler(char *buf, int len, int mode);
-#endif
 int AT_CmdSysCkCfgHandler(char *buf, int len, int mode);
-int AT_CmdOtaTestHandler(char *buf, int len, int mode);
 
 /***********
 C Functions

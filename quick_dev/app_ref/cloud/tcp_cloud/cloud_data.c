@@ -61,8 +61,6 @@ Declaration of static Global Variables & Functions
 uint8_t u8PostTemp[TCP_TX_BUF_SIZE] = {0};
 uint8_t u8RecvTemp[TCP_RX_BUF_SIZE] = {0};
 
-static uint32_t u32PostCount = 0;
-
 // Sec 7: declaration of static function prototype
 
 /***********
@@ -98,7 +96,7 @@ void Cloud_DataConstruct(uint8_t *pInData, uint32_t u32InDataLen, uint8_t *pOutD
     memset(u8PostTemp, 0, sizeof(u8PostTemp));
     memcpy(u8PostTemp, pInData, u32InDataLen);
 
-    *u32OutDataLen += sprintf((char *)pOutData, "{\"P\":\"%s%d\"}", cDataBuf, u32PostCount++);
+    *u32OutDataLen += sprintf((char *)pOutData, "{\"P\":\"%s\"}", cDataBuf);
 }
 
 /*************************************************************************
@@ -163,7 +161,7 @@ void Cloud_DataParser(uint8_t *pInData, uint32_t u32InDataLen)
     {
         if(0 != strstr(tRecv.value, (char *)u8PostTemp))
         {
-            Cloud_TimerStop(CLOUD_TMR_DATA_POST);
+            // Cloud_TimerStop(CLOUD_TMR_DATA_POST);
         }
     }
     else if(!lite_cjson_object_item(&tJson, "P", 1, &tPost))

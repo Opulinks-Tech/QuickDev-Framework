@@ -12,7 +12,7 @@
 /******************************************************************************
 *  Filename:
 *  ---------
-*  iot_data.c
+*  cloud_kernel.c
 *
 *  Project:
 *  --------
@@ -92,10 +92,6 @@ void Cloud_TxTaskHandler(void *args);
 void Cloud_TxTaskInit(void);
 void Cloud_RxTaskHandler(void *args);
 void Cloud_RxTaskInit(void);
-
-#if (CLOUD_TX_DATA_BACKUP_ENABLED == 1)
-void Cloud_RingBufInit(T_CloudRingBuf *ptCloudRingBuf, uint8_t u8QueueMaxCount);
-#endif /* CLOUD_TX_DATA_BACKUP_ENABLED */
 
 /***********
 C Functions
@@ -330,11 +326,6 @@ void Cloud_Init(T_CloudConnInfo *tCloudInitConnInfo)
     // init rb
 #if (CLOUD_TX_DATA_BACKUP_ENABLED == 1)
     Cloud_BackupRingBufInit();
-#endif
-
-    // init ota http task
-#if (CLOUD_OTA_ENABLED == 1)
-    Cloud_OtaTaskInit();
 #endif
 
     // trigger init handler

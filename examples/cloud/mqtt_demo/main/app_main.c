@@ -378,7 +378,9 @@ static void APP_EvtHandler_CloudConnectDoneInd(uint32_t u32EventId, void *pData,
     Cloud_RxTopicRegisterDyn(&tCloudTopicRegInfo);
 
     // start periodic timer to publish data
-    osTimerStart(g_tAppSysTimer, 20000);
+#if (MQTT_DEMO_PERI_POST_EN == 1)
+    osTimerStart(g_tAppSysTimer, MQTT_DEMO_PERI_POST_INTERVAL);
+#endif
 
     // stop ble advertise
     Opl_Ble_Stop_Req();
@@ -393,13 +395,17 @@ static void APP_EvtHandler_CloudConnectFailInd(uint32_t u32EventId, void *pData,
 static void APP_EvtHandler_CloudReconnectDoneInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
     // start periodic timer to publish data
-    osTimerStart(g_tAppSysTimer, 20000);
+#if (MQTT_DEMO_PERI_POST_EN == 1)
+    osTimerStart(g_tAppSysTimer, MQTT_DEMO_PERI_POST_INTERVAL);
+#endif
 }
 
 static void APP_EvtHandler_CloudDisconnectInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
     // stop periodic timer
+#if (MQTT_DEMO_PERI_POST_EN == 1)
     osTimerStop(g_tAppSysTimer);
+#endif
 }
 
 static void APP_EvtHandler_SysTimerTimeout(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
@@ -410,7 +416,7 @@ static void APP_EvtHandler_SysTimerTimeout(uint32_t u32EventId, void *pData, uin
     T_CloudPayloadFmt tCloudPayloadFmt;
 
     // ready the payload to send
-    char u8Payload[15] = "Hello MQTT!";
+    char u8Payload[9] = "HelloMQTT";
 
     tCloudPayloadFmt.u8TopicIndex = 1;
     tCloudPayloadFmt.u32PayloadLen = strlen(u8Payload);
@@ -795,6 +801,4 @@ void APP_MainInit(void)
     PS_EnterSmartSleep(5000);
 #endif
 
-    // start periodic timer
-    // osTimerStart(g_tAppSysTimer, 10000);
 }

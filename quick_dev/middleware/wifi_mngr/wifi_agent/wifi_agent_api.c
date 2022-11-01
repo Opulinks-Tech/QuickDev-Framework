@@ -156,12 +156,7 @@ uint32_t _WM_WaBeaconIntervalGet(void)
 *************************************************************************/
 T_OplErr WM_WaApInfoGet(wifi_ap_record_t *ptApRecord)
 {
-#if defined(OPL1000_A2) || defined(OPL1000_A3)
-    wpa_cli_getssid(ptApRecord->ssid);
-    wpa_cli_getbssid(ptApRecord->bssid);
-#elif defined(OPL2500_A0)
     wifi_sta_get_ap_info(ptApRecord);
-#endif
 
     return OPL_OK;
 }

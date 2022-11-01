@@ -1,5 +1,20 @@
 ## Release Version:
 State : RC
+Version : v0.2.3
+
+## Release Date: 2022/10/31
+
+## Descript
+1. Add http_ota example located at examples/ota folder to demonstrate the OTA procedure through HTTP protocol
+2. Add periodic data post after cloud connected scenario in tcp_demo and mqtt_demo examples
+3. Add opl2500_a0 type project in mqtt_demo example
+4. Re-organize the httpclient into httpclient_exp common module located at quick_dev/common/httpclient_exp
+5. Set default fim version as 0 in each example
+6. Remove default "at+ota" command in each example except http_ota example
+7. Modify the ring buffer related calling function to a correct APIs
+
+## Release Version:
+State : RC
 Version : v0.2.2
 
 ## Release Date: 2022/09/30

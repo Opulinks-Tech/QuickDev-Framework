@@ -34,6 +34,7 @@ Head Block of The File
 
 // Sec 1: Include File
 
+#include "log.h"
 #include "ring_buffer.h"
 
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
@@ -64,7 +65,7 @@ C Functions
 
 /*************************************************************************
 * FUNCTION:
-*   Cloud_RingBufPush
+*   RingBuf_Push
 *
 * DESCRIPTION:
 *   push data into ring buffer
@@ -117,7 +118,7 @@ done:
 
 /*************************************************************************
 * FUNCTION:
-*   Cloud_RingBufPop
+*   RingBuf_Pop
 *
 * DESCRIPTION:
 *   pop data from ring buffer
@@ -159,7 +160,7 @@ done:
 
 /*************************************************************************
 * FUNCTION:
-*   Cloud_RingBufReset
+*   RingBuf_Reset
 *
 * DESCRIPTION:
 *   clear all data in ring buffer
@@ -173,12 +174,12 @@ done:
 *************************************************************************/
 void RingBuf_Reset(T_RingBuf *ptRingBuf)
 {
-    T_CloudRingBufData ptRingBufData;
+    T_RingBufData ptRingBufData;
 
-    while (false == Cloud_RingBufCheckEmpty(ptRingBuf))
+    while (false == RingBuf_CheckEmpty(ptRingBuf))
     {
-        Cloud_RingBufPop(ptRingBuf, &ptRingBufData);
-        Cloud_RingBufReadIdxUpdate(ptRingBuf);
+        RingBuf_Pop(ptRingBuf, &ptRingBufData);
+        RingBuf_ReadIdxUpdate(ptRingBuf);
 
         if(ptRingBufData.pu8Data != NULL)
         {
@@ -191,7 +192,7 @@ void RingBuf_Reset(T_RingBuf *ptRingBuf)
 
 /*************************************************************************
 * FUNCTION:
-*   Cloud_RingBufReadIdxUpdate
+*   RingBuf_ReadIdxUpdate
 *
 * DESCRIPTION:
 *   update the read index of ring buffer (follow after ring buffer pop)
@@ -215,7 +216,7 @@ void RingBuf_ReadIdxUpdate(T_RingBuf *ptRingBuf)
 
 /*************************************************************************
 * FUNCTION:
-*   Cloud_RingBufCheckEmpty
+*   RingBuf_CheckEmpty
 *
 * DESCRIPTION:
 *   check ring buffer is empty
@@ -247,7 +248,7 @@ bool RingBuf_CheckEmpty(T_RingBuf *ptRingBuf)
 
 /*************************************************************************
 * FUNCTION:
-*   Cloud_RingBufCheckFull
+*   RingBuf_CheckFull
 *
 * DESCRIPTION:
 *   check ring buffer is full
@@ -283,7 +284,7 @@ bool RingBuf_CheckFull(T_RingBuf *ptRingBuf)
 
 /*************************************************************************
 * FUNCTION:
-*   Cloud_RingBufGetQueueCount
+*   RingBuf_QueueCount
 *
 * DESCRIPTION:
 *   get current queue count of ring buffer
@@ -307,7 +308,7 @@ void RingBuf_QueueCount(T_RingBuf *ptRingBuf, uint16_t *u16QueueCount)
 
 /*************************************************************************
 * FUNCTION:
-*   Cloud_RingBufInit
+*   RingBuf_Init
 *
 * DESCRIPTION:
 *   ring buffer initiate function
@@ -331,7 +332,7 @@ void RingBuf_Init(T_RingBuf *ptRingBuf, uint8_t u8QueueMaxCount)
 
     if(NULL == ptRingBuf->tRbSemaphoreId)
     {
-        OPL_LOG_ERRO(CLOUD, "Create RB sempahore fail");
+        OPL_LOG_ERRO(RB, "Create RB sempahore fail");
     }
 
     osSemaphoreWait(ptRingBuf->tRbSemaphoreId, osWaitForever);
@@ -340,7 +341,7 @@ void RingBuf_Init(T_RingBuf *ptRingBuf, uint8_t u8QueueMaxCount)
     ptRingBuf->u32QueueMaxCount = u8QueueMaxCount;
     ptRingBuf->u32ReadIdx = 0;
     ptRingBuf->u32WriteIdx = 0;
-    ptRingBuf->tCloudRingBufData = (T_RingBufData *)malloc(sizeof(T_RingBufData) * u8QueueMaxCount);
+    ptRingBuf->tRingBufData = (T_RingBufData *)malloc(sizeof(T_RingBufData) * u8QueueMaxCount);
  
     osSemaphoreRelease(ptRingBuf->tRbSemaphoreId);
 

@@ -48,14 +48,6 @@ extern "C" {
 #define CLOUD_TX_DATA_BACKUP_ENABLED                    (1)
 #endif
 
-// WI-FI ota enable (OTA_ENABLE and OTA_Init() must required)
-#ifndef CLOUD_OTA_ENABLED
-#define CLOUD_OTA_ENABLED                               (1)
-#endif
-
-// OTA default download url
-#define CLOUD_OTA_DEF_URL                               ("http://192.168.0.100/ota.bin")
-
 // tx task watchdog reset time
 #define SW_RESET_TIME                                   (300000) //ms
 

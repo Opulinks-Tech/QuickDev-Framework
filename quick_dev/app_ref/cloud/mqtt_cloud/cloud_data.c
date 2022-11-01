@@ -35,7 +35,6 @@ Head Block of The File
 // Sec 1: Include File
 
 #include "cloud_data.h"
-#include "cloud_kernel.h"
 
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
 
@@ -80,7 +79,7 @@ C Functions
 *   none
 *
 *************************************************************************/
-__weak void Cloud_DataConstruct(uint8_t *pInData, uint32_t u32InDataLen, uint8_t *pOutData, uint32_t *u32OutDataLen)
+void Cloud_DataConstruct(uint8_t *pInData, uint32_t u32InDataLen, uint8_t *pOutData, uint32_t *u32OutDataLen)
 {
     // user implement
     // 1. construct post data
@@ -101,7 +100,7 @@ __weak void Cloud_DataConstruct(uint8_t *pInData, uint32_t u32InDataLen, uint8_t
 *   none
 *
 *************************************************************************/
-__weak void Cloud_DataParser(uint8_t *pInData, uint32_t u32InDataLen)
+void Cloud_DataParser(uint8_t *pInData, uint32_t u32InDataLen)
 {
     // user implement
     // 1. handle data parser

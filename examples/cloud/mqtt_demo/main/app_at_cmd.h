@@ -84,7 +84,6 @@ Declaration of static Global Variables & Functions
 int AT_CmdFimWriteHandler(char *buf, int len, int mode);
 int AT_CmdFimReadHandler(char *buf, int len, int mode);
 int AT_CmdSysCkCfgHandler(char *buf, int len, int mode);
-int AT_CmdOtaTestHandler(char *buf, int len, int mode);
 int AT_CmdSmartSleepHandler(char *buf, int len, int mode);
 
 /***********

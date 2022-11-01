@@ -35,7 +35,6 @@ Head Block of The File
 // Sec 1: Include File
 
 #include "cloud_data.h"
-#include "cloud_kernel.h"
 
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
 

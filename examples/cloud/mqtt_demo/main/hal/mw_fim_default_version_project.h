@@ -42,14 +42,14 @@ Declaration of data structure
 /*
 FIM version
 */
-#define MW_FIM_VER11_PROJECT            0x07    // 0x00 ~ 0xFF
-#define MW_FIM_VER12_PROJECT            0x07    // 0x00 ~ 0xFF
-#define MW_FIM_VER13_PROJECT            0x03    // 0x00 ~ 0xFF
-#define MW_FIM_VER14_PROJECT            0x02    // 0x00 ~ 0xFF
-#define MW_FIM_VER15_PROJECT            0x03    // 0x00 ~ 0xFF
-#define MW_FIM_VER16_PROJECT            0x01    // 0x00 ~ 0xFF
-#define MW_FIM_VER17_PROJECT            0x04    // 0x00 ~ 0xFF
-#define MW_FIM_VER18_PROJECT            0x03    // 0x00 ~ 0xFF
+#define MW_FIM_VER11_PROJECT            0x00    // 0x00 ~ 0xFF
+#define MW_FIM_VER12_PROJECT            0x00    // 0x00 ~ 0xFF
+#define MW_FIM_VER13_PROJECT            0x00    // 0x00 ~ 0xFF
+#define MW_FIM_VER14_PROJECT            0x00    // 0x00 ~ 0xFF
+#define MW_FIM_VER15_PROJECT            0x00    // 0x00 ~ 0xFF
+#define MW_FIM_VER16_PROJECT            0x00    // 0x00 ~ 0xFF
+#define MW_FIM_VER17_PROJECT            0x00    // 0x00 ~ 0xFF
+#define MW_FIM_VER18_PROJECT            0x00    // 0x00 ~ 0xFF
 
 
 /********************************************

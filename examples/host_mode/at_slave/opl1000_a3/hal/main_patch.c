@@ -52,14 +52,8 @@ Head Block of The File
 #include "hal_vic.h"
 #include "hal_wdt.h"
 #include "boot_sequence.h"
-#if defined(OPL1000_A2) || defined(OPL1000_A3)
 #include "at_cmd_common_patch.h"
 #include "ps_patch.h"
-#elif defined(OPL2500_A0)
-#include "at_cmd_common.h"
-#include "freertos_cmsis.h"
-#include "ps.h"
-#endif
 
 #include "app_main.h"
 #include "mw_fim_default_version_project.h"
@@ -144,18 +138,11 @@ void __Patch_EntryPoint(void)
     MwFim_FlashLayoutUpdate = Main_FlashLayoutUpdate;
     
     // the initial of driver part for cold and warm boot
-#if defined(OPL1000_A2)
-    Sys_MiscDriverConfigSetup = Main_MiscDriverConfigSetup;
-#elif defined(OPL1000_A3)
     Sys_MiscModulesInit = Main_MiscDriverConfigSetup;
-#elif defined(OPL2500_A0)    
-    Sys_MiscModulesInit = Main_MiscDriverConfigSetup;
-#endif
     
     // update the switch AT UART / dbg UART function
     at_cmd_switch_uart1_dbguart = Main_AtUartDbgUartSwitch;
 
-#if defined(OPL1000_A2) || defined(OPL1000_A3)
     // modify the heap size, from g_ucaMemPartAddr to 0x44F000
     // u32Addr = SCT_PATCH_START + SCT_PATCH_LEN from .sct file
     u32Addr = 0x004164a0 + 0x00020160;
@@ -164,10 +151,6 @@ void __Patch_EntryPoint(void)
     g_ulMemPartTotalSize = 0x44F000 - u32Addr;
 
     Sys_SetUnsuedSramEndBound(u32Addr);
-#elif defined(OPL2500_A0)
-    osHeapAssign(APS_HEAP_START, APS_HEAP_LENGTH);
-    //Sys_SetUnsuedSramEndBound(0x43E000);
-#endif
     
     // application init
     Sys_AppInit = Main_AppInit_patch;

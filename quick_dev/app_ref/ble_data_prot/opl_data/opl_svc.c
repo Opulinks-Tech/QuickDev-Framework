@@ -421,7 +421,7 @@ static T_OplErr OPL_Svc_GattDispatchHandler(MESSAGEID tId, MESSAGE tMsg)
         }
 
         case LE_GATT_MSG_NOTIFY_CFM:
-        {
+        {					
             Opl_Ble_Send_Message(OPL_SVC_EVT_SEND_TO_PEER_CFM, NULL, 0, 0);
             break;
         }

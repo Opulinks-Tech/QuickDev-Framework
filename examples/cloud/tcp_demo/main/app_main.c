@@ -39,6 +39,7 @@ Head Block of The File
 #include "app_at_cmd.h"
 #include "ble_mngr.h"
 #include "cmsis_os.h"
+#include "cloud_ctrl.h"
 #include "cloud_kernel.h"
 #include "opl_data_prot.h"
 #include "opl_data_hdl.h"
@@ -200,6 +201,36 @@ void APP_BleUnsolicitedCallback(uint16_t u16EvtType, T_OplErr tEvtRst, uint8_t *
     }
 }
 
+static void APP_CloudStatusCallback(T_CloudStatus tCloudStatus, void *pData, uint32_t u32DataLen)
+{
+    switch(tCloudStatus)
+    {
+        case CLOUD_CB_STA_INIT_DONE:
+        case CLOUD_CB_STA_INIT_FAIL:
+            break;
+        case CLOUD_CB_STA_CONN_DONE:
+        {
+            APP_SendMessage(APP_EVT_CLOUD_CONNECT_IND, pData, u32DataLen);
+            break;
+        }
+        case CLOUD_CB_STA_CONN_FAIL:
+        case CLOUD_CB_STA_RECONN_DONE:
+            break;
+        case CLOUD_CB_STA_DISCONN:
+        {
+            APP_SendMessage(APP_EVT_CLOUD_DISCONNECT_IND, pData, u32DataLen);
+            break;
+        }
+        case CLOUD_CB_STA_RECV_IND:
+        {
+            APP_SendMessage(APP_EVT_CLOUD_RECV_IND, pData, u32DataLen);
+            break;
+        }
+        default:
+            break;
+    }
+}
+
 static void APP_SysTimerTimeoutHandler(void const *argu)
 {
     APP_SendMessage(APP_EVT_SYS_TIMER_TIMEOUT, NULL, 0);
@@ -287,12 +318,24 @@ static void APP_EvtHandler_NetworkReset(uint32_t u32EventId, void *pData, uint32
 
 static void APP_EvtHandler_CloudConnectInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
-    // nothing to do
+    // stop ble advertising
+    Opl_Ble_Stop_Req();
+
+    // start periodic timer
+#if (TCP_DEMO_PERI_POST_EN == 1)
+    osTimerStart(g_tAppSysTimer, TCP_DEMO_PERI_POST_INTERVAL);
+#endif
 }
 
 static void APP_EvtHandler_CloudDisconnectInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
-    // nothing to do
+    // start ble advertising
+    Opl_Ble_Start_Req(true);
+
+    // stop periodic timer
+#if (TCP_DEMO_PERI_POST_EN == 1)
+    osTimerStop(g_tAppSysTimer);
+#endif
 }
 
 static void APP_EvtHandler_CloudRecvInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
@@ -302,7 +345,15 @@ static void APP_EvtHandler_CloudRecvInd(uint32_t u32EventId, void *pData, uint32
 
 static void APP_EvtHandler_SysTimerTimeout(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
+    uint8_t u8PostData[8] = "HelloTCP";
 
+    T_CloudPayloadFmt tCloudPayloadFmt = {0};
+
+    tCloudPayloadFmt.u8TopicIndex = 0; //topic not used in tcp cloud
+    tCloudPayloadFmt.u32PayloadLen = sizeof(u8PostData);
+    memcpy(tCloudPayloadFmt.u8aPayloadBuf, u8PostData, tCloudPayloadFmt.u32PayloadLen);
+
+    Cloud_MsgSend(CLOUD_EVT_TYPE_POST, (uint8_t *)&tCloudPayloadFmt, sizeof(T_CloudPayloadFmt));
 }
 
 //////////////////////////////////// 
@@ -474,8 +525,13 @@ void APP_NetInit(void)
 
 void APP_CldInit(void)
 {
-    // user implement
+    // initialize cloud status callback
+    Cloud_StatusCallbackRegister(APP_CloudStatusCallback);
+
+    // initialize cloud
     Cloud_Init();
+
+    // user implement
 }
 
 void APP_UserAtInit(void)
@@ -669,6 +725,4 @@ void APP_MainInit(void)
     PS_EnterSmartSleep(5000);
 #endif
 
-    // start periodic timer
-    // osTimerStart(g_tAppSysTimer, 10000);
 }

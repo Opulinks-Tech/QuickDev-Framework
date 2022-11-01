@@ -40,6 +40,10 @@ Head Block of The File
 #include "log.h"
 #include "opl_err.h"
 
+#if (CLOUD_TX_DATA_BACKUP_ENABLED == 1)
+#include "ring_buffer.h"
+#endif /* CLOUD_TX_DATA_BACKUP_ENABLED */
+
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
 
 #ifndef __CLOUD_CTRL_H__
@@ -105,9 +109,9 @@ Declaration of Global Variables & Functions
 ********************************************/
 // Sec 4: declaration of global variable
 
-extern T_CloudRingBuf g_stCloudRspQ;
-extern T_CloudRingBuf g_stKeepAliveQ;
-extern T_CloudRingBuf g_stIotRbData;
+extern T_RingBuf g_stCloudRspQ;
+extern T_RingBuf g_stKeepAliveQ;
+extern T_RingBuf g_stIotRbData;
 
 extern uint8_t g_u8WaitingRspType;
 extern uint8_t g_u8PostRetry_KeepAlive_Cnt;

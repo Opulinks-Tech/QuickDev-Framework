@@ -152,8 +152,7 @@ void APP_BleUnsolicitedCallback(uint16_t u16EvtType, T_OplErr tEvtRst, uint8_t *
     switch(u16EvtType)
     {
         case USLCTED_CB_EVT_BLE_INIT:
-        {       
-            printf("!!!BLE Init\r\n");
+        {
             // initialize ble advertise data
             APP_BleAdvDataInit();
 
@@ -164,28 +163,24 @@ void APP_BleUnsolicitedCallback(uint16_t u16EvtType, T_OplErr tEvtRst, uint8_t *
         }
         case USLCTED_CB_EVT_BLE_ENT_ADVERTISE:
         {
-            printf("!!!BLE Ent Adv\r\n");
             APP_SendMessage(APP_EVT_BLE_START_ADV, NULL, 0);
 
             break;
         }
         case USLCTED_CB_EVT_BLE_EXI_ADVERTISE:
         {
-            printf("!!!BLE Exi Adv\r\n");
             APP_SendMessage(APP_EVT_BLE_STOP_ADV, NULL, 0);
 
             break;
         }
         case USLCTED_CB_EVT_BLE_CONNECTED:
         {
-            printf("!!!BLE Connected\r\n");
             APP_SendMessage(APP_EVT_BLE_CONNECTED, pu8Data, u32DataLen);
 
             break;
         }
         case USLCTED_CB_EVT_BLE_DISCONNECT:
         {
-            printf("!!!BLE Disconnect\r\n");
             APP_SendMessage(APP_EVT_BLE_DISCONNECTED, NULL, 0);
 
             break;
@@ -353,8 +348,6 @@ void APP_BleScanRspDataInit(void)
                                               u8aBleMac[4],
                                               u8aBleMac[5]);
 
-    printf("ble adv name %s\r\n", u8aBleName);
-
     u8BleNameLen = strlen(u8aBleName);
 
     au8BleScanRspData[0] = (u8BleNameLen + 1);
@@ -428,8 +421,6 @@ void APP_TaskInit(void)
 
     // user implement
 }
-
-// qd_app/app_main.c
 
 void APP_BleInit(void)
 {

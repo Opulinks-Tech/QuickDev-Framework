@@ -551,8 +551,6 @@ void APP_BleScanRspDataInit(void)
                                               u8aBleMac[4],
                                               u8aBleMac[5]);
 
-    printf("ble adv name %s\r\n", u8aBleName);
-
     u8BleNameLen = strlen(u8aBleName);
 
     au8BleScanRspData[0] = (u8BleNameLen + 1);
@@ -620,8 +618,6 @@ void APP_TaskInit(void)
 
     // user implement
 }
-
-// qd_app/app_main.c
 
 void APP_BleInit(void)
 {

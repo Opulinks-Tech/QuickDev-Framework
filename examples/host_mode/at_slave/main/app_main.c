@@ -42,7 +42,6 @@ Head Block of The File
 #include "cloud_ctrl.h"
 #include "cloud_config.h"
 #include "cloud_kernel.h"
-#include "cloud_ota_http.h"
 #include "opl_data_prot.h"
 #include "opl_data_hdl.h"
 #include "opl_svc.h"
@@ -195,6 +194,11 @@ void APP_NmUnsolicitedCallback(T_NmUslctdEvtType tEvtType, uint8_t *pu8Data, uin
 
             g_u8WifiStatus = 1;
 
+#if defined(HOST_MODE_MQTT)
+            // set network up (for cloud to checking wifi connection)
+            Cloud_NetworkStatusSet(true);
+#endif
+
             break;
         }
         case NM_USLCTD_EVT_NETWORK_DOWN:
@@ -203,6 +207,11 @@ void APP_NmUnsolicitedCallback(T_NmUslctdEvtType tEvtType, uint8_t *pu8Data, uin
 
             g_u8WifiStatus = 0;
 
+#if defined(HOST_MODE_MQTT)
+            // set network down (for cloud to checking wifi connection)
+            Cloud_NetworkStatusSet(false);
+#endif
+
             break;
         }
         case NM_USLCTD_EVT_NETWORK_RESET:
@@ -210,6 +219,11 @@ void APP_NmUnsolicitedCallback(T_NmUslctdEvtType tEvtType, uint8_t *pu8Data, uin
             APP_SendMessage(APP_EVT_NETWORK_RESET_IND, NULL, 0);
 
             g_u8WifiStatus = 0;
+
+#if defined(HOST_MODE_MQTT)
+            // set network down (for cloud to checking wifi connection)
+            Cloud_NetworkStatusSet(false);
+#endif
 
             break;
         }
@@ -278,6 +292,46 @@ void APP_BleUnsolicitedCallback(uint16_t u16EvtType, T_OplErr tEvtRst, uint8_t *
         }
     }
 }
+
+void APP_CloudStatusCallback(T_CloudStatus tCloudStatus, void *pData, uint32_t u32DataLen)
+{
+    switch(tCloudStatus)
+    {
+        case CLOUD_CB_STA_INIT_DONE:
+        case CLOUD_CB_STA_INIT_FAIL:
+            break;
+        case CLOUD_CB_STA_CONN_DONE:
+        {
+            APP_SendMessage(APP_EVT_CLOUD_CONNECT_IND, NULL, 0);
+            break;
+        }
+        case CLOUD_CB_STA_CONN_FAIL:
+        case CLOUD_CB_STA_RECONN_DONE:
+            break;
+        case CLOUD_CB_STA_DISCONN:
+        {
+            APP_SendMessage(APP_EVT_CLOUD_DISCONNECT_IND, NULL, 0);
+            break;
+        }
+#if defined(HOST_MODE_TCP)
+        case CLOUD_CB_STA_RECV_IND:
+        {
+            APP_SendMessage(APP_EVT_CLOUD_RECV_IND, pData, u32DataLen);
+            break;
+        }
+#elif defined(HOST_MODE_MQTT)
+        case CLOUD_CB_STA_SUB_DONE:
+        case CLOUD_CB_STA_SUB_FAIL:
+        case CLOUD_CB_STA_UNSUB_DONE:
+        case CLOUD_CB_STA_UNSUB_FAIL:
+        case CLOUD_CB_STA_PUB_DONE:
+        case CLOUD_CB_STA_PUB_FAIL:
+#endif
+        default:
+            break;
+    }
+}
+
 
 void APP_NmScanDoneIndCallback(T_OplErr tEvtRst)
 {
@@ -842,8 +896,6 @@ void APP_BleScanRspDataInit(void)
                                               u8aBleMac[4],
                                               u8aBleMac[5]);
 
-    printf("ble adv name %s\r\n", u8aBleName);
-
     u8BleNameLen = strlen(u8aBleName);
 
     au8BleScanRspData[0] = (u8BleNameLen + 1);
@@ -925,8 +977,6 @@ void APP_TaskInit(void)
     // user implement
 }
 
-// qd_app/app_main.c
-
 void APP_BleInit(void)
 {
     // assign unsolicited callback function
@@ -955,8 +1005,24 @@ void APP_NetInit(void)
 
 void APP_CldInit(void)
 {
-    // user implement
+    // initialize cloud status callback
+    Cloud_StatusCallbackRegister(APP_CloudStatusCallback);
+
+#if defined(HOST_MODE_TCP)
+    // initialize cloud
     Cloud_Init();
+
+#elif defined(HOST_MODE_MQTT)
+    // initialize cloud connect information
+    T_CloudConnInfo tCloudConnInfo;
+
+    tCloudConnInfo.u8AutoConn = 1;
+    tCloudConnInfo.u8Security = 0;
+    tCloudConnInfo.u16HostPort = MQTT_HOST_PORT;
+    strcpy((char *)tCloudConnInfo.u8aHostAddr, MQTT_HOST_URL);
+
+    Cloud_Init(&tCloudConnInfo);
+#endif
 }
 
 void APP_UserAtInit(void)

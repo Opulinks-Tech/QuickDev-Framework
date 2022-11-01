@@ -416,7 +416,7 @@ void APP_HostModeDemoProgress(T_HostModeAckCmdList tHostModeAckCmdIdx, uint8_t *
 #if defined(HOST_MODE_TCP)
             strcpy((char *)tHostModeReqCmdFmt.u8aPayload, "1,192.168.0.100,8883");
 #elif defined(HOST_MODE_MQTT)
-            strcpy((char *)tHostModeReqCmdFmt.u8aPayload, "1,broker.emqx.io,8883");
+            strcpy((char *)tHostModeReqCmdFmt.u8aPayload, "1");
 #endif
 
             tHostModeReqCmdFmt.u16PayloadLen = strlen((char *)tHostModeReqCmdFmt.u8aPayload);
@@ -434,7 +434,25 @@ void APP_HostModeDemoProgress(T_HostModeAckCmdList tHostModeAckCmdIdx, uint8_t *
             break;
         }
         case AT_CMD_ACK_WIFI_STATUS:
+        	break;
         case AT_CMD_ACK_CLOUD_CONNECT:
+        {
+            // register tx topic
+
+#if defined(HOST_MODE_TCP)
+            // start sleep slave timer after 1s
+            osTimerStart(g_tAppSleepSlaveTimer, 1000);
+#elif defined(HOST_MODE_MQTT)
+            // register tx topic
+            strcpy((char *)tHostModeReqCmdFmt.u8aPayload, "1,MQTT/TEST/PUB/1");
+            tHostModeReqCmdFmt.u16PayloadLen = strlen((char *)tHostModeReqCmdFmt.u8aPayload);
+            tHostModeReqCmdFmt.tHostModeReqCmdIdx = AT_CMD_REQ_CLOUD_TX_TOPIC;
+            tHostModeReqCmdFmt.tAtMode = AT_CMD_MODE_SET;
+
+            u8NeedToSend = 1;
+#endif
+            break;
+        }
         case AT_CMD_ACK_CLOUD_DISCONNECT:
         case AT_CMD_ACK_CLOUD_KEEPALIVE_INTERVAL:
         case AT_CMD_ACK_CLOUD_TX_TOPIC:
@@ -451,28 +469,11 @@ void APP_HostModeDemoProgress(T_HostModeAckCmdList tHostModeAckCmdIdx, uint8_t *
 
         case AT_CMD_ACK_OK:
         {
-            if(g_tHostModeBackupReqCmdIdx == AT_CMD_REQ_CLOUD_CONN)
+            if(g_tHostModeBackupReqCmdIdx == AT_CMD_REQ_CLOUD_TX_TOPIC)
             {
-                // wait cloud real connected
-                osDelay(5000);
-
-#if defined(HOST_MODE_TCP)
-                // start sleep slave timer after 1s
-                osTimerStart(g_tAppSleepSlaveTimer, 1000);
-#elif defined(HOST_MODE_MQTT)
-                // register tx topic
-                strcpy((char *)tHostModeReqCmdFmt.u8aPayload, "1,MQTT/TEST/PUB/1");
-                tHostModeReqCmdFmt.u16PayloadLen = strlen((char *)tHostModeReqCmdFmt.u8aPayload);
-                tHostModeReqCmdFmt.tHostModeReqCmdIdx = AT_CMD_REQ_CLOUD_TX_TOPIC;
-                tHostModeReqCmdFmt.tAtMode = AT_CMD_MODE_SET;
-
-                u8NeedToSend = 1;
-#endif
-            }
-            else if(g_tHostModeBackupReqCmdIdx == AT_CMD_REQ_CLOUD_TX_TOPIC)
-            {
-#if defined(HOST_MODE_MQTT)
                 // register rx topic
+
+#if defined(HOST_MODE_MQTT)
                 strcpy((char *)tHostModeReqCmdFmt.u8aPayload, "1,MQTT/TEST/SUB/1");
                 tHostModeReqCmdFmt.u16PayloadLen = strlen((char *)tHostModeReqCmdFmt.u8aPayload);
                 tHostModeReqCmdFmt.tHostModeReqCmdIdx = AT_CMD_REQ_CLOUD_RX_TOPIC;

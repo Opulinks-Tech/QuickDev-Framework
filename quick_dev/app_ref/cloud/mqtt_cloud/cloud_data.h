@@ -75,7 +75,7 @@ Declaration of Global Variables & Functions
 *   none
 *
 *************************************************************************/
-__weak void Cloud_DataConstruct(uint8_t *pInData, uint32_t u32InDataLen, uint8_t *pOutData, uint32_t *u32OutDataLen);
+void Cloud_DataConstruct(uint8_t *pInData, uint32_t u32InDataLen, uint8_t *pOutData, uint32_t *u32OutDataLen);
 
 /*************************************************************************
 * FUNCTION:
@@ -92,7 +92,7 @@ __weak void Cloud_DataConstruct(uint8_t *pInData, uint32_t u32InDataLen, uint8_t
 *   none
 *
 *************************************************************************/
-__weak void Cloud_DataParser(uint8_t *pInData, uint32_t u32InDataLen);
+void Cloud_DataParser(uint8_t *pInData, uint32_t u32InDataLen);
 
 /***************************************************
 Declaration of static Global Variables & Functions

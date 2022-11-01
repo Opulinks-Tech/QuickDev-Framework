@@ -53,6 +53,7 @@ Head Block of The File
 #include "ota_mngr.h"
 #include "qd_config.h"
 #include "qd_module.h"
+#include "ring_buffer.h"
 #if defined(MAGIC_LED)
 #include "cloud_cmd_data.h"
 #include "evt_group.h"
@@ -897,7 +898,7 @@ static void CK_DataProtocol_AppHostInfo(uint16_t type, uint8_t *data, int len)
     //if cloud is connected, do cloud disconnect first then execute cloud connection
     Cloud_MsgSend(CLOUD_EVT_TYPE_DISCONNECT, NULL, 0);
 
-    Cloud_RingBufReset(&g_stIotRbData);
+    RingBuf_Reset(&g_stIotRbData);
 
     // BleWifi_COM_EventStatusSet(g_tAppCtrlEventGroup, APP_CTRL_EVENT_BIT_WAIT_UPDATE_HOST, false);
 

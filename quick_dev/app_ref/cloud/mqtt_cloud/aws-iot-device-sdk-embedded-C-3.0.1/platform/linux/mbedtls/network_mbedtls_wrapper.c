@@ -37,6 +37,7 @@ extern "C" {
 
 
 #include "cloud_config.h"
+#include "qd_config.h"
 
 #ifdef BLEWIFI_CONNECT_NON_BLOCKING
 #include "netdb.h"
@@ -279,34 +280,63 @@ IoT_Error_t iot_tls_connect(Network *pNetwork, TLSConnectParams *params) {
 
 	IOT_DEBUG("  . Loading the CA root certificate ...");
     //Goter, need to fix  //change to mbedtls_x509_crt_parse( mbedtls_x509_crt *chain, const unsigned char *buf, size_t buflen )
-    //ret = mbedtls_x509_crt_parse_file(&(tlsDataParams->cacert), pNetwork->tlsConnectParams.pRootCALocation);
-    //ret = mbedtls_x509_crt_parse(&(tlsDataParams->cacert), (const unsigned char *) ssl_client_ca_crt, sizeof(ssl_client_ca_crt ));
-    if(ret < 0) {
-		IOT_ERROR(" failed\n  !  mbedtls_x509_crt_parse returned -0x%x while parsing root cert\n\n", -ret);
-		return NETWORK_X509_ROOT_CRT_PARSE_ERROR;
+    // ret = mbedtls_x509_crt_parse_file(&(tlsDataParams->cacert), pNetwork->tlsConnectParams.pRootCALocation);
+    // ret = mbedtls_x509_crt_parse(&(tlsDataParams->cacert), (const unsigned char *) ssl_client_ca_crt, sizeof(ssl_client_ca_crt ));
+    // if(ret < 0) {
+	// 	IOT_ERROR(" failed\n  !  mbedtls_x509_crt_parse returned -0x%x while parsing root cert %d\n\n", -ret, strlen(pNetwork->tlsConnectParams.pRootCALocation));
+	// 	return NETWORK_X509_ROOT_CRT_PARSE_ERROR;
+	// }
+	if(pNetwork->tlsConnectParams.pRootCALocation != NULL)
+	{
+		ret = mbedtls_x509_crt_parse(&(tlsDataParams->cacert), (const unsigned char *)pNetwork->tlsConnectParams.pRootCALocation, strlen(pNetwork->tlsConnectParams.pRootCALocation) + 1);
+
+		if(ret < 0) {
+			IOT_ERROR(" failed\n  !  mbedtls_x509_crt_parse returned -0x%x while parsing root cert %d\n\n", -ret, strlen(pNetwork->tlsConnectParams.pRootCALocation));
+			return NETWORK_X509_ROOT_CRT_PARSE_ERROR;
+		}
 	}
+
 	IOT_DEBUG(" ok (%d skipped)\n", ret);
 
 	IOT_DEBUG("  . Loading the client cert. and key...");
     //Goter, need to fix
-#if 0
-	//ret = mbedtls_x509_crt_parse_file(&(tlsDataParams->clicert), pNetwork->tlsConnectParams.pDeviceCertLocation);
-    ret = mbedtls_x509_crt_parse(&(tlsDataParams->clicert), (const unsigned char *)g_tAWSDeviceCertPEM.CertPEM, sizeof(g_tAWSDeviceCertPEM.CertPEM));
-    if(ret != 0) {
-		IOT_ERROR(" failed\n  !  mbedtls_x509_crt_parse returned -0x%x while parsing device cert\n\n", -ret);
-		return NETWORK_X509_DEVICE_CRT_PARSE_ERROR;
+#if 1
+	// ret = mbedtls_x509_crt_parse_file(&(tlsDataParams->clicert), pNetwork->tlsConnectParams.pDeviceCertLocation);
+    // ret = mbedtls_x509_crt_parse(&(tlsDataParams->clicert), (const unsigned char *)g_tAWSDeviceCertPEM.CertPEM, sizeof(g_tAWSDeviceCertPEM.CertPEM));
+    // if(ret != 0) {
+	// 	IOT_ERROR(" failed\n  !  mbedtls_x509_crt_parse returned -0x%x while parsing device cert\n\n", -ret);
+	// 	return NETWORK_X509_DEVICE_CRT_PARSE_ERROR;
+	// }
+	if(pNetwork->tlsConnectParams.pDeviceCertLocation != NULL)
+	{
+		ret = mbedtls_x509_crt_parse(&(tlsDataParams->clicert), (const unsigned char *)pNetwork->tlsConnectParams.pDeviceCertLocation, strlen(pNetwork->tlsConnectParams.pDeviceCertLocation) + 1);
+		if(ret != 0) {
+			IOT_ERROR(" failed\n  !  mbedtls_x509_crt_parse returned -0x%x while parsing device cert\n\n", -ret);
+			return NETWORK_X509_DEVICE_CRT_PARSE_ERROR;
+		}
 	}
+	
     //Goter, need to fix
     //DLL_TLS_API int mbedtls_pk_parse_key(mbedtls_pk_context *ctx,
     //                                 const unsigned char *key, size_t keylen,
     //                                 const unsigned char *pwd, size_t pwdlen);
-	//ret = mbedtls_pk_parse_keyfile(&(tlsDataParams->pkey), pNetwork->tlsConnectParams.pDevicePrivateKeyLocation, "");
-    ret = mbedtls_pk_parse_key(&(tlsDataParams->pkey), (const unsigned char *)g_tAWSDevicePrivateKeys.PrivateKey, sizeof(g_tAWSDevicePrivateKeys.PrivateKey), NULL, NULL);
-    if(ret != 0) {
-		IOT_ERROR(" failed\n  !  mbedtls_pk_parse_key returned -0x%x while parsing private key\n\n", -ret);
-		IOT_DEBUG(" path : %s ", pNetwork->tlsConnectParams.pDevicePrivateKeyLocation);
-		return NETWORK_PK_PRIVATE_KEY_PARSE_ERROR;
+	// ret = mbedtls_pk_parse_keyfile(&(tlsDataParams->pkey), pNetwork->tlsConnectParams.pDevicePrivateKeyLocation, "");
+    // ret = mbedtls_pk_parse_key(&(tlsDataParams->pkey), (const unsigned char *)g_tAWSDevicePrivateKeys.PrivateKey, sizeof(g_tAWSDevicePrivateKeys.PrivateKey), NULL, NULL);
+	// if(ret != 0) {
+	// 	IOT_ERROR(" failed\n  !  mbedtls_pk_parse_key returned -0x%x while parsing private key\n\n", -ret);
+	// 	IOT_DEBUG(" path : %s ", pNetwork->tlsConnectParams.pDevicePrivateKeyLocation);
+	// 	return NETWORK_PK_PRIVATE_KEY_PARSE_ERROR;
+	// }
+	if(pNetwork->tlsConnectParams.pDevicePrivateKeyLocation != NULL)
+	{
+		ret = mbedtls_pk_parse_key(&(tlsDataParams->pkey), (const unsigned char *)pNetwork->tlsConnectParams.pDevicePrivateKeyLocation, strlen(pNetwork->tlsConnectParams.pDevicePrivateKeyLocation) + 1, NULL, NULL);
+		if(ret != 0) {
+			IOT_ERROR(" failed\n  !  mbedtls_pk_parse_key returned -0x%x while parsing private key\n\n", -ret);
+			IOT_DEBUG(" path : %s ", pNetwork->tlsConnectParams.pDevicePrivateKeyLocation);
+			return NETWORK_PK_PRIVATE_KEY_PARSE_ERROR;
+		}
 	}
+
 #endif
 	IOT_DEBUG(" ok\n");
 	snprintf(portBuffer, 6, "%d", pNetwork->tlsConnectParams.DestinationPort);
@@ -365,13 +395,24 @@ IoT_Error_t iot_tls_connect(Network *pNetwork, TLSConnectParams *params) {
 	mbedtls_ssl_conf_rng(&(tlsDataParams->conf), mbedtls_ctr_drbg_random, &(tlsDataParams->ctr_drbg));
 
 	mbedtls_ssl_conf_ca_chain(&(tlsDataParams->conf), &(tlsDataParams->cacert), NULL);
+
 #if 0
 	if((ret = mbedtls_ssl_conf_own_cert(&(tlsDataParams->conf), &(tlsDataParams->clicert), &(tlsDataParams->pkey))) !=
 	   0) {
 		IOT_ERROR(" failed\n  ! mbedtls_ssl_conf_own_cert returned %d\n\n", ret);
 		return SSL_CONNECTION_ERROR;
 	}
+#else
+	if(pNetwork->tlsConnectParams.pDeviceCertLocation != NULL && pNetwork->tlsConnectParams.pDevicePrivateKeyLocation != NULL)
+	{
+		if((ret = mbedtls_ssl_conf_own_cert(&(tlsDataParams->conf), &(tlsDataParams->clicert), &(tlsDataParams->pkey))) != 0) 
+		{
+			IOT_ERROR(" failed\n  ! mbedtls_ssl_conf_own_cert returned %d\n\n", ret);
+			return SSL_CONNECTION_ERROR;
+		}
+	}
 #endif
+
 	mbedtls_ssl_conf_read_timeout(&(tlsDataParams->conf), pNetwork->tlsConnectParams.timeout_ms);
 
 	/* Use the AWS IoT ALPN extension for MQTT if port 443 is requested. */
@@ -392,12 +433,22 @@ IoT_Error_t iot_tls_connect(Network *pNetwork, TLSConnectParams *params) {
 		return SSL_CONNECTION_ERROR;
 	}
 	IOT_DEBUG("\n\nSSL state connect : %d ", tlsDataParams->ssl.state);
+#if 1
+	mbedtls_ssl_set_bio(&(tlsDataParams->ssl), &(tlsDataParams->server_fd), mbedtls_net_send, mbedtls_net_recv,
+						mbedtls_net_recv_timeout);
+#else
 	mbedtls_ssl_set_bio(&(tlsDataParams->ssl), &(tlsDataParams->server_fd), mbedtls_net_send, NULL,
 						mbedtls_net_recv_timeout);
+#endif
 	IOT_DEBUG(" ok\n");
 
 	IOT_DEBUG("\n\nSSL state connect : %d ", tlsDataParams->ssl.state);
 	IOT_DEBUG("  . Performing the SSL/TLS handshake...");
+
+#if 1
+	sys_cfg_clk_set(SYS_CFG_CLK_143_MHZ);
+#endif
+
 	while((ret = mbedtls_ssl_handshake(&(tlsDataParams->ssl))) != 0) {
 		if(ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
 			IOT_ERROR(" failed\n  ! mbedtls_ssl_handshake returned -0x%x\n", -ret);
@@ -409,9 +460,15 @@ IoT_Error_t iot_tls_connect(Network *pNetwork, TLSConnectParams *params) {
 							  "    Alternatively, you may want to use "
 							  "auth_mode=optional for testing purposes.\n");
 			}
+#if 1
+			sys_cfg_clk_set(SYS_CFG_CLK_RATE);
+#endif
 			return SSL_CONNECTION_ERROR;
 		}
 	}
+#if 1
+	sys_cfg_clk_set(SYS_CFG_CLK_RATE);
+#endif
 
 	IOT_DEBUG(" ok\n    [ Protocol is %s ]\n    [ Ciphersuite is %s ]\n", mbedtls_ssl_get_version(&(tlsDataParams->ssl)),
 		  mbedtls_ssl_get_ciphersuite(&(tlsDataParams->ssl)));

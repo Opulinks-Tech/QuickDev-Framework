@@ -729,10 +729,8 @@ static T_OplErr WM_WaDisconnectIndicateHandler(T_FsmState tFsmState, T_FsmEvent 
     // reason 255 which means the wifi low layer timeout, back to idle state and call unsolicited callback
     if(255 == u8Reason)
     {
-#if defined(OPL1000_A2) || defined(OPL1000_A3)
         // reset wifi
         wifi_reset();
-#endif
 
         FSM_StateChange(&g_tWaFsmDef, WA_ST_IDLE);
 

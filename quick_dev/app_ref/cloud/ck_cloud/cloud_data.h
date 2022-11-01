@@ -40,6 +40,10 @@ Head Block of The File
 #include "log.h"
 #include "opl_err.h"
 
+#if (CLOUD_TX_DATA_BACKUP_ENABLED == 1)
+#include "ring_buffer.h"
+#endif /* CLOUD_TX_DATA_BACKUP_ENABLED */
+
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
 
 #ifndef __CLOUD_DATA_H__
@@ -207,7 +211,7 @@ void Cloud_DataConstruct(uint8_t *pInData, uint32_t u32InDataLen, uint8_t *pOutD
 *   int8_t :        [OUT] cloud send result
 *
 *************************************************************************/
-int8_t Cloud_ConstructPostDataAndSend(T_CloudRingBufData *ptProperity);
+int8_t Cloud_ConstructPostDataAndSend(T_RingBufData *ptProperity);
 
 /*************************************************************************
 * FUNCTION:
