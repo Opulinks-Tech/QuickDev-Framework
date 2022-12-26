@@ -49,9 +49,14 @@ Head Block of The File
 #include "pwr_save.h"
 #include "rf_pwr.h"
 #include "wifi_mngr_api.h"
+#include "app_at_cmd.h"
+#include "ble_gap_if.h"
+#include "ble_hci_if.h"
+#include "wifi_agent.h"
+#include "ps_public.h"
 
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
-
+#define BleAdvIntvTransform     (1.6)
 /********************************************
 Declaration of data structure
 ********************************************/
@@ -73,6 +78,13 @@ osThreadId g_tAppTaskId;
 osMessageQId g_tAppQueueId;
 osTimerId g_tAppSysTimer;
 
+#if (OPL_DATA_CURRENT_MEASURE_ENABLED == 1)
+osTimerId g_tAppWakeupTimer;
+bool bBleUserPC = false; // User want to impl power consumption test 
+uint8_t g_u8SleepModeStatus;
+T_BlePCStruct g_tPcStruct = {0};
+#endif
+
 static T_AppEvtHandlerTbl g_tAppEvtHandlerTbl[] = 
 {
     {APP_EVT_BLE_START_ADV,                 APP_EvtHandler_BleStartAdv},
@@ -80,7 +92,10 @@ static T_AppEvtHandlerTbl g_tAppEvtHandlerTbl[] =
     {APP_EVT_BLE_CONNECTED,                 APP_EvtHandler_BleConnected},
     {APP_EVT_BLE_DISCONNECTED,              APP_EvtHandler_BleDisconnected},
     {APP_EVT_BLE_DATA_IND,                  APP_EvtHandler_BleDataInd},
-
+#if (OPL_DATA_CURRENT_MEASURE_ENABLED == 1)
+    {APP_EVT_BLE_POWER_CONSUMPTION,         APP_EvtHandler_BlePowerConsumptionInd}, 
+    {APP_EVT_WAKEUP_TIMER_START,            APP_EvtHandler_WakeUp},  
+#endif
     {APP_EVT_NETWORK_UP,                    APP_EvtHandler_NetworkUp},
     {APP_EVT_NETWORK_DOWN,                  APP_EvtHandler_NetworkDown},
     {APP_EVT_NETWORK_RESET,                 APP_EvtHandler_NetworkReset},
@@ -91,6 +106,12 @@ static T_AppEvtHandlerTbl g_tAppEvtHandlerTbl[] =
 };
 
 // Sec 7: declaration of static function prototype
+
+#if (OPL_DATA_CURRENT_MEASURE_ENABLED == 1)
+static void Ble_Para_Set(uint16_t u16BleAdv_itvl);
+static T_OplErr SkipDtimSet(uint32_t SkipDtim);
+static void APP_Sleep_Check(void);
+#endif
 
 void APP_BleAdvDataInit(void);
 void APP_BleScanRspDataInit(void);
@@ -107,6 +128,7 @@ C Functions
 ***********/
 // Sec 8: C Functions
 
+
 // indicate callback for each type request
 
 //////////////////////////////////// 
@@ -114,6 +136,19 @@ C Functions
 //////////////////////////////////// 
 
 // add your callback function here
+
+#if (OPL_DATA_CURRENT_MEASURE_ENABLED == 1)
+static void APP_WakeupCb(PS_WAKEUP_TYPE type)
+{
+    APP_SendMessage(APP_EVT_WAKEUP_TIMER_START, NULL, 0);
+}
+
+static void APP_WakeupTimeoutHandler(void const *argu)
+{
+    OPL_LOG_INFO(APP, "Timer Sleep");
+    ps_timer_sleep(g_tPcStruct.u32SleepTime);
+}
+#endif
 
 void APP_NmUnsolicitedCallback(T_NmUslctdEvtType tEvtType, uint8_t *pu8Data, uint32_t u32DataLen)
 {
@@ -239,12 +274,100 @@ static void APP_EvtHandler_BleConnected(uint32_t u32EventId, void *pData, uint32
 static void APP_EvtHandler_BleDisconnected(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
     OPL_LOG_INFO(APP, "BLE disconnected");
+
+#if (OPL_DATA_CURRENT_MEASURE_ENABLED == 1)
+    if(true == bBleUserPC)
+    {
+        APP_Sleep_Check();    
+    }
+#endif    
 }
 
 static void APP_EvtHandler_BleDataInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
     OPL_DataRecvHandler(pData, (uint16_t)u32DataLen);
 }
+
+#if (OPL_DATA_CURRENT_MEASURE_ENABLED == 1)
+static void APP_EvtHandler_BlePowerConsumptionInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
+{
+    memcpy(&g_tPcStruct, pData, u32DataLen);
+
+    switch(g_tPcStruct.u8SleepMode)
+    {
+        case SMART_SLEEP:
+        {
+            //Turn off BLE
+            if(OPL_OK == Opl_Ble_Stop_Req()) //wait response
+            {
+                OPL_LOG_INFO(APP, "BLE Off Request Success");
+            }
+            else
+            {
+                OPL_LOG_INFO(APP, "BLE Off Request Fail");
+                return;
+            }
+
+            break;
+        }
+        
+        case TIMER_SLEEP:
+        {
+            //Turn off BLE
+            if(OPL_OK == Opl_Ble_Stop_Req()) //wait response OK
+            {
+                OPL_LOG_INFO(APP, "BLE Off Request Success");
+            }
+            else
+            {
+                OPL_LOG_INFO(APP, "BLE Off Request Fail");
+                return;
+            }
+
+            //Turn off Wi-Fi  //wait response OK
+            if(OPL_OK == Opl_Wifi_AC_Disable_Req(true, NULL))
+            {
+                OPL_LOG_INFO(APP, "Wi-Fi Off Request Success");
+            }
+            else
+            {
+                OPL_LOG_INFO(APP, "Wi-Fi Off Request Fail");
+                return;
+            }
+
+            break;
+        }
+
+        case DEEP_SLEEP:
+        {
+            //Turn off BLE
+            if(OPL_OK == Opl_Ble_Stop_Req()) //wait response OK
+            {
+                OPL_LOG_INFO(APP, "BLE Off Request Success");
+            }
+            else
+            {
+                OPL_LOG_INFO(APP, "BLE Off Request Fail");
+                return;
+            }
+
+            //Turn off Wi-Fi  //wait response OK
+            if(OPL_OK == Opl_Wifi_AC_Disable_Req(true, NULL))
+            {
+                OPL_LOG_INFO(APP, "Wi-Fi Off Request Success");
+            }
+            else
+            {
+                OPL_LOG_INFO(APP, "Wi-Fi Off Request Fail");
+                return;
+            }
+
+            break;
+        }        
+    }
+    bBleUserPC = true; //User request current management flag 
+}
+#endif /*OPL_DATA_CURRENT_MEASURE_ENABLED*/
 
 static void APP_EvtHandler_NetworkUp(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
@@ -269,12 +392,27 @@ static void APP_EvtHandler_NetworkUp(uint32_t u32EventId, void *pData, uint32_t 
 static void APP_EvtHandler_NetworkDown(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
     OPL_LOG_INFO(APP, "Network disconnected");
+
+#if (OPL_DATA_CURRENT_MEASURE_ENABLED == 1)
+    if(true == bBleUserPC)
+    {
+        APP_Sleep_Check();    
+    }
+#endif
 }
 
 static void APP_EvtHandler_NetworkReset(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
     OPL_LOG_INFO(APP, "Network reset");
 }
+
+#if (OPL_DATA_CURRENT_MEASURE_ENABLED == 1)
+static void APP_EvtHandler_WakeUp(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
+{
+    OPL_LOG_INFO(APP, "Wakeup time = %d", g_tPcStruct.u32WakeupTime);
+    osTimerStart(g_tAppWakeupTimer, g_tPcStruct.u32WakeupTime);
+}
+#endif
 
 static void APP_EvtHandler_SysTimerTimeout(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
@@ -286,6 +424,151 @@ static void APP_EvtHandler_SysTimerTimeout(uint32_t u32EventId, void *pData, uin
 ////////////////////////////////////
 
 // add your application function here
+#if (OPL_DATA_CURRENT_MEASURE_ENABLED == 1)
+static void APP_Sleep_Check(void)
+{
+    switch(g_tPcStruct.u8SleepMode)
+    {
+        case SMART_SLEEP:
+        {
+            if(BM_ST_IDLE == Opl_Ble_EntityGet()->u16CurrentState) //Maybe not check BLE IDLE
+            {
+                SkipDtimSet(g_tPcStruct.u32DtimPeriod);
+
+                //Check Ble adv on/off
+                if(g_tPcStruct.u8BleAdvOnOff)
+                {
+                    //Transform ble adv intv for ble spec (Because g_tPcStruct.u16BleAdvIntv (unit is 1ms)) 
+                    g_tPcStruct.u16BleAdvIntv = g_tPcStruct.u16BleAdvIntv * BleAdvIntvTransform;
+                    
+                    //Set BLE adv parameter
+                    Ble_Para_Set(g_tPcStruct.u16BleAdvIntv);
+
+                    OPL_LOG_INFO(APP, "BLE ADV ON");
+                    Opl_Ble_Start_Req(true);    
+                }
+
+                //Enter smart sleep directly
+                OPL_LOG_INFO(APP, "Smart Sleep");
+                ps_smart_sleep(1); 
+            }
+            
+            break;
+        }
+
+        case TIMER_SLEEP:
+        {
+            //Check BLE & Wi-Fi module are both Idle
+            if(BM_ST_IDLE == Opl_Ble_EntityGet()->u16CurrentState && WA_ST_IDLE == WM_WaFsmDefGet()->ptFsmStateInfo.tCurrentState)
+            {
+                osTimerDef_t tTimerDef;
+
+                tTimerDef.ptimer = APP_WakeupTimeoutHandler;
+                g_tAppWakeupTimer = osTimerCreate(&tTimerDef, osTimerOnce, NULL);
+                if(g_tAppWakeupTimer == NULL)
+                {
+                    OPL_LOG_ERRO(APP, "Create timer fail");
+                }
+                ps_smart_sleep(false); //turn off smart sleep to avoid simultaneous operation
+                ps_set_wakeup_cb(APP_WakeupCb);
+                OPL_LOG_INFO(APP, "Timer Sleep");
+                ps_timer_sleep(g_tPcStruct.u32SleepTime);
+
+                break;
+            }
+            else
+            {
+                return;
+            }
+        }
+
+        case DEEP_SLEEP:
+        {
+            //Check BLE & Wi-Fi module are both Idle
+            if(BM_ST_IDLE == Opl_Ble_EntityGet()->u16CurrentState && WA_ST_IDLE == WM_WaFsmDefGet()->ptFsmStateInfo.tCurrentState)
+            {
+                OPL_LOG_INFO(APP, "Deep Sleep"); 
+                ps_smart_sleep(false); //turn off smart sleep to avoid simultaneous operation
+                ps_deep_sleep();
+
+                break;
+            }
+            else
+            {
+                return;
+            }
+        }
+    }
+
+    bBleUserPC          = false;
+}
+
+static void Ble_Para_Set(uint16_t u16BleAdv_itvl)
+{
+    LE_GAP_ADVERTISING_PARAM_T para;
+
+    para.interval_min = u16BleAdv_itvl;
+    para.interval_max = u16BleAdv_itvl;
+    para.type = LE_HCI_ADV_TYPE_ADV_IND;
+    para.own_addr_type = LE_HCI_OWN_ADDR_PUBLIC;
+    para.peer_addr_type = LE_HCI_ADV_PEER_ADDR_PUBLIC;
+    MemSet(para.peer_addr, 0, 6);
+    para.channel_map = 0x7;
+    para.filter_policy = LE_HCI_ADV_FILT_NONE;
+
+
+    printf("Min_intv=%d, Max_intv=%d\n", para.interval_min, para.interval_max);
+    LeGapSetAdvParameter(&para);
+}
+
+static T_OplErr SkipDtimSet(uint32_t SkipDtim)
+{
+    uint32_t u32DtimInterval = 0;
+    uint32_t u32BeaconInterval = 0;
+    wifi_scan_info_t tInfo;
+
+    // get the information of Wifi AP
+    if(0 != wifi_sta_get_ap_info(&tInfo))
+    {
+        //WM_LOG_ERRO("Get AP info fail");
+    }
+
+    // beacon time (ms)
+    u32BeaconInterval = tInfo.beacon_interval * tInfo.dtim_period;
+
+    OPL_LOG_INFO(APP, "Beacon intvl %d", u32BeaconInterval);
+
+    // error handle
+    if (u32BeaconInterval == 0)
+    {
+        u32BeaconInterval = 100;
+    }
+
+    //set dtim
+    u32DtimInterval = (SkipDtim + (u32BeaconInterval / 2)) / u32BeaconInterval;
+
+    if(u32DtimInterval > 0)
+    {
+        u32DtimInterval = u32DtimInterval - 1;
+    }
+
+    if (u32DtimInterval > 255)
+    {
+        u32DtimInterval = 255;
+    }
+
+    OPL_LOG_INFO(APP, "Dtim intvl %d", u32DtimInterval);
+    
+    if (0 != wifi_config_set_skip_dtim(u32DtimInterval, false))
+    {
+        //WM_LOG_ERRO("Dtim skip intvl set fail");
+
+        return OPL_ERR;
+    }
+
+    return OPL_OK;
+}
+#endif /*OPL_DATA_CURRENT_MEASURE_ENABLED*/
 
 void APP_BleAdvDataInit(void)
 {

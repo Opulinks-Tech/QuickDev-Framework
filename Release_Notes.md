@@ -1,5 +1,17 @@
 ## Release Version:
 State : RC
+Version : v0.2.4
+
+## Release Date: 2022/12/26
+
+## Descript
+1. Modify pin configuration file of opl2500_a0 project in each example for fitting in newest opl2500 EVB
+2. Modify Makefile that can using GNU make to compile example program (Currently only support on qd_app)
+3. Add build.bat (windows) and build.sh (linux) script file for easy to compiling code via GNU make
+4. Current measurement function supported on qd_app (Compiler option "OPL_DATA_CURRENT_MEASURE_ENABLED" must required, default 0)
+
+## Release Version:
+State : RC
 Version : v0.2.3
 
 ## Release Date: 2022/10/31

@@ -54,6 +54,10 @@ Head Block of The File
 #include "qd_module.h"
 #include "wifi_mngr_api.h"
 
+#if (OPL_DATA_CURRENT_MEASURE_ENABLED == 1)
+#include "wifi_agent.h"
+#endif 
+
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
 
 #if (OPL_DATA_ENABLED == 1)
@@ -63,6 +67,17 @@ Head Block of The File
 
 #define MAC2STR(a) (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5]
 #define MACSTR "%02x:%02x:%02x:%02x:%02x:%02x"
+
+#if (OPL_DATA_CURRENT_MEASURE_ENABLED == 1)
+#define DTIM_PERIOD_MIN           100     //minimum Wi-Fi skip dtim (ms)
+#define DTIM_PERIOD_MAX           3000    //maximum Wi-Fi skip dtim (ms)
+#define BLE_ADV_INTEVAL_MIN     20     //minimum BLE advertise interval (ms)
+#define BLE_ADV_INTEVAL_MAX     1000    //maximum BLE advertise interval (ms)
+#define BLE_SLEEP_TIMER_MIN     15      //minimum timer sleep sleep time (ms)
+#define BLE_SLEEP_TIMER_MAX     150000  //maximum timer sleep sleep time (ms)
+#define BLE_WAKEUP_TIMER_MIN    0      //minimum timer sleep wakeup time (ms)
+#define BLE_WAKEUP_TIMER_MAX    1000  //maximum timer sleep wakeup time (ms)
+#endif
 
 // #define AES_BLOCK_SIZE  (16)                 //for CBC
 
@@ -123,6 +138,7 @@ static T_OplDataEventTable g_tOplDataEventHandlerTbl[] =
     {OPL_DATA_REQ_ENG_MAC_SRC_WRITE,         OPL_DataProtocol_EngMacSrcWrite},
     {OPL_DATA_REQ_ENG_MAC_SRC_READ,          OPL_DataProtocol_EngMacSrcRead},
 
+    {OPL_DATA_REQ_ENG_POWER_CONSUMPTION,     OPL_DataProtocol_EngPowerConsumtion}, 
     {0xFFFFFFFF,                            NULL},
 };
 
@@ -143,6 +159,37 @@ static void OPL_DataProtocolProc(uint16_t type, uint8_t *data, int len);
 C Functions
 ***********/
 // Sec 8: C Functions
+
+#if (OPL_DATA_CURRENT_MEASURE_ENABLED == 1)
+static T_OplErr _OPL_QueryDeviceInfo(void) 
+{
+    T_OplErr tRet = OPL_ERR;
+    uint8_t u8aIp[4];
+    wifi_scan_info_t stInfo; 
+    struct netif *iface = netif_find("st1");
+    const uint8_t u8aNoIp[4] = {0};
+    const uint8_t u8aNoBssid[6] = {0}; 
+
+    u8aIp[0] = (iface->ip_addr.u_addr.ip4.addr >> 0) & 0xFF;
+    u8aIp[1] = (iface->ip_addr.u_addr.ip4.addr >> 8) & 0xFF;
+    u8aIp[2] = (iface->ip_addr.u_addr.ip4.addr >> 16) & 0xFF;
+    u8aIp[3] = (iface->ip_addr.u_addr.ip4.addr >> 24) & 0xFF;
+
+    // get ap info
+    Opl_Wifi_ApInfo_Get((wifi_ap_record_t *)&stInfo);
+
+    //Wi-Fi connected & Got Ip 
+    if(memcmp(stInfo.bssid, u8aNoBssid, 6) != 0 && memcmp(u8aIp, u8aNoIp, 4) != 0)
+    {
+        tRet = OPL_OK;
+    }
+    else
+    {
+        tRet = OPL_ERR;
+    }
+    return tRet;
+}
+#endif /*OPL_DATA_CURRENT_MEASURE_ENABLED*/
 
 static void _OPL_DataWifiSendDeviceInfo(T_WmDeviceInfo *dev_info)
 {
@@ -925,6 +972,112 @@ done:
     {
         OPL_DataSendResponse(OPL_DATA_RSP_ENG_MAC_SRC_READ, 1);
     }
+}
+
+
+static void OPL_DataProtocol_EngPowerConsumtion(uint16_t type, uint8_t *data, int len)
+{
+#if (OPL_DATA_CURRENT_MEASURE_ENABLED == 1)
+    OPL_LOG_DEBG(OPL, "OPL_DATA_REQ_ENG_POWER_CONSUMPTION");
+    T_OplErr tRet = OPL_ERR; //For YC Test 20221124
+    T_OplErr tQuery = OPL_ERR;
+    bool bQueryFlag = false;
+    T_BlePCStruct tPcStruct = {0};
+    
+
+    memcpy(&tPcStruct, data, len);
+
+    //For YC Test 20221124
+    OPL_LOG_INFO(APP, "u8SleepMode %d",     tPcStruct.u8SleepMode);
+    OPL_LOG_INFO(APP, "u8BleAdvOnOff %d",   tPcStruct.u8BleAdvOnOff);
+    OPL_LOG_INFO(APP, "u16BleAdvIntv %d",   tPcStruct.u16BleAdvIntv);
+    OPL_LOG_INFO(APP, "u32DtimPeriod %d",   tPcStruct.u32DtimPeriod);
+    OPL_LOG_INFO(APP, "u32SleepTime %d",    tPcStruct.u32SleepTime);
+    OPL_LOG_INFO(APP, "u32WakeupTime %d",   tPcStruct.u32WakeupTime);
+
+    switch(tPcStruct.u8SleepMode)
+    {
+        case SMART_SLEEP:
+        {
+            if(tPcStruct.u32DtimPeriod < DTIM_PERIOD_MIN || tPcStruct.u32DtimPeriod > DTIM_PERIOD_MAX)
+            {
+                goto done;
+            }
+
+            if(tPcStruct.u8BleAdvOnOff)
+            {
+                if(tPcStruct.u16BleAdvIntv < BLE_ADV_INTEVAL_MIN || tPcStruct.u16BleAdvIntv > BLE_ADV_INTEVAL_MAX)
+                {
+                    goto done;
+                }
+            }
+
+            APP_SendMessage(APP_EVT_BLE_POWER_CONSUMPTION,(void*) &tPcStruct, sizeof(tPcStruct));
+
+            break;
+        }
+
+        case TIMER_SLEEP:
+        {
+            //Check Sleep time range
+            if(tPcStruct.u32SleepTime < BLE_SLEEP_TIMER_MIN || tPcStruct.u32SleepTime > BLE_SLEEP_TIMER_MAX)
+            {
+                goto done;
+            }
+
+            //Check Wakeup time range
+            if(tPcStruct.u32WakeupTime > BLE_WAKEUP_TIMER_MAX)
+            {
+                goto done;
+            }
+
+            APP_SendMessage(APP_EVT_BLE_POWER_CONSUMPTION,(void*) &tPcStruct, sizeof(tPcStruct));
+
+            break;
+        }
+
+        case DEEP_SLEEP:
+        {
+            APP_SendMessage(APP_EVT_BLE_POWER_CONSUMPTION,(void*) &tPcStruct, sizeof(tPcStruct));
+
+            break;
+        }
+
+        case QUERY_STATUS: // Query device status Whether to connect to AP before implement Sleep
+        {
+            tQuery = _OPL_QueryDeviceInfo();
+            bQueryFlag = true;
+            break;
+        }
+    }
+    tRet = OPL_OK;
+
+done:
+    if(false == bQueryFlag) // sleep request
+    {
+        if (OPL_OK == tRet)
+        {
+            OPL_DataSendResponse(OPL_DATA_RSP_ENG_POWER_CONSUMPTION, 0);
+        }
+        else
+        {
+            OPL_DataSendResponse(OPL_DATA_RSP_ENG_POWER_CONSUMPTION, 1);
+        }
+    }
+    else // query request
+    {
+        if(OPL_OK == tQuery)
+        {
+            OPL_DataSendResponse(OPL_DATA_RSP_ENG_POWER_CONSUMPTION, 3);
+        }
+        else
+        {
+            OPL_DataSendResponse(OPL_DATA_RSP_ENG_POWER_CONSUMPTION, 4);
+        }
+    }
+#else
+    OPL_DataSendResponse(OPL_DATA_RSP_ENG_POWER_CONSUMPTION, 0xFF); // OPL_DATA_CURRENT_MEASURE_ENABLED == 0
+#endif /*OPL_DATA_CURRENT_MEASURE_ENABLED*/
 }
 
 /*************************************************************************

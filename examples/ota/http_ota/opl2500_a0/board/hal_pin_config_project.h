@@ -57,7 +57,7 @@ Head Block of The File
  *      (PIN_TYPE_SPI0_IO1_IO15  | PIN_DRVCRNT_IO15_2mA  | PIN_INMODE_IO15_FLOATING)
  *      (PIN_TYPE_I2C_SDA_IO_IO9 | PIN_DRVCRNT_IO9_2mA   | PIN_INMODE_IO9_PULL_UP)
  */
-#define HAL_PIN_TYPE_PATCH_IO_0               (PIN_TYPE_UART1_TXD_IO0        | PIN_DRVCRNT_IO0_2mA   | PIN_INMODE_IO0_FLOATING)
+#define HAL_PIN_TYPE_PATCH_IO_0               (PIN_TYPE_APS_UART_TXD_IO0        | PIN_DRVCRNT_IO0_2mA   | PIN_INMODE_IO0_FLOATING)
                                                 /* ***********************************
                                                  *     PIN_TYPE_APS_SWDIO_IO0
                                                  *     PIN_TYPE_APS_UART_TXD_IO0
@@ -87,7 +87,7 @@ Head Block of The File
                                                  * *********************************** */
 
 
-#define HAL_PIN_TYPE_PATCH_IO_1               (PIN_TYPE_APS_UART_RXD_IO1           | PIN_DRVCRNT_IO1_2mA   | PIN_INMODE_IO1_PULL_UP)
+#define HAL_PIN_TYPE_PATCH_IO_1               (PIN_TYPE_UART1_RXD_IO1           | PIN_DRVCRNT_IO1_2mA   | PIN_INMODE_IO1_PULL_UP)
                                                 /* ***********************************
                                                  *     PIN_TYPE_APS_SWDIO_IO1
                                                  *     PIN_TYPE_APS_UART_RXD_IO1
@@ -119,7 +119,7 @@ Head Block of The File
                                                  * *********************************** */
 
 
-#define HAL_PIN_TYPE_PATCH_IO_2               (PIN_TYPE_UART1_RXD_IO2        | PIN_DRVCRNT_IO2_2mA   | PIN_INMODE_IO2_PULL_UP)
+#define HAL_PIN_TYPE_PATCH_IO_2               (PIN_TYPE_APS_UART_RXD_IO2        | PIN_DRVCRNT_IO2_2mA   | PIN_INMODE_IO2_PULL_UP)
                                                 /* ***********************************
                                                  *     PIN_TYPE_APS_SWCLK_IO2
                                                  *     PIN_TYPE_APS_UART_RXD_IO2
@@ -214,7 +214,7 @@ Head Block of The File
                                                  * *********************************** */
 
 
-#define HAL_PIN_TYPE_PATCH_IO_5               (PIN_TYPE_APS_UART_TXD_IO5           | PIN_DRVCRNT_IO5_2mA   | PIN_INMODE_IO5_FLOATING)
+#define HAL_PIN_TYPE_PATCH_IO_5               (PIN_TYPE_GPIO_DISABLE_IO5           | PIN_DRVCRNT_IO5_2mA   | PIN_INMODE_IO5_FLOATING)
                                                 /* ***********************************
                                                  *     PIN_TYPE_APS_UART_TXD_IO5
                                                  *     PIN_TYPE_CAM_DATA2_IO5
@@ -755,7 +755,7 @@ Head Block of The File
                                                  * *********************************** */
 
 
-#define HAL_PIN_TYPE_PATCH_IO_22              (PIN_TYPE_GPIO_DISABLE_IO22       | PIN_DRVCRNT_IO22_12mA | PIN_INMODE_IO22_FLOATING)
+#define HAL_PIN_TYPE_PATCH_IO_22              (PIN_TYPE_UART1_TXD_IO22       | PIN_DRVCRNT_IO22_12mA | PIN_INMODE_IO22_FLOATING)
                                                 /* ***********************************
                                                  *     PIN_TYPE_APS_UART_TXD_IO22
                                                  *     PIN_TYPE_CAM_XVCLK_IO22

@@ -100,6 +100,7 @@ typedef enum E_OplDataEvent
     OPL_DATA_REQ_ENG_TMPR_CAL_DATA_WRITE         = 0x609,
     OPL_DATA_REQ_ENG_TMPR_CAL_DATA_READ          = 0x60A,
     OPL_DATA_REQ_ENG_VDD_VOUT_VOLTAGE_READ       = 0x60B,
+    OPL_DATA_REQ_ENG_POWER_CONSUMPTION           = 0x60C,
     //4 cmd ID unused
     OPL_DATA_REQ_ENG_BLE_CLOUD_INFO_WRITE        = 0x610,
     OPL_DATA_REQ_ENG_BLE_CLOUD_INFO_READ         = 0x611,
@@ -142,6 +143,7 @@ typedef enum E_OplDataEvent
     OPL_DATA_RSP_ENG_TMPR_CAL_DATA_WRITE         = 0x1609,
     OPL_DATA_RSP_ENG_TMPR_CAL_DATA_READ          = 0x160A,
     OPL_DATA_RSP_ENG_VDD_VOUT_VOLTAGE_READ       = 0x160B,
+    OPL_DATA_RSP_ENG_POWER_CONSUMPTION           = 0x160C, 
     //4 cmd ID unused
     OPL_DATA_RSP_ENG_BLE_CLOUD_INFO_WRITE        = 0x1610,
     OPL_DATA_RSP_ENG_BLE_CLOUD_INFO_READ         = 0x1611,
@@ -291,6 +293,7 @@ static void OPL_DataProtocol_EngBleMacRead(uint16_t type, uint8_t *data, int len
 static void OPL_DataProtocol_EngBleCmd(uint16_t type, uint8_t *data, int len);
 static void OPL_DataProtocol_EngMacSrcWrite(uint16_t type, uint8_t *data, int len);
 static void OPL_DataProtocol_EngMacSrcRead(uint16_t type, uint8_t *data, int len);
+static void OPL_DataProtocol_EngPowerConsumtion(uint16_t type, uint8_t *data, int len);
 
 /***********
 C Functions

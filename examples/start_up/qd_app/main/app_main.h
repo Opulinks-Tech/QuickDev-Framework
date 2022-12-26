@@ -69,11 +69,12 @@ typedef enum E_AppEvtId
     APP_EVT_BLE_CONNECTED,
     APP_EVT_BLE_DISCONNECTED,
     APP_EVT_BLE_DATA_IND,
-
+    APP_EVT_BLE_POWER_CONSUMPTION,  
     APP_EVT_NETWORK_UP,
     APP_EVT_NETWORK_DOWN,
     APP_EVT_NETWORK_RESET,
 
+    APP_EVT_WAKEUP_TIMER_START,
     APP_EVT_SYS_TIMER_TIMEOUT,
 
     // user event end here
@@ -96,6 +97,26 @@ typedef struct S_AppMsgStruct
     uint32_t            u32DataLen;
     uint8_t             pau8Data[];
 } T_AppMsgStruct;
+
+typedef enum E_BlePCSleepMode
+{
+    SMART_SLEEP,
+    TIMER_SLEEP,
+    DEEP_SLEEP,
+    QUERY_STATUS,
+
+    SLEEP_MAX,
+}T_BlePCSleepMode;
+
+typedef struct S_BlePCStruct
+{
+    uint8_t             u8SleepMode;    // 0: smart sleep, 1: timer sleep, 2: deep sleep
+    uint8_t             u8BleAdvOnOff;  // BLE AdvertiseMent On/Off for smart sleep
+    uint16_t            u16BleAdvIntv;  // BLE AdvertiseMent Interval min for smart sleep when BLE adv on 0.625ms uint min = 100, max = 1500
+    uint32_t            u32DtimPeriod;  // Skip dtim setting for smart sleep min = 100ms max = 5000ms 
+    uint32_t            u32SleepTime;   // Sleep timer for timer sleep, range min = 15, max = 150000 (ms)
+    uint32_t            u32WakeupTime;  // Wake up timer for timer sleep, range min = 15, max = 150000 (ms)      
+} T_BlePCStruct;
 
 /********************************************
 Declaration of Global Variables & Functions
@@ -187,9 +208,12 @@ static void APP_EvtHandler_BleStopAdv(uint32_t u32EventId, void *pData, uint32_t
 static void APP_EvtHandler_BleConnected(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_BleDisconnected(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_BleDataInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
+static void APP_EvtHandler_BleAdvSetInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen); 
+static void APP_EvtHandler_BlePowerConsumptionInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen); 
 static void APP_EvtHandler_NetworkUp(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_NetworkDown(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_NetworkReset(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
+static void APP_EvtHandler_WakeUp(uint32_t u32EventId, void *pData, uint32_t u32DataLen); 
 static void APP_EvtHandler_SysTimerTimeout(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 
 /***********
