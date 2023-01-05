@@ -70,6 +70,8 @@ static HTTPCLIENT_T g_tHttpOtaHttpClient = {0};
 
 static uint16_t g_u16OtaDtimId = 0;
 static uint16_t g_u16OtaSeqId = 0;
+static bool g_blOtaProgress = false;
+
 
 // Sec 7: declaration of static function prototype
 
@@ -77,6 +79,26 @@ static uint16_t g_u16OtaSeqId = 0;
 C Functions
 ***********/
 // Sec 8: C Functions
+
+/*************************************************************************
+* FUNCTION:
+*   HTTP_OtaInProgress
+*
+* DESCRIPTION:
+*   check is in ota progress
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   bool :          [OUT] true: in OTA progress
+*                         false: in idle
+*
+*************************************************************************/
+bool HTTP_OtaInProgress(void)
+{
+    return g_blOtaProgress;
+}
 
 /*************************************************************************
 * FUNCTION:
@@ -532,8 +554,11 @@ void HTTP_OtaTaskHandler(void *args)
 #elif defined(OPL2500_A0)
                     CtrlWifi_PsStateForce(STA_MODE_PERFORMANCE, 0);
 #endif
+                    g_blOtaProgress = true;
 
                     int32_t i32Ret = HTTP_OtaHttpDownload((char *)ptHttpOtaMsg->u8aData, (int)ptHttpOtaMsg->u32DataLen);
+
+                    g_blOtaProgress = false;
 
                     // enable skip dtim
                     Opl_Wifi_Skip_Dtim_Set(g_u16OtaDtimId, true);

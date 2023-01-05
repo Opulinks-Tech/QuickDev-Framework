@@ -58,14 +58,14 @@ extern "C" {
 
 #if (BM_ENABLED == 1)
 
-// <o> BM_DEF_DESIRED_MIN_CONN_INTERVAL - minimum connection interval (units of 1.25ms)
-#ifndef BM_DEF_DESIRED_MIN_CONN_INTERVAL
-#define BM_DEF_DESIRED_MIN_CONN_INTERVAL            (100)
+// <o> BM_DEF_DESIRED_MIN_ADV_INTERVAL - minimum advertisment interval (units of 0.625ms)
+#ifndef BM_DEF_DESIRED_MIN_ADV_INTERVAL
+#define BM_DEF_DESIRED_MIN_ADV_INTERVAL             (100)
 #endif
 
-// <o> BM_DEF_DESIRED_MAX_CONN_INTERVAL - maximum connection interval (uints of 1.25ms)
-#ifndef BM_DEF_DESIRED_MAX_CONN_INTERVAL
-#define BM_DEF_DESIRED_MAX_CONN_INTERVAL            (200)
+// <o> BM_DEF_DESIRED_MAX_ADV_INTERVAL - maximum advertisment interval (units of 0.625ms)
+#ifndef BM_DEF_DESIRED_MAX_ADV_INTERVAL
+#define BM_DEF_DESIRED_MAX_ADV_INTERVAL             (200)
 #endif
 
 // <o> BM_DEF_DESIRED_SLAVE_LATENCY - slave latency
@@ -79,13 +79,13 @@ extern "C" {
 #endif
 
 
-// Minimum connection interval (units of 1.25ms) if automatic parameter update request is enabled
-#define DEFAULT_DESIRED_MIN_CONN_INTERVAL           BM_DEF_DESIRED_MIN_CONN_INTERVAL
-// Maximum connection interval (units of 1.25ms) if automatic parameter update request is enabled
-#define DEFAULT_DESIRED_MAX_CONN_INTERVAL           BM_DEF_DESIRED_MAX_CONN_INTERVAL
-// Maximum connection interval (units of 1.25ms) if automatic parameter update request is enabled
+// Minimum advertisment interval (units of 0.625ms) if automatic parameter update request is enabled
+#define DEFAULT_DESIRED_MIN_CONN_INTERVAL           BM_DEF_DESIRED_MIN_ADV_INTERVAL
+// Maximum advertisment interval (units of 0.625ms) if automatic parameter update request is enabled
+#define DEFAULT_DESIRED_MAX_CONN_INTERVAL           BM_DEF_DESIRED_MAX_ADV_INTERVAL
+// Maximum advertisment interval (units of 0.625ms) if automatic parameter update request is enabled
 #define DEFAULT_DESIRED_SLAVE_LATENCY               BM_DEF_DESIRED_SLAVE_LATENCY
-// Maximum connection interval (units of 1.25ms) if automatic parameter update request is enabled
+// Maximum advertisment interval (units of 0.625ms) if automatic parameter update request is enabled
 #define DEFAULT_DESIRED_SUPERVERSION_TIMEOUT        BM_DEF_DESIRED_SUPERVERSION_TIMEOUT
 
 #define LE_GATT_DATA_OUT_BUF_CNT                    50

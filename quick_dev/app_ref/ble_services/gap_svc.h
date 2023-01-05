@@ -12,7 +12,7 @@
 /******************************************************************************
 *  Filename:
 *  ---------
-*  gap_pf.h
+*  gap_svc.h
 *
 *  Project:
 *  --------
@@ -36,11 +36,12 @@ Head Block of The File
 
 #include "qd_config.h"
 #include "qd_module.h"
+#include "ble_mngr.h"
 
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
 
-#ifndef __GAP_PF_H__
-#define __GAP_PF_H__
+#ifndef __GAP_SVC_H__
+#define __GAP_SVC_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,6 +81,40 @@ Declaration of Global Variables & Functions
 
 /*************************************************************************
 * FUNCTION:
+*   GAP_Svc_DeviceName_Set
+*
+* DESCRIPTION:
+*   setting device name
+*
+* PARAMETERS
+*   pu8Data :       [IN] data
+*   u32DataLen :    [IN] data lens
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr GAP_Svc_DeviceName_Set(uint8_t *pu8Data, uint32_t u32DataLen);
+
+/*************************************************************************
+* FUNCTION:
+*   GAP_Svc_Appearance_Set
+*
+* DESCRIPTION:
+*   setting appearance
+*
+* PARAMETERS
+*   pu8Data :       [IN] data
+*   u32DataLen :    [IN] data lens
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr GAP_Svc_Appearance_Set(uint8_t *pu8Data, uint32_t u32DataLen);
+
+/*************************************************************************
+* FUNCTION:
 *   GAP_Svc_Init
 *
 * DESCRIPTION:
@@ -110,4 +145,4 @@ C Functions
 }
 #endif
 
-#endif /* __GAP_PF_H__ */
+#endif /* __GAP_SVC_H__ */

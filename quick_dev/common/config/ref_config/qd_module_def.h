@@ -231,14 +231,14 @@ extern "C" {
 #define BM_SVC_NUM_MAX                          (5)
 #endif
 
-// <o> BM_DEF_DESIRED_MIN_CONN_INTERVAL - minimum connection interval (units of 1.25ms)
-#ifndef BM_DEF_DESIRED_MIN_CONN_INTERVAL
-#define BM_DEF_DESIRED_MIN_CONN_INTERVAL        (100)
+// <o> BM_DEF_DESIRED_MIN_ADV_INTERVAL - minimum advertisment interval (units of 0.625ms)
+#ifndef BM_DEF_DESIRED_MIN_ADV_INTERVAL
+#define BM_DEF_DESIRED_MIN_ADV_INTERVAL         (100)
 #endif
 
-// <o> BM_DEF_DESIRED_MAX_CONN_INTERVAL - maximum connection interval (uints of 1.25ms)
-#ifndef BM_DEF_DESIRED_MAX_CONN_INTERVAL
-#define BM_DEF_DESIRED_MAX_CONN_INTERVAL        (200)
+// <o> BM_DEF_DESIRED_MAX_ADV_INTERVAL - maximum advertisment interval (units of 0.625ms)
+#ifndef BM_DEF_DESIRED_MAX_ADV_INTERVAL
+#define BM_DEF_DESIRED_MAX_ADV_INTERVAL         (200)
 #endif
 
 // <o> BM_DEF_DESIRED_SLAVE_LATENCY - slave latency

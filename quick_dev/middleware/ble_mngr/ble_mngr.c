@@ -1056,7 +1056,7 @@ T_OplErr BM_AdvParamSet(uint8_t u8Type, uint8_t u8AddrType, LE_BT_ADDR_T *ptPeer
 *************************************************************************/
 T_OplErr BM_AdvIntervalSet(uint16_t u16AdvItvlMin, uint16_t u16AdvItvlMax)
 {
-    return BM_AdvParamSet(LE_HCI_ADV_TYPE_ADV_IND, LE_HCI_OWN_ADDR_PUBLIC, 0, LE_HCI_ADV_FILT_NONE, g_tTheBle.min_itvl, g_tTheBle.max_itvl);
+    return BM_AdvParamSet(LE_HCI_ADV_TYPE_ADV_IND, LE_HCI_OWN_ADDR_PUBLIC, 0, LE_HCI_ADV_FILT_NONE, u16AdvItvlMin, u16AdvItvlMax);
 }
 
 /*************************************************************************

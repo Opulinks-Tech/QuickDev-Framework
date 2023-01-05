@@ -1,5 +1,19 @@
 ## Release Version:
 State : RC
+Version : v0.2.5
+
+## Release Date: 2023/01/05
+
+## Descript
+1. Add aws_cloud in app_ref/cloud
+2. Add devinfo_svc in app_ref/ble_services
+3. Add check ota progress api in http_ota file
+4. Modify the definition BM_DEF_DESIRED_MIN_CONN_INTERNAL & BM_DEF_DESIRED_MAX_CONN_INTERNAL to BM_DEF_DESIRED_MIN_ADV_INTERVAL & BM_DEF_DESIRED_MAX_ADV_INTERVAL
+5. Modify the device name characteristic as read only in gap_svc file
+6. Fix BM_AdvIntervalSet not work issue in ble_mngr file
+
+## Release Version:
+State : RC
 Version : v0.2.4
 
 ## Release Date: 2022/12/26

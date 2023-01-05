@@ -94,6 +94,23 @@ Declaration of Global Variables & Functions
 
 /*************************************************************************
 * FUNCTION:
+*   HTTP_OtaInProgress
+*
+* DESCRIPTION:
+*   check is in ota progress
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   bool :          [OUT] true: in OTA progress
+*                         false: in idle
+*
+*************************************************************************/
+bool HTTP_OtaInProgress(void);
+
+/*************************************************************************
+* FUNCTION:
 *   HTTP_OtaTriggerReq
 *
 * DESCRIPTION:

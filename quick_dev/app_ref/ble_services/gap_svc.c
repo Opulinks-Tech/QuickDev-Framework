@@ -65,7 +65,7 @@ Declaration of static Global Variables & Functions
 static uint16_t gGapSvcUuid = ATT_SVC_GENERIC_ACCESS;
 
 static uint16_t gGapDeviceNameUuid          = ATT_CHAR_DEVICE_NAME;
-static uint8_t  gGapDeviceNameCharVal[]     = CHAR_DECL_UUID16_ATTR_VAL(LE_GATT_CHAR_PROP_RD | LE_GATT_CHAR_PROP_WR, ATT_CHAR_DEVICE_NAME);
+static uint8_t  gGapDeviceNameCharVal[]     = CHAR_DECL_UUID16_ATTR_VAL(LE_GATT_CHAR_PROP_RD, ATT_CHAR_DEVICE_NAME);
 static uint8_t  gGapDeviceNameVal[31]       = BLE_GAP_PF_DEVICE_NAME;
 
 static uint16_t gGapAppearanceUuid          = ATT_CHAR_APPEARANCE;
@@ -82,7 +82,7 @@ static LE_GATT_ATTR_T gGapSvcDb[GAP_SVC_IDX_TOTAL] =
     [GAP_SVC_IDX_SVC]                  = PRIMARY_SERVICE_DECL_UUID16(&gGapSvcUuid),
     // GAP Device Name Characteristic
     [GAP_SVC_IDX_DEVICE_NAME_CHAR]     = CHARACTERISTIC_DECL_UUID16(gGapDeviceNameCharVal),
-    [GAP_SVC_IDX_DEVICE_NAME_VAL]      = CHARACTERISTIC_UUID16(&gGapDeviceNameUuid, LE_GATT_PERMIT_AUTHOR_READ | LE_GATT_PERMIT_AUTHOR_WRITE, sizeof(gGapDeviceNameVal), sizeof(BLE_GAP_PF_DEVICE_NAME) - 1, gGapDeviceNameVal),
+    [GAP_SVC_IDX_DEVICE_NAME_VAL]      = CHARACTERISTIC_UUID16(&gGapDeviceNameUuid, LE_GATT_PERMIT_AUTHOR_READ, 0, sizeof(gGapDeviceNameVal), gGapDeviceNameVal),
     // GAP Appearance Characteristic
     [GAP_SVC_IDX_APPEARANCE_CHAR]      = CHARACTERISTIC_DECL_UUID16(gGapAppearanceCharVal),
     [GAP_SVC_IDX_APPEARANCE_VAL]       = CHARACTERISTIC_UUID16(&gGapAppearanceUuid, LE_GATT_PERMIT_READ, 0, 2, gGapAppearanceVal),
@@ -218,6 +218,62 @@ static T_OplErr GAP_Svc_GattDispatchHandler(MESSAGEID tId, MESSAGE tMsg)
             return OPL_ERR_CASE_INVALID;
         }
     }
+
+    return OPL_OK;
+}
+
+/*************************************************************************
+* FUNCTION:
+*   GAP_Svc_DeviceName_Set
+*
+* DESCRIPTION:
+*   setting device name
+*
+* PARAMETERS
+*   pu8Data :       [IN] data
+*   u32DataLen :    [IN] data lens
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr GAP_Svc_DeviceName_Set(uint8_t *pu8Data, uint32_t u32DataLen)
+{
+    if(sizeof(gGapDeviceNameVal) < u32DataLen && NULL == pu8Data)
+    {
+        return OPL_ERR_PARAM_INVALID;
+    }
+
+    memset(&gGapDeviceNameVal, 0, sizeof(gGapDeviceNameVal));
+    memcpy(&gGapDeviceNameVal, pu8Data, u32DataLen);
+
+    return OPL_OK;
+}
+
+/*************************************************************************
+* FUNCTION:
+*   GAP_Svc_Appearance_Set
+*
+* DESCRIPTION:
+*   setting appearance
+*
+* PARAMETERS
+*   pu8Data :       [IN] data
+*   u32DataLen :    [IN] data lens
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr GAP_Svc_Appearance_Set(uint8_t *pu8Data, uint32_t u32DataLen)
+{
+    if(sizeof(gGapAppearanceVal) < u32DataLen && NULL == pu8Data)
+    {
+        return OPL_ERR_PARAM_INVALID;
+    }
+
+    memset(&gGapAppearanceVal, 0, sizeof(gGapAppearanceVal));
+    memcpy(&gGapAppearanceVal, pu8Data, u32DataLen);
 
     return OPL_OK;
 }
