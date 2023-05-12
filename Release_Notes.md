@@ -1,5 +1,29 @@
 ## Release Version:
 State : RC
+Version : v0.2.7
+
+## Release Date: 2023/05/12
+
+## Descript
+1. Support OPL2500_A0 host_mode examples (at_master/at_slave/uart_master/uart_slave)
+2. Support OPL2500_A0 peripheral/i2c_master example
+3. Modify tcp_cloud
+    - add power sleep control via TCP data, this function is defined by "OPL_POWER_SLEEP_CONTROL_VIA_TCP" with default disable in opl_config.h
+    - fix twice TCP disconnect issue
+    - modify the set_dtim execute timing to adjust the stability to send and receive data
+4. Modify OPL2500_A0 example's scatter file to support OPL2500 new SDK version
+5. Modify OPL1000_A3 heap start address default to 0x0043A000
+6. Modify net_mngr to handle the wifi reset & disconnect event from wifi_mngr, and send notify to application
+7. Modify WM_SkipDtimSet function
+    - adjust the insert arguments
+    - to set skip DTIM to 0 if the definition "WM_DTIM_PERIOD_TIME" set 0
+8. Modify deep-sleep wakeup pin config set in pwr_save
+9. Add "EXT_PA_ENABLE" definition to support OPL2500_P (front-end module) in qd_config.h, default set as "Disable"
+10. Fix auto-connect interval table index caculation's error
+11. Modify the specific C:/Keil path to open the Keil/ARMCC/ELF to using to relative Keil's path in example's batch file and keil project file (only modify on OPL2500 relative examples)
+
+## Release Version:
+State : RC
 Version : v0.2.5
 
 ## Release Date: 2023/01/05

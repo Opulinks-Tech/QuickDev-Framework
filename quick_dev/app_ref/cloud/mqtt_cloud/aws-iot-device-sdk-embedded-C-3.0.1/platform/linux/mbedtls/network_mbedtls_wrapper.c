@@ -446,7 +446,12 @@ IoT_Error_t iot_tls_connect(Network *pNetwork, TLSConnectParams *params) {
 	IOT_DEBUG("  . Performing the SSL/TLS handshake...");
 
 #if 1
+#if defined(OPL2500_A0)
+    // TODO: sets back to 143MHz while opl2500 is ready (Handshake clock rate)
+	sys_cfg_clk_set(SYS_CFG_CLK_44_MHZ);
+#else
 	sys_cfg_clk_set(SYS_CFG_CLK_143_MHZ);
+#endif
 #endif
 
 	while((ret = mbedtls_ssl_handshake(&(tlsDataParams->ssl))) != 0) {

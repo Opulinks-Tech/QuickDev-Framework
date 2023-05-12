@@ -70,6 +70,7 @@ Declaration of data structure
 Declaration of Global Variables & Functions
 ********************************************/
 // Sec 4: declaration of global variable
+uint32_t g_u32PostWaitAck = 0;  // For post data set, no used here, prevent link fail
 
 // Sec 5: declaration of global function prototype
 
@@ -913,8 +914,12 @@ void APP_BleScanRspDataInit(void)
 
 void APP_SysInit(void)
 {
+#if (EXT_PA_ENABLED == 1)
+    // Do not overwrite RF power setting if external PA enable
+#else
     // initialize rf power setting
     RF_PwrSet(RF_CFG_DEF_PWR_SET);
+#endif
 
     // initialize ota manager
     OTA_Init();

@@ -85,14 +85,22 @@ extern "C" {
 #define TCP_HOST_IP_SIZE                                (15)
 #define TCP_HOST_PORT                                   (21)
 
+// TCP demo test option (echo the specified data)
+#define TCP_RX_DATA_ECHO_ENABLE                         (0)
+#define TCP_RX_SPECIFIED_DATA                           ("rcvdata")
+
 // TCP post/recv configuration
-#define TCP_TX_POST_TIMEOUT                             (30000)
+#define TCP_TX_POST_TIMEOUT                             (40000)
 #define TCP_TX_BUF_SIZE                                 (256)
 #define TCP_RX_RECV_TIMEOUT                             (5000)
 #define TCP_RX_BUF_SIZE                                 (1024)
 
 // TCP re-connect time
 #define TCP_RECONN_TIME                                 (5000)
+
+// TCP ack time
+#define TCP_WAIT_TCP_ACK_TIME                           (300)
+#define TCP_RECV_WAIT_TCP_ACK_TIME                      (1500)
 
 // TCP host information (backup for retry connection)
 typedef struct S_CloudTcpHostInfo

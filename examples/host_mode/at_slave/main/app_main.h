@@ -51,7 +51,7 @@ extern "C" {
 
 #define APP_TASK_PRIORITY               (osPriorityNormal)
 #define APP_QUEUE_SIZE                  (20)
-#define APP_TASK_STACK_SIZE             (512)
+#define APP_TASK_STACK_SIZE             (1024)
 
 /********************************************
 Declaration of data structure
@@ -100,6 +100,8 @@ typedef enum E_AppEvtId
     APP_EVT_MASTER_WAKEUP,
     APP_EVT_AT_TEST_REQ,
 
+    APP_EVT_POST_SET,   // For post data set
+
     // user event end here
     
     APP_EVT_TOTAL,
@@ -120,6 +122,14 @@ typedef struct S_AppMsgStruct
     uint32_t            u32DataLen;
     uint8_t             pau8Data[];
 } T_AppMsgStruct;
+
+// For post data set
+typedef struct S_PostSetMsg
+{
+    uint32_t            u32PostDuration;
+    uint32_t            u32PostTotalCnt;
+    uint32_t            u32PostWaitAck;
+} T_PostSetMsg;
 
 // host mode ack command list
 typedef enum E_HostModeAckCmdList

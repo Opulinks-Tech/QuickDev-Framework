@@ -69,6 +69,7 @@ static const T_FsmStateExctblEvent tNmIdleExctblEvent[] =
 
 static const T_FsmStateExctblEvent tNmWaitScanExctblEvent[] = 
 {
+    {NM_EVT_WIFI_DOWN_IND,      APP_NmWiFiDownHndlr},
     {NM_EVT_WIFI_SCAN_IND,      APP_NmScanDoneHndlr},
     {FSM_EV_NULL_EVENT,         FSM_AT_NULL_ACTION},
 };
@@ -76,6 +77,7 @@ static const T_FsmStateExctblEvent tNmWaitScanExctblEvent[] =
 
 static const T_FsmStateExctblEvent tNmWaitCnctExctblEvent[] = 
 {
+    {NM_EVT_WIFI_DOWN_IND,      APP_NmWiFiDownHndlr},
     {NM_EVT_WIFI_CNCT_PASS_IND, APP_NmCnctIndHndlr},
     {NM_EVT_WIFI_CNCT_FAIL_IND, APP_NmCnctIndHndlr},
     {FSM_EV_NULL_EVENT,         FSM_AT_NULL_ACTION},
@@ -1452,6 +1454,10 @@ static T_OplErr APP_NmWiFiDownHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEvent, 
 #endif
 		    }
 		}
+        case NM_ST_WAIT_SCAN:
+        case NM_ST_WAIT_CNCT:
+            // nothing to do here
+            break;
 		default:
 			break;
 	}
@@ -1897,22 +1903,31 @@ T_OplErr APP_NmEventProc(uint32_t u32EventId, uint8_t *u8Data, uint32_t u32DataL
 
     if((NM_EVT_BEGIN <= u32EventId) && (u32EventId <= NM_EVT_TOTAL))
     {
-        tEvtRst = FSM_Run( APP_NmFsmDefGet(),
-                           u32EventId,
-                           u8Data,
-                           u32DataLen,
-                           NULL );
-
-        // Unsolicited callback
-        if(OPL_OK == tEvtRst)
+        if( u32EventId == NM_EVT_WIFI_RESET )
         {
-            if( u32EventId == NM_EVT_WIFI_DOWN_IND ||
-                u32EventId == NM_EVT_GOT_IP ||
-                u32EventId == NM_EVT_WIFI_RESET )
+            APP_NmUslctdCbRun( (T_NmEventList)u32EventId,
+                                u8Data,
+                                u32DataLen );
+        }
+        else
+        {
+            tEvtRst = FSM_Run( APP_NmFsmDefGet(),
+                               u32EventId,
+                               u8Data,
+                               u32DataLen,
+                               NULL );
+
+            // Unsolicited callback
+            if(OPL_OK == tEvtRst)
             {
-                APP_NmUslctdCbRun( (T_NmEventList)u32EventId,
-                                    u8Data,
-                                    u32DataLen );
+                if( u32EventId == NM_EVT_WIFI_DOWN_IND ||
+                    u32EventId == NM_EVT_GOT_IP ) //||
+                    //u32EventId == NM_EVT_WIFI_RESET )
+                {
+                    APP_NmUslctdCbRun( (T_NmEventList)u32EventId,
+                                        u8Data,
+                                        u32DataLen );
+                }
             }
         }
 

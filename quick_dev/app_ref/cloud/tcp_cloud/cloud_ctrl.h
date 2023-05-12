@@ -58,7 +58,8 @@ typedef enum E_CloudTimerIdx
     // *
     CLOUD_TMR_CONN_RETRY = 0,
     CLOUD_TMR_KEEP_ALIVE,
-    CLOUD_TMR_DATA_POST,
+    CLOUD_TMR_WAIT_ACK_DATA,
+    CLOUD_TMR_WAIT_TCP_ACK,
     // *
 
     CLOUD_TMR_MAX,
@@ -278,6 +279,22 @@ T_CloudTopicRegInfoPtr Cloud_TxTopicGet(void);
 *
 *************************************************************************/
 T_CloudTopicRegInfoPtr Cloud_RxTopicGet(void);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_GotAckHandler
+*
+* DESCRIPTION:
+*   handle activity after received ack message
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_GotAckHandler(void);
 
 /*************************************************************************
 * FUNCTION:

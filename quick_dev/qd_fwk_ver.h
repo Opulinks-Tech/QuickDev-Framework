@@ -44,8 +44,8 @@ extern "C" {
 #endif
 
 #define QD_FWK_RELEASE_STATE                            "RC"
-#define QD_FWK_RELEASE_VER                              "v0.2.5"
-#define QD_FWK_RELEASE_DATE                             "2023/01/05"
+#define QD_FWK_RELEASE_VER                              "v0.2.7"
+#define QD_FWK_RELEASE_DATE                             "2023/05/08"
 
 /********************************************
 Declaration of data structure

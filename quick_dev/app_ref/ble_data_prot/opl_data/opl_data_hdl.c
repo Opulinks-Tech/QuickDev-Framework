@@ -59,6 +59,8 @@ Declaration of Global Variables & Functions
 
 T_OplDataConnCfg g_tOplDataConnCfg = {0};
 
+uint8_t g_u8IsManuallyConnectScanRetry = false;
+
 // Sec 5: declaration of global function prototype
 
 /***************************************************
@@ -530,6 +532,98 @@ void OPL_DataHandler_WifiScanDoneIndCb(T_OplErr tEvtRst)
         // CK_DATA_REQ_SCAN cmd, just do report scan list
         _OPL_DataHandler_SendScanReport();
         OPL_DataSendResponse(OPL_DATA_RSP_SCAN_END, 0);
+    }
+    else if(OPL_DATA_CONN_TYPE_SSID == g_tOplDataConnCfg.u8ConnectType)
+    {
+        // CK_DATA_REQ_MANUAL_CONNECT_AP cmd, do dedicate connect after scan done
+
+        wifi_scan_list_t stScanList = {0};
+        
+        uint8_t i = 0;
+        uint8_t u8IsMatched = false;
+
+        /* Get APs list */
+        Opl_Wifi_ScanList_Get(&stScanList);
+
+        if(g_u8IsManuallyConnectScanRetry == true)
+        {
+            /* Search if AP matched */
+            for (i = 0; i < stScanList.num; i++)
+            {
+                // if find target AP or Hidden AP in the scan list
+                if ((memcmp(stScanList.ap_record[i].ssid, g_tOplDataConnCfg.u8aSsid, sizeof(g_tOplDataConnCfg.u8aSsid)) == 0) ||
+                    (strlen((char *)stScanList.ap_record[i].ssid) == 0))
+                {
+                    u8IsMatched = true;
+                    break;
+                }
+            }
+
+            if(true == u8IsMatched)
+            {
+                T_NmWifiCnctConfig stConnConfig = {0};
+
+                stConnConfig.u8Timeout = g_tOplDataConnCfg.u8Timeout;
+                stConnConfig.u8SsidLen = g_tOplDataConnCfg.u8SsidLen;
+                stConnConfig.u8PwdLen = g_tOplDataConnCfg.u8PwdLen;
+
+                memcpy(stConnConfig.u8aSsid, g_tOplDataConnCfg.u8aSsid, sizeof(g_tOplDataConnCfg.u8aSsid));                
+                memcpy(stConnConfig.u8aPwd, g_tOplDataConnCfg.u8aPwd, g_tOplDataConnCfg.u8PwdLen);
+                // memcpy(stConnConfig.u8aBssid, stScanList.ap_record[i].bssid, WIFI_MAC_ADDRESS_LENGTH);
+
+                // clear auto connect list & wifi profile
+                // Opl_Wifi_Profile_Clear();
+
+                // CK_DataSendResponse(CK_DATA_RSP_RESET, 0);
+
+                // trigger wifi connect
+                APP_NmWifiCnctReq(&stConnConfig, OPL_DataHandler_WifiConnectionIndCb);
+            }
+            else
+            {
+                OPL_DataSendResponse(OPL_DATA_RSP_CONNECT, OPL_DATA_WIFI_AP_NOT_FOUND);
+            }
+
+            g_u8IsManuallyConnectScanRetry = false;
+        }
+        else
+        {
+            /* Search if AP matched */
+            for (i=0; i< stScanList.num; i++)
+            {
+                if (memcmp(stScanList.ap_record[i].ssid, g_tOplDataConnCfg.u8aSsid, sizeof(g_tOplDataConnCfg.u8aSsid)) == 0)
+                {
+                    u8IsMatched = true;
+                    break;
+                }
+            }
+
+            if(true == u8IsMatched)
+            {
+                T_NmWifiCnctConfig stConnConfig = {0};
+
+                memcpy(stConnConfig.u8aBssid, stScanList.ap_record[i].bssid, WIFI_MAC_ADDRESS_LENGTH);
+                memcpy(stConnConfig.u8aPwd, g_tOplDataConnCfg.u8aPwd, WIFI_LENGTH_PASSPHRASE);
+                stConnConfig.u8PwdLen = g_tOplDataConnCfg.u8PwdLen;
+                stConnConfig.u8Timeout = g_tOplDataConnCfg.u8Timeout;
+
+                // clear auto connect list & wifi profile
+                // Opl_Wifi_Profile_Clear();
+
+                // CK_DataSendResponse(CK_DATA_RSP_RESET, 0);
+
+                // trigger wifi connect
+                APP_NmWifiCnctReq(&stConnConfig, OPL_DataHandler_WifiConnectionIndCb);
+            }
+            else
+            {
+                OPL_LOG_WARN(OPL, "Manual Connect Scan Retry");
+
+                g_u8IsManuallyConnectScanRetry = true;
+
+                APP_NmWifiScanReq(OPL_DataHandler_WifiScanDoneIndCb);
+            }
+        }
     }
 }
 

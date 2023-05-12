@@ -700,7 +700,8 @@ Fail:
         free(buf);
     }
 
-    httpclient_exp_close(&g_client);
+    // Already do httpclient_exp_close inside httpclient_exp_get --> httpclient_exp_common, should not do again here
+    //httpclient_exp_close(&g_client);
 
     Opl_Wifi_Skip_Dtim_Set(g_u16IotDtimTxUse, true);
 

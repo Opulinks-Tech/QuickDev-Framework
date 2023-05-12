@@ -109,6 +109,7 @@ static T_OplDataEventTable g_tOplDataEventHandlerTbl[] =
 {
     {OPL_DATA_REQ_SCAN,                      OPL_DataProtocol_Scan},
     {OPL_DATA_REQ_CONNECT,                   OPL_DataProtocol_Connect},
+    {OPL_DATA_REQ_MANUAL_CONNECT_AP,         OPL_DataProtocol_Manually_Connect_AP},
     {OPL_DATA_REQ_DISCONNECT,                OPL_DataProtocol_Disconnect},
     {OPL_DATA_REQ_RECONNECT,                 OPL_DataProtocol_Reconnect},
     {OPL_DATA_REQ_READ_DEVICE_INFO,          OPL_DataProtocol_ReadDeviceInfo},
@@ -356,7 +357,7 @@ static void OPL_DataProtocol_Connect(uint16_t type, uint8_t *data, int len)
     {
         if(data[7] > OPL_DATA_MAX_REC_PASSWORD_SIZE)
         {
-            OPL_LOG_INFO(OPL, "Not do manually connect %d", __LINE__);
+            OPL_LOG_WARN(OPL, "pwd lens incorrect");
             OPL_DataSendResponse(OPL_DATA_RSP_CONNECT, OPL_DATA_WIFI_PASSWORD_FAIL);
             return;
         }
@@ -384,6 +385,69 @@ static void OPL_DataProtocol_Connect(uint16_t type, uint8_t *data, int len)
 
     // trigger wifi connect
     APP_NmWifiCnctReq(&stConnConfig, OPL_DataHandler_WifiConnectionIndCb);
+}
+
+static void OPL_DataProtocol_Manually_Connect_AP(uint16_t type, uint8_t *data, int len)
+{
+    OPL_LOG_DEBG(OPL, "OPL_DATA_REQ_MANUAL_CONNECT_AP");
+
+    // data format for connecting a hidden AP
+    //--------------------------------------------------------------------
+    //|        1     |    1~32    |         1          |   8~63     |
+    //--------------------------------------------------------------------
+    //| ssid length  |    ssid    |   password_length  |   password |
+    //--------------------------------------------------------------------
+
+    if (len >= (1 + data[0] + 1) ) // ssid length(1) + ssid (data(0)) + password_length (1)
+    {
+        OPL_LOG_DEBG(OPL, "Do Manual Connect");
+
+        // reset connection config table
+        memset(&g_tOplDataConnCfg, 0, sizeof(T_OplDataConnCfg));
+
+        g_tOplDataConnCfg.u8ConnectType = OPL_DATA_CONN_TYPE_SSID;
+
+        // copy ssid len & ssid
+        g_tOplDataConnCfg.u8SsidLen = data[0];
+        memcpy(g_tOplDataConnCfg.u8aSsid, &data[1], data[0]);
+
+        OPL_LOG_INFO(OPL, "Recv Connect Request SSID is %s", g_tOplDataConnCfg.u8aSsid);
+
+        size_t u16PasswordLen = data[data[0] + 1];
+
+        // check and copy password
+        if(u16PasswordLen == 0) //password len = 0
+        {
+            OPL_LOG_INFO(OPL, "pwd lens = 0");
+            g_tOplDataConnCfg.u8PwdLen = 0;
+            memset((char *)g_tOplDataConnCfg.u8aPwd, 0 , WIFI_LENGTH_PASSPHRASE);
+        }
+        else
+        {
+            if(u16PasswordLen > OPL_DATA_MAX_REC_PASSWORD_SIZE)
+            {
+                OPL_LOG_WARN(OPL, "pwd lens incorrect");
+                OPL_DataSendResponse(OPL_DATA_RSP_CONNECT, OPL_DATA_WIFI_PASSWORD_FAIL);
+                return;
+            }
+            
+            g_tOplDataConnCfg.u8PwdLen = u16PasswordLen;
+            memcpy(g_tOplDataConnCfg.u8aPwd, &data[1 + data[0] + 1], u16PasswordLen);
+
+            printf("password = %s\r\n" , g_tOplDataConnCfg.u8aPwd);
+            printf("password_length = %d\r\n" , g_tOplDataConnCfg.u8PwdLen);
+        }
+
+        g_u8IsManuallyConnectScanRetry = false;
+
+        APP_NmWifiScanReq(OPL_DataHandler_WifiScanDoneIndCb);
+    }
+    else
+    {
+        OPL_LOG_DEBG(OPL, "Not Do Manual Connect");
+
+        OPL_DataSendResponse(OPL_DATA_RSP_CONNECT, OPL_DATA_WIFI_CONNECTED_FAIL);
+    }
 }
 
 static void OPL_DataProtocol_Disconnect(uint16_t type, uint8_t *data, int len)

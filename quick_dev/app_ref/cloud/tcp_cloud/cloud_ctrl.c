@@ -57,6 +57,7 @@ Declaration of data structure
 Declaration of Global Variables & Functions
 ********************************************/
 // Sec 4: declaration of global variable
+extern uint32_t g_u32PostWaitAck;
 
 // Sec 5: declaration of global function prototype
 
@@ -75,7 +76,11 @@ static int32_t g_i32TcpTxId = -1;
 static int32_t g_i32TcpRxId = -1;
 static uintptr_t g_ptrCloudTcpHdlId = 0;
 
-uint16_t g_u16CloudTcpSkipDtimId = 0;
+static uint8_t g_u8AvailableToPost = 0;
+
+uint16_t g_u16CloudTcpConnectionSkipDtimId = 0;
+uint16_t g_u16CloudTcpWaitAckDataSkipDtimId = 0;
+uint16_t g_u16CloudTcpWaitTcpAckSkipDtimId = 0;
 uint32_t g_u32CloudKeepAliveDuration = CLOUD_KEEP_ALIVE_TIME;
 
 // global cloud status callback fp
@@ -84,7 +89,7 @@ T_CloudStatusCbFp g_tCloudStatusCbFp = NULL;
 // global cloud configure information
 T_CloudConnInfo g_tCloudConnInfo = 
 {
-    .u8AutoConn = false,
+    .u8AutoConn = true,
     .u8Security = 0,
     .u8aHostAddr = TCP_HOST_IP,
     .u16HostPort = TCP_HOST_PORT,
@@ -95,7 +100,7 @@ T_CloudTopicRegInfo g_tRxTopicTab[CLOUD_TOPIC_NUMBER];
 // Sec 7: declaration of static function prototype
 
 static void Cloud_TimeoutCallback(void const *argu);
-static void Cloud_PostData(uint8_t *pu8Data, uint32_t u32DataLen);
+static T_OplErr Cloud_PostData(uint8_t *pu8Data, uint32_t u32DataLen);
 
 /***********
 C Functions
@@ -342,14 +347,12 @@ T_CloudTopicRegInfoPtr Cloud_RxTopicGet(void)
 *   u32DataLen :    [IN] post data lens
 *
 * RETURNS
-*   none
+*   T_OplErr :      see in opl_err.h
 *
 *************************************************************************/
-void Cloud_PostData(uint8_t *pu8Data, uint32_t u32DataLen)
+T_OplErr Cloud_PostData(uint8_t *pu8Data, uint32_t u32DataLen)
 {
     int32_t i32Ret = 0;
-
-    Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpSkipDtimId, false);
 
     osSemaphoreWait(g_tCloudSemaphoreId, osWaitForever);
 
@@ -372,7 +375,7 @@ void Cloud_PostData(uint8_t *pu8Data, uint32_t u32DataLen)
             (g_i32TcpHdlId == g_i32TcpTxId) &&
             (true == Cloud_OnlineStatusGet()))
         {
-            uint8_t u8ReConnect = true;
+            uint8_t u8ReConnect = g_tCloudConnInfo.u8AutoConn;
 
             Cloud_MsgSend(CLOUD_EVT_TYPE_DISCONNECT, &u8ReConnect, sizeof(u8ReConnect));
 
@@ -380,11 +383,38 @@ void Cloud_PostData(uint8_t *pu8Data, uint32_t u32DataLen)
         }
 
         osSemaphoreRelease(g_tCloudSemaphoreId);
-    }
 
-    OPL_LOG_INFO(CLOUD, "post: %s (%d)", pu8Data, u32DataLen);
-    
-    Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpSkipDtimId, true);
+        return OPL_ERR;
+    }
+    else
+    {
+        OPL_LOG_INFO(CLOUD, "post: %s (%d)", pu8Data, u32DataLen);
+
+        return OPL_OK;
+    }
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_GotAckHandler
+*
+* DESCRIPTION:
+*   handle activity after received ack message
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_GotAckHandler(void)
+{
+    Cloud_TimerStop(CLOUD_TMR_WAIT_ACK_DATA);
+
+    Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpWaitAckDataSkipDtimId, true);
+
+    g_u8AvailableToPost = 0;
 }
 
 /*************************************************************************
@@ -547,10 +577,19 @@ void Cloud_InitHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
     }
 
     // register skip DTIM id
-    if(OPL_OK != Opl_Wifi_Skip_Dtim_Module_Reg(&g_u16CloudTcpSkipDtimId))
-    {
-        OPL_LOG_ERRO(CLOUD, "Reg cloud tcp skip DTIM id fail");
-    }
+    // if(OPL_OK != Opl_Wifi_Skip_Dtim_Module_Reg(&g_u16CloudTcpSkipDtimId))
+    // {
+    //     OPL_LOG_ERRO(CLOUD, "Reg cloud tcp skip DTIM id fail");
+    // }
+
+    if(OPL_OK != Opl_Wifi_Skip_Dtim_Module_Reg(&g_u16CloudTcpConnectionSkipDtimId))
+        OPL_LOG_ERRO(CLOUD, "Reg tcp connection skip DTIM id fail");
+    
+    if(OPL_OK != Opl_Wifi_Skip_Dtim_Module_Reg(&g_u16CloudTcpWaitAckDataSkipDtimId))
+        OPL_LOG_ERRO(CLOUD, "Reg tcp wait ack data skip DTIM id fail");
+    
+    if(OPL_OK != Opl_Wifi_Skip_Dtim_Module_Reg(&g_u16CloudTcpWaitTcpAckSkipDtimId))
+        OPL_LOG_ERRO(CLOUD, "Reg tcp wait tcp ack skip DTIM id fail");
 
     // user implement
 }
@@ -585,7 +624,7 @@ void Cloud_EstablishHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLe
     {
         osSemaphoreWait(g_tCloudSemaphoreId, osWaitForever);
 
-        Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpSkipDtimId, false);
+        Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpConnectionSkipDtimId, false);
 
         g_ptrCloudTcpHdlId = TCP_Establish((char *)g_tCloudConnInfo.u8aHostAddr, g_tCloudConnInfo.u16HostPort);
 
@@ -621,7 +660,7 @@ void Cloud_EstablishHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLe
             OPL_LOG_INFO(CLOUD, "tcp connect pass, keep alive duation (%d)", g_u32CloudKeepAliveDuration);
         }
 
-        Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpSkipDtimId, true);
+        Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpConnectionSkipDtimId, true);
     }
 }
 
@@ -643,16 +682,25 @@ void Cloud_EstablishHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLe
 *************************************************************************/
 void Cloud_DisconnectHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
-    uint8_t u8ReConnect = *((uint8_t *)pData);
+    uint8_t u8ReConnect = false;
+    
+    if(sizeof(u8ReConnect) == u32DataLen)
+    {
+        u8ReConnect = *((uint8_t *)pData);
+    }
 
     // user implement
     osSemaphoreWait(g_tCloudSemaphoreId, osWaitForever);
 
-    Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpSkipDtimId, false);
+    Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpConnectionSkipDtimId, false);
 
     Cloud_TimerStop(CLOUD_TMR_CONN_RETRY);
     Cloud_TimerStop(CLOUD_TMR_KEEP_ALIVE);
-    Cloud_TimerStop(CLOUD_TMR_DATA_POST);
+    Cloud_TimerStop(CLOUD_TMR_WAIT_ACK_DATA);
+    Cloud_TimerStop(CLOUD_TMR_WAIT_TCP_ACK);
+
+    // restore the post flag
+    g_u8AvailableToPost = 0;
 
     // 1. close connection
     int32_t i32Ret = 0;
@@ -660,8 +708,31 @@ void Cloud_DisconnectHandler(uint32_t u32EventId, void *pData, uint32_t u32DataL
     if(true == Cloud_OnlineStatusGet())
     {
         i32Ret = TCP_Disconnect(g_ptrCloudTcpHdlId);
-    }
 
+        // 2. determine the disconnect result and change the connection status
+        if(i32Ret < 0)
+        {
+            OPL_LOG_ERRO(CLOUD, "tcp disconnect fail (ret %d)", i32Ret);
+        }
+        else
+        {
+            OPL_LOG_INFO(CLOUD, "tcp disconnected");
+        }
+
+        Cloud_OnlineStatusSet(false);
+
+        // notify to application
+        Cloud_StatusCallback(CLOUD_CB_STA_DISCONN, NULL, 0);
+
+        g_ptrCloudTcpHdlId = (uintptr_t)-1;
+        g_i32TcpHdlId = -1;
+
+        if(u8ReConnect == true)
+        {
+            Cloud_MsgSend(CLOUD_EVT_TYPE_ESTABLISH, NULL, 0);
+        }
+    }
+#if 0
     // 2. determine the disconnect result and change the connection status
     if(i32Ret < 0)
     {
@@ -684,8 +755,10 @@ void Cloud_DisconnectHandler(uint32_t u32EventId, void *pData, uint32_t u32DataL
     {
         Cloud_MsgSend(CLOUD_EVT_TYPE_ESTABLISH, NULL, 0);
     }
-
-    Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpSkipDtimId, true);
+#endif
+    Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpConnectionSkipDtimId, true);
+    Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpWaitTcpAckSkipDtimId, true);
+    Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpWaitAckDataSkipDtimId, true);
 
     osSemaphoreRelease(g_tCloudSemaphoreId);
 }
@@ -724,13 +797,20 @@ void Cloud_TimeoutHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
             Cloud_KeepAliveHandler(u32EventId, pData, u32DataLen);
             break;
 
-        case CLOUD_TMR_DATA_POST:
+        case CLOUD_TMR_WAIT_ACK_DATA:
         {
-            uint8_t u8ReConnect = true;
+            // OPL_LOG_WARN(CLOUD, "Waiting ack data timeout");
 
-            OPL_LOG_WARN(CLOUD, "post data timeout");
+            Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpWaitAckDataSkipDtimId, true);
 
-            Cloud_MsgSend(CLOUD_EVT_TYPE_DISCONNECT, &u8ReConnect, sizeof(u8ReConnect));
+            g_u8AvailableToPost = 0;
+
+            break;
+        }
+
+        case CLOUD_TMR_WAIT_TCP_ACK:
+        {
+            Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpWaitTcpAckSkipDtimId, true);
             break;
         }
 
@@ -803,9 +883,14 @@ void Cloud_KeepAliveHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLe
 
         u32PostDataLen += sprintf((char *)u8PostData, "%s", u8KeepAliveData);
 
-        Cloud_PostData(u8PostData, u32PostDataLen);
+        Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpWaitAckDataSkipDtimId, false);
 
-        Cloud_TimerStart(CLOUD_TMR_KEEP_ALIVE, g_u32CloudKeepAliveDuration);
+        if(OPL_OK == Cloud_PostData(u8PostData, u32PostDataLen))
+        {
+            Cloud_TimerStart(CLOUD_TMR_KEEP_ALIVE, g_u32CloudKeepAliveDuration);
+        }
+
+        Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpWaitAckDataSkipDtimId, true);
     }
 }
 
@@ -843,7 +928,16 @@ void Cloud_AckHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
         Cloud_AckDataConstruct(pData, u32DataLen, u8AckData, &u32AckDataLen);
 
         // 2. post ack data
-        Cloud_PostData(u8AckData, u32AckDataLen);
+        Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpWaitTcpAckSkipDtimId, false);
+
+        if(OPL_OK == Cloud_PostData(u8AckData, u32AckDataLen))
+        {
+            Cloud_TimerStart(CLOUD_TMR_WAIT_TCP_ACK, TCP_RECV_WAIT_TCP_ACK_TIME);
+        }
+        else
+        {
+            Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpWaitTcpAckSkipDtimId, true);
+        }
     }
 }
 
@@ -882,6 +976,12 @@ void Cloud_PostHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 
         // 4. send event CLOUD_EVT_TYPE_POST_BACKUP if RingBuf not empty
 #else
+        if(1 == g_u8AvailableToPost)
+        {
+            // OPL_LOG_WARN(CLOUD, "Ignore the post, still waiting ack data");
+            return;
+        }
+
         // 1. construct income data for post (if required)
         uint8_t u8PostData[TCP_TX_BUF_SIZE] = {0};
         uint32_t u32PostDataLen = 0;
@@ -890,11 +990,28 @@ void Cloud_PostHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 
         Cloud_DataConstruct(tCloudPayloadFmt.u8aPayloadBuf, tCloudPayloadFmt.u32PayloadLen, u8PostData, &u32PostDataLen);
 
+        Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpWaitAckDataSkipDtimId, false);
+        
         // 2. post data
-        Cloud_PostData(u8PostData, u32PostDataLen);
+        if(OPL_OK == Cloud_PostData(u8PostData, u32PostDataLen))
+        {
+            if(g_u32PostWaitAck)
+            {
+                g_u8AvailableToPost = 1;
 
-        // start data post timer
-        // Cloud_TimerStart(CLOUD_TMR_DATA_POST, TCP_TX_POST_TIMEOUT);
+                // start "waiting ack data" timer
+                Cloud_TimerStart(CLOUD_TMR_WAIT_ACK_DATA, TCP_TX_POST_TIMEOUT);
+            }
+            else
+            {
+                // Don't wait ack data from server, just wait send tcp ack
+                Cloud_TimerStart(CLOUD_TMR_WAIT_ACK_DATA, TCP_WAIT_TCP_ACK_TIME);
+            }
+        }
+        else
+        {
+            Opl_Wifi_Skip_Dtim_Set(g_u16CloudTcpWaitAckDataSkipDtimId, true);
+        }
 
 #endif /* CLOUD_TX_DATA_BACKUP_ENABLED */
     }
@@ -1013,9 +1130,22 @@ void Cloud_ReceiveHandler(void)
             (g_i32TcpHdlId == g_i32TcpRxId) &&
             (true == Cloud_OnlineStatusGet()))
         {
-            uint8_t u8ReConnect = true;
+            uint8_t u8ReConnect = g_tCloudConnInfo.u8AutoConn;
             
-            Cloud_MsgSend(CLOUD_EVT_TYPE_DISCONNECT, &u8ReConnect, sizeof(u8ReConnect));
+            if(NULL != g_tCloudSemaphoreId)
+            {
+                osSemaphoreRelease(g_tCloudSemaphoreId);
+            }
+
+            OPL_LOG_INFO(CLOUD, "Call Cloud_DisconnectHandler directly");
+            Cloud_DisconnectHandler(CLOUD_EVT_TYPE_DISCONNECT, &u8ReConnect, sizeof(u8ReConnect));
+
+            if(NULL != g_tCloudSemaphoreId)
+            {
+                osSemaphoreWait(g_tCloudSemaphoreId, osWaitForever);
+            }
+
+            // Cloud_MsgSend(CLOUD_EVT_TYPE_DISCONNECT, &u8ReConnect, sizeof(u8ReConnect));
 
             g_i32TcpRxId = -1;
         }

@@ -93,7 +93,7 @@ void __Patch_EntryPoint(void) __attribute__((used));
 static void Main_PinMuxUpdate(void);
 static void Main_FlashLayoutUpdate(void);
 static void Main_AppInit_patch(void);
-static void Main_MiscDriverConfigSetup(void);
+static void Main_MiscModulesInit(void);
 static void Main_AtUartDbgUartSwitch(void);
 static void Main_ApsUartRxDectecConfig(void);
 #ifdef __APS_UART_DETECT__ // !!! don't detect the IO pin, bcz it will be sometimmes false alarm.
@@ -121,8 +121,6 @@ C Functions
 *************************************************************************/
 void __Patch_EntryPoint(void)
 {
-    uint32_t u32Addr;
-
     // don't remove this code
     SysInit_EntryPoint();
 
@@ -138,18 +136,16 @@ void __Patch_EntryPoint(void)
     MwFim_FlashLayoutUpdate = Main_FlashLayoutUpdate;
     
     // the initial of driver part for cold and warm boot
-    Sys_MiscModulesInit = Main_MiscDriverConfigSetup;
+    Sys_MiscModulesInit = Main_MiscModulesInit;
     
     // update the switch AT UART / dbg UART function
     at_cmd_switch_uart1_dbguart = Main_AtUartDbgUartSwitch;
 
-    // modify the heap size, from g_ucaMemPartAddr to 0x44F000
-    // u32Addr = SCT_PATCH_START + SCT_PATCH_LEN from .sct file
-    u32Addr = 0x004164a0 + 0x00020160;
-
-    g_ucaMemPartAddr = (uint8_t*) u32Addr;
+    // u32Addr must equal the first elements of SCT_PATCH_LEN
+    uint32_t u32Addr = 0x43A000;
+    g_ucaMemPartAddr = (uint8_t*)u32Addr;
     g_ulMemPartTotalSize = 0x44F000 - u32Addr;
-
+		
     Sys_SetUnsuedSramEndBound(u32Addr);
     
     // application init
@@ -245,7 +241,7 @@ static void Main_FlashLayoutUpdate(void)
 
 /*************************************************************************
 * FUNCTION:
-*   Main_MiscDriverConfigSetup
+*   Main_MiscModulesInit
 *
 * DESCRIPTION:
 *   the initial of driver part for cold and warm boot
@@ -257,7 +253,7 @@ static void Main_FlashLayoutUpdate(void)
 *   none
 *
 *************************************************************************/
-static void Main_MiscDriverConfigSetup(void)
+static void Main_MiscModulesInit(void)
 {
     //Hal_Wdt_Stop();   //disable watchdog here.
 

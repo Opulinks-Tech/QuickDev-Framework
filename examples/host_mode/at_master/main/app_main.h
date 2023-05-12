@@ -51,7 +51,7 @@ extern "C" {
 
 #define APP_TASK_PRIORITY               (osPriorityNormal)
 #define APP_QUEUE_SIZE                  (20)
-#define APP_TASK_STACK_SIZE             (512)
+#define APP_TASK_STACK_SIZE             (1024)
 
 #define HOST_MODE_DATA_LEN              (128)
 

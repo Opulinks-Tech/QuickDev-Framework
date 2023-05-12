@@ -1435,7 +1435,12 @@ static int httpclient_exp_ssl_conn(httpclient_exp_t *client, char *host)
     /*
     * Handshake
     */
-    sys_cfg_clk_set(SYS_CFG_CLK_44_MHZ);
+#if defined(OPL2500_A0)
+    // TODO: sets back to 143MHz while opl2500 is ready (Handshake clock rate)
+	sys_cfg_clk_set(SYS_CFG_CLK_44_MHZ);
+#else
+	sys_cfg_clk_set(SYS_CFG_CLK_143_MHZ);
+#endif
 
     while ((ret = mbedtls_ssl_handshake(&ssl->ssl_ctx)) != 0) {
         if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE) {

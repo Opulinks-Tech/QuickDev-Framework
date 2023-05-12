@@ -43,6 +43,7 @@ Head Block of The File
 // Sec 1: Include File
 #include <stdint.h>
 #include "hal_pin_def.h"
+#include "qd_config.h"  // For EXT_PA_ENABLED
 
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
 
@@ -149,7 +150,11 @@ Head Block of The File
                                                  * *********************************** */
 
 
+#if (EXT_PA_ENABLED == 1)
+#define HAL_PIN_TYPE_PATCH_IO_3               (PIN_TYPE_GPIO_OUT_LOW_IO3        | PIN_DRVCRNT_IO3_2mA   | PIN_INMODE_IO3_FLOATING)
+#else
 #define HAL_PIN_TYPE_PATCH_IO_3               (PIN_TYPE_GPIO_DISABLE_IO3        | PIN_DRVCRNT_IO3_2mA   | PIN_INMODE_IO3_FLOATING)
+#endif
                                                 /* ***********************************
                                                  *     PIN_TYPE_APS_UART_RTS_N_IO3
                                                  *     PIN_TYPE_CAM_DATA0_IO3
@@ -176,7 +181,11 @@ Head Block of The File
                                                  * *********************************** */
 
 
+#if (EXT_PA_ENABLED == 1)
+#define HAL_PIN_TYPE_PATCH_IO_4               (PIN_TYPE_GPIO_OUT_LOW_IO4        | PIN_DRVCRNT_IO4_2mA   | PIN_INMODE_IO4_FLOATING)
+#else
 #define HAL_PIN_TYPE_PATCH_IO_4               (PIN_TYPE_GPIO_DISABLE_IO4        | PIN_DRVCRNT_IO4_2mA   | PIN_INMODE_IO4_FLOATING)
+#endif
                                                 /* ***********************************
                                                  *     PIN_TYPE_APS_SWDIO_IO4
                                                  *     PIN_TYPE_APS_UART_CTS_N_IO4
@@ -214,7 +223,11 @@ Head Block of The File
                                                  * *********************************** */
 
 
+#if (EXT_PA_ENABLED == 1)
+#define HAL_PIN_TYPE_PATCH_IO_5               (PIN_TYPE_GPIO_OUT_LOW_IO5           | PIN_DRVCRNT_IO5_2mA   | PIN_INMODE_IO5_FLOATING)
+#else
 #define HAL_PIN_TYPE_PATCH_IO_5               (PIN_TYPE_GPIO_DISABLE_IO5           | PIN_DRVCRNT_IO5_2mA   | PIN_INMODE_IO5_FLOATING)
+#endif
                                                 /* ***********************************
                                                  *     PIN_TYPE_APS_UART_TXD_IO5
                                                  *     PIN_TYPE_CAM_DATA2_IO5
@@ -249,7 +262,11 @@ Head Block of The File
                                                  * *********************************** */
 
 
+#if (EXT_PA_ENABLED == 1)
 #define HAL_PIN_TYPE_PATCH_IO_6               (PIN_TYPE_GPIO_OUT_LOW_IO6        | PIN_DRVCRNT_IO6_2mA   | PIN_INMODE_IO6_FLOATING)
+#else
+#define HAL_PIN_TYPE_PATCH_IO_6               (PIN_TYPE_GPIO_OUT_LOW_IO6        | PIN_DRVCRNT_IO6_2mA   | PIN_INMODE_IO6_FLOATING)
+#endif
                                                 /* ***********************************
                                                  *     PIN_TYPE_APS_SWCLK_IO6
                                                  *     PIN_TYPE_APS_UART_RTS_N_IO6

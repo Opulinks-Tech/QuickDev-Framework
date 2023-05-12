@@ -67,6 +67,12 @@ extern "C" {
 #define RF_CFG_DEF_PWR_SET                      (RF_PWR_LVL_D0)
 #endif
 
+#if 0 // Should be enable for OPL2500P
+#define EXT_PA_ENABLED                          (1)
+#else
+#define EXT_PA_ENABLED                          (0)
+#endif
+
 // </h>
 
 //==========================================================
@@ -94,6 +100,12 @@ extern "C" {
 // <else> User define
 #ifndef SYS_CFG_PS_MODE
 #define SYS_CFG_PS_MODE                         (0)
+#endif
+
+#ifndef OPL_POWER_SLEEP_CONTROL
+#define OPL_POWER_SLEEP_CONTROL                 (0) // Demostract power control
+#define DEEP_SLEEP_IO_PORT                      (GPIO_IDX_09)
+#define SLAVE_READY_IO_PORT                     (GPIO_IDX_29)
 #endif
 
 //----------------------------------------------------------

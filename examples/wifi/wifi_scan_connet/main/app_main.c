@@ -255,8 +255,12 @@ static void APP_EvtHandler_SysTimerTimeout(uint32_t u32EventId, void *pData, uin
 
 void APP_SysInit(void)
 {
+#if (EXT_PA_ENABLED == 1)
+    // Do not overwrite RF power setting if external PA enable
+#else
     // initialize rf power setting
     RF_PwrSet(RF_CFG_DEF_PWR_SET);
+#endif
 
     // user implement
 }

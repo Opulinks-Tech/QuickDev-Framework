@@ -81,7 +81,7 @@ Declaration of Global Variables & Functions
 
 extern T_OplDataConnCfg g_tOplDataConnCfg;
 
-// extern uint8_t g_u8IsManuallyConnectScanRetry;
+extern uint8_t g_u8IsManuallyConnectScanRetry;
 
 // Sec 5: declaration of global function prototype
 

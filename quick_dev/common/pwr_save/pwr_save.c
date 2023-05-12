@@ -68,7 +68,8 @@ C Functions
 
 void PS_EnterDeepSleep(E_GpioIdx_t tGpioIdx, E_ItrType_t tItrType)
 {
-    Hal_Pin_ConfigSet(tGpioIdx, PIN_TYPE_GPIO_INPUT, PIN_DRIVING_FLOAT);
+    //Hal_Pin_ConfigSet(tGpioIdx, PIN_TYPE_GPIO_INPUT, PIN_DRIVING_FLOAT);
+    Hal_Pin_ConfigSet(tGpioIdx, PIN_TYPE_GPIO_INPUT, GPIO_LEVEL_HIGH);  // OPL_POWER_SLEEP_CONTROL
     ps_set_wakeup_io(tGpioIdx, 1, tItrType, 0, NULL);
 
     ps_deep_sleep();

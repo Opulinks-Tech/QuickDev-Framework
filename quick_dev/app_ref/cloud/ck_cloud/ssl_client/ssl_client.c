@@ -468,18 +468,26 @@ int ssl_Establish(mbedtls_net_context *server_fd,
      * 4. Handshake
      */
     printf("Performing the SSL/TLS handshake...\n\n");
-    // sys_cfg_clk_set(SYS_CFG_CLK_143_MHZ);
+
+#if defined(OPL2500_A0)
+    // TODO: sets back to 143MHz while opl2500 is ready (Handshake clock rate)
+	sys_cfg_clk_set(SYS_CFG_CLK_44_MHZ);
+#else
+	sys_cfg_clk_set(SYS_CFG_CLK_143_MHZ);
+#endif
+
     while ((ret = mbedtls_ssl_handshake(ssl)) != 0)
     {
         if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE)
         {
             printf("mbedtls_ssl_handshake returned -0x%x\n\n", -ret);
             printf("[ATS]Websocket handshake fail\r\n");
-            // sys_cfg_clk_set(SYS_CFG_CLK_RATE);
+            sys_cfg_clk_set(SYS_CFG_CLK_RATE);
             return false;
         }
     }
-    // sys_cfg_clk_set(SYS_CFG_CLK_RATE);
+
+    sys_cfg_clk_set(SYS_CFG_CLK_RATE);
     mbedtls_ssl_conf_read_timeout(conf, SSL_SOCKET_TIMEOUT);
 
     /*

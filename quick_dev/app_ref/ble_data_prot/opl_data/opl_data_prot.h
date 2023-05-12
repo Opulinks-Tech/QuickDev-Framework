@@ -49,6 +49,16 @@ extern "C" {
 
 #if (OPL_DATA_ENABLED == 1)
 
+#define MAX_AUTH_DATA_SIZE              (64)          // CBC(UUID(36)) = 48 , BASE64(CBC(UUID(36))) = 64
+#define MAX_AUTH_TOKEN_DATA_SIZE        (108)         // CBC(UUID(36) + "_"(1) + UUID(36)) = 80 , BASE(80) = 108
+#define UUID_SIZE                       (36)          // 8-4-4-4-12
+#define UUID_ENC_SIZE                   (48)          // CBC(UUID(36)) = 48
+#define SECRETKEY_LEN                   (16)
+#define IV_SIZE                         (16)
+#define ENC_UUID_TO_BASE64_SIZE         (64)          // base64 max size ((4 * n / 3) + 3) & ~3
+#define MAX_RSP_BASE64_API_KEY_LEN      (108)         // BASE(80) = 108
+#define MAX_RSP_BASE64_CHIP_ID_LEN      (44)          // BASE(32) = 44
+
 #define OPL_DATA_MAX_REC_PASSWORD_SIZE   (108)         // WIFI_LENGTH_PASSPHRASE = 64  CBC(64)= 80  BASE64(80) = 108
 
 #define OPL_DATA_WIFI_CONNECTED_DONE     0
@@ -266,6 +276,7 @@ Declaration of static Global Variables & Functions
 
 static void OPL_DataProtocol_Scan(uint16_t type, uint8_t *data, int len);
 static void OPL_DataProtocol_Connect(uint16_t type, uint8_t *data, int len);
+static void OPL_DataProtocol_Manually_Connect_AP(uint16_t type, uint8_t *data, int len);
 static void OPL_DataProtocol_Disconnect(uint16_t type, uint8_t *data, int len);
 static void OPL_DataProtocol_Reconnect(uint16_t type, uint8_t *data, int len);
 static void OPL_DataProtocol_ReadDeviceInfo(uint16_t type, uint8_t *data, int len);

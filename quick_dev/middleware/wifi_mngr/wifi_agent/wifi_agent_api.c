@@ -561,12 +561,16 @@ T_OplErr WM_WaSkipDtimModuleReg(uint16_t *u16ModuleId)
 *************************************************************************/
 T_OplErr WM_WaSkipDtimSet(uint16_t u16ModuleId, uint8_t u8Enable)
 {
-    uint32_t u32DtimInterval;
+    uint32_t u32DtimInterval = 0;
 
-    // valid module id
+    // validate module id
     if(u16ModuleId == (u16ModuleId & g_u16SkipDtimModuleIdField))
     {
-        if(true == u8Enable)
+        if(0 == WM_DTIM_PERIOD_TIME)
+        {
+            u32DtimInterval = 0;
+        }
+        else if(true == u8Enable)
         {
             g_u16SkipDtimModuleStField |= u16ModuleId;
 
@@ -589,12 +593,22 @@ T_OplErr WM_WaSkipDtimSet(uint16_t u16ModuleId, uint8_t u8Enable)
                 return OPL_OK;
             }
         }
-        else
+        else if(false == u8Enable)
         {
             g_u16SkipDtimModuleStField &= ~u16ModuleId;
 
             u32DtimInterval = 0;
         }
+        else
+        {
+            // invalid data of control argument (u8Enable)
+            return OPL_ERR_PARAM_INVALID;
+        }
+    }
+    else
+    {
+        // invalid module id
+        return OPL_ERR_PARAM_INVALID;
     }
 
     // the max is 8 bits

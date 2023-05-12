@@ -342,7 +342,12 @@ MbedtlsOplStatus_t Mbedtls_Opl_Connect( NetworkContext_t *ptNetworkContext,
 
         mbedtls_ssl_conf_read_timeout(&(pMbedtlsOplContext->config), 5000);
 
-        sys_cfg_clk_set(SYS_CFG_CLK_143_MHZ);
+#if defined(OPL2500_A0)
+        // TODO: sets back to 143MHz while opl2500 is ready (Handshake clock rate)
+        sys_cfg_clk_set(SYS_CFG_CLK_44_MHZ);
+#else
+	    sys_cfg_clk_set(SYS_CFG_CLK_143_MHZ);
+#endif
 
         while((mbedtlsError = mbedtls_ssl_handshake(&(pMbedtlsOplContext->context))) != 0)
         {

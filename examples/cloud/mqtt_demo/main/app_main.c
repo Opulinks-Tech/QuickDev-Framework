@@ -509,8 +509,12 @@ void APP_BleScanRspDataInit(void)
 
 void APP_SysInit(void)
 {
+#if (EXT_PA_ENABLED == 1)
+    // Do not overwrite RF power setting if external PA enable
+#else
     // initialize rf power setting
     RF_PwrSet(RF_CFG_DEF_PWR_SET);
+#endif
 
     // initialize ota manager
     OTA_Init();
@@ -795,7 +799,12 @@ void APP_MainInit(void)
     APP_CldInit();
 
     APP_UserAtInit();
-    
+ 
+#if 0   // Workaround for after several auto-connect rounds will cause SDK hang
+    printf("Warning: ice mode!!!\r\n");
+    reg_write(0x40001100, 0x12);    // software ice mode workaround for mantis 3226 
+#endif
+
     // enter smart sleep after 5s
 #if (PS_ENABLED == 1)
     PS_EnterSmartSleep(5000);

@@ -43,6 +43,7 @@ Head Block of The File
 // Sec 1: Include File
 #include <stdint.h>
 #include "hal_pin_def.h"
+#include "qd_config.h"  // For EXT_PA_ENABLED
 
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
 
@@ -149,7 +150,11 @@ Head Block of The File
                                                  * *********************************** */
 
 
+#if (EXT_PA_ENABLED == 1)
+#define HAL_PIN_TYPE_PATCH_IO_3               (PIN_TYPE_GPIO_OUT_LOW_IO3        | PIN_DRVCRNT_IO3_2mA   | PIN_INMODE_IO3_FLOATING)
+#else
 #define HAL_PIN_TYPE_PATCH_IO_3               (PIN_TYPE_GPIO_DISABLE_IO3        | PIN_DRVCRNT_IO3_2mA   | PIN_INMODE_IO3_FLOATING)
+#endif
                                                 /* ***********************************
                                                  *     PIN_TYPE_APS_UART_RTS_N_IO3
                                                  *     PIN_TYPE_CAM_DATA0_IO3
@@ -176,7 +181,11 @@ Head Block of The File
                                                  * *********************************** */
 
 
+#if (EXT_PA_ENABLED == 1)
+#define HAL_PIN_TYPE_PATCH_IO_4               (PIN_TYPE_GPIO_OUT_LOW_IO4        | PIN_DRVCRNT_IO4_2mA   | PIN_INMODE_IO4_FLOATING)
+#else
 #define HAL_PIN_TYPE_PATCH_IO_4               (PIN_TYPE_GPIO_DISABLE_IO4        | PIN_DRVCRNT_IO4_2mA   | PIN_INMODE_IO4_FLOATING)
+#endif
                                                 /* ***********************************
                                                  *     PIN_TYPE_APS_SWDIO_IO4
                                                  *     PIN_TYPE_APS_UART_CTS_N_IO4
@@ -214,7 +223,11 @@ Head Block of The File
                                                  * *********************************** */
 
 
+#if (EXT_PA_ENABLED == 1)
+#define HAL_PIN_TYPE_PATCH_IO_5               (PIN_TYPE_GPIO_OUT_LOW_IO5           | PIN_DRVCRNT_IO5_2mA   | PIN_INMODE_IO5_FLOATING)
+#else
 #define HAL_PIN_TYPE_PATCH_IO_5               (PIN_TYPE_GPIO_DISABLE_IO5           | PIN_DRVCRNT_IO5_2mA   | PIN_INMODE_IO5_FLOATING)
+#endif
                                                 /* ***********************************
                                                  *     PIN_TYPE_APS_UART_TXD_IO5
                                                  *     PIN_TYPE_CAM_DATA2_IO5
@@ -249,7 +262,11 @@ Head Block of The File
                                                  * *********************************** */
 
 
+#if (EXT_PA_ENABLED == 1)
 #define HAL_PIN_TYPE_PATCH_IO_6               (PIN_TYPE_GPIO_OUT_LOW_IO6        | PIN_DRVCRNT_IO6_2mA   | PIN_INMODE_IO6_FLOATING)
+#else
+#define HAL_PIN_TYPE_PATCH_IO_6               (PIN_TYPE_GPIO_OUT_LOW_IO6        | PIN_DRVCRNT_IO6_2mA   | PIN_INMODE_IO6_FLOATING)
+#endif
                                                 /* ***********************************
                                                  *     PIN_TYPE_APS_SWCLK_IO6
                                                  *     PIN_TYPE_APS_UART_RTS_N_IO6
@@ -347,8 +364,11 @@ Head Block of The File
                                                  *     PIN_INMODE_IO8_PULL_UP
                                                  * *********************************** */
 
-
+#if (OPL_POWER_SLEEP_CONTROL == 1)
+#define HAL_PIN_TYPE_PATCH_IO_9               (PIN_TYPE_GPIO_IN_IO9             | PIN_DRVCRNT_IO9_2mA   | PIN_INMODE_IO9_FLOATING)
+#else
 #define HAL_PIN_TYPE_PATCH_IO_9               (PIN_TYPE_GPIO_DISABLE_IO9        | PIN_DRVCRNT_IO9_2mA   | PIN_INMODE_IO9_FLOATING)
+#endif
                                                 /* ***********************************
                                                  *     PIN_TYPE_APS_UART_CTS_N_IO9
                                                  *     PIN_TYPE_CAM_DATA6_IO9
@@ -815,8 +835,11 @@ Head Block of The File
                                                  *     PIN_INMODE_IO23_PULL_UP
                                                  * *********************************** */
 
-
+#if (OPL_POWER_SLEEP_CONTROL == 1)
+#define HAL_PIN_TYPE_PATCH_IO_24              (PIN_TYPE_I2C_SDA_IO_IO24         | PIN_DRVCRNT_IO24_12mA | PIN_INMODE_IO24_FLOATING)
+#else
 #define HAL_PIN_TYPE_PATCH_IO_24              (PIN_TYPE_GPIO_DISABLE_IO24       | PIN_DRVCRNT_IO24_12mA | PIN_INMODE_IO24_FLOATING)
+#endif
                                                 /* ***********************************
                                                  *     PIN_TYPE_APS_UART_TXD_IO24
                                                  *     PIN_TYPE_CAM_HSYNC_IO24
@@ -844,8 +867,11 @@ Head Block of The File
                                                  *     PIN_INMODE_IO24_PULL_UP
                                                  * *********************************** */
 
-
+#if (OPL_POWER_SLEEP_CONTROL == 1)
+#define HAL_PIN_TYPE_PATCH_IO_25              (PIN_TYPE_I2C_SCL_IO_IO25         | PIN_DRVCRNT_IO25_12mA | PIN_INMODE_IO25_FLOATING)
+#else
 #define HAL_PIN_TYPE_PATCH_IO_25              (PIN_TYPE_GPIO_DISABLE_IO25       | PIN_DRVCRNT_IO25_12mA | PIN_INMODE_IO25_FLOATING)
+#endif
                                                 /* ***********************************
                                                  *     PIN_TYPE_APS_SWDIO_IO25
                                                  *     PIN_TYPE_APS_UART_RXD_IO25
@@ -976,7 +1002,11 @@ Head Block of The File
                                                  * *********************************** */
 
 
+#if (OPL_POWER_SLEEP_CONTROL == 1)
+#define HAL_PIN_TYPE_PATCH_IO_29              (PIN_TYPE_GPIO_OUT_HIGH_IO29      | PIN_DRVCRNT_IO29_2mA  | PIN_INMODE_IO29_FLOATING)
+#else
 #define HAL_PIN_TYPE_PATCH_IO_29              (PIN_TYPE_GPIO_DISABLE_IO29       | PIN_DRVCRNT_IO29_2mA  | PIN_INMODE_IO29_FLOATING)
+#endif
                                                 /* ***********************************
                                                  *     PIN_TYPE_APS_SWDIO_IO29
                                                  *     PIN_TYPE_APS_UART_RTS_N_IO29

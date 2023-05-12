@@ -995,7 +995,7 @@ T_OplErr WM_AcIdle_AcTimerTimeoutHandler(T_FsmState tFsmState, T_FsmEvent tFsmEv
     T_FsmState tNextState;
 
     // update the next value of AC interval index
-    if (g_u8AcIntervalIdx < (sizeof(WM_AC_RETRY_INTVL_TBL[0])/sizeof(WM_AC_RETRY_INTVL_TBL) - 1))
+    if (g_u8AcIntervalIdx < (sizeof(WM_AC_RETRY_INTVL_TBL)/sizeof(WM_AC_RETRY_INTVL_TBL[0]) - 1))
     // if (g_u8AcIntervalIdx < (WM_AC_INTERVAL_TABLE_SIZE - 1))
     {
         g_u8AcIntervalIdx++;

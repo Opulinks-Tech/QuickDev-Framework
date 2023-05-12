@@ -1,12 +1,12 @@
 /******************************************************************************
-*  Copyright 2017 - 2018, Opulinks Technology Ltd.
+*  Copyright 2017 - 2021, Opulinks Technology Ltd.
 *  ----------------------------------------------------------------------------
 *  Statement:
 *  ----------
 *  This software is protected by Copyright and the information contained
 *  herein is confidential. The software may not be copied and the information
 *  contained herein may not be used or disclosed except with the written
-*  permission of Opulinks Technology Ltd. (C) 2018
+*  permission of Opulinks Technology Ltd. (C) 2021
 ******************************************************************************/
 
 /******************************************************************************
@@ -16,7 +16,7 @@
 *
 *  Project:
 *  --------
-*  OPL1000 Project - the main patch implement file
+*  OPL2500 Project - the main patch implement file
 *
 *  Description:
 *  ------------
@@ -24,7 +24,7 @@
 *
 *  Author:
 *  -------
-*  SDK Team
+*  FW team
 *
 ******************************************************************************/
 /***********************
@@ -37,25 +37,10 @@ Head Block of The File
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include "event_loop.h"
-#include "wifi_api.h"
-#include "wifi_event.h"
-#include "wifi_event_handler.h"
-#include "lwip_helper.h"
 #include "at_cmd_common.h"
-#include "at_cmd_tcpip.h"
-#include "at_cmd_wifi.h"
-#include "at_cmd_app.h"
-#include "at_cmd_property.h"
-#include "at_cmd_msg_ext.h"
-#include "sys_init.h"
-#include "sys_init_patch.h"
-#include "sys_cfg.h"
+#include "boot_sequence.h"
+#include "freertos_cmsis.h"
 #include "hal_system.h"
-#include "mw_fim.h"
-#include "mw_fim_default.h"
-#include "cmsis_os.h"
-#include "sys_os_config.h"
 #include "hal_auxadc.h"
 #include "hal_pin.h"
 #include "hal_pin_def.h"
@@ -63,19 +48,23 @@ Head Block of The File
 #include "hal_dbg_uart.h"
 #include "hal_vic.h"
 #include "hal_wdt.h"
-#include "boot_sequence.h"
-#include "at_cmd_common.h"
-#include "freertos_cmsis.h"
+#include "mw_fim.h"
+#include "mw_fim_default.h"
 #include "ps.h"
+#include "sys_init.h"
+#include "sys_cfg.h"
+#include "sys_os_config.h"
 
 #include "app_main.h"
 #include "mw_fim_default_version_project.h"
 #include "mw_fim_default_group11_project.h"
 #include "mw_fim_default_group12_project.h"
 #include "mw_fim_default_group16_project.h"
+#include "mw_fim_default_group01.h" // For EXT_PA_ENABLED
 #include "qd_config.h"
 #include "qd_module.h"
 #include "qd_fwk_ver.h"
+#include "svn_rev_patch.h"
 
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
 
@@ -103,17 +92,12 @@ static E_PIN_MAIN_UART_MODE g_eAppMainUartMode = PIN_MAIN_UART_MODE_AT;
 // Sec 7: declaration of static function prototype
 void __Patch_EntryPoint(void) __attribute__((section("ENTRY_POINT")));
 void __Patch_EntryPoint(void) __attribute__((used));
+static void Main_HeapPatchInit(void);
 static void Main_PinMuxUpdate(void);
+static void Main_MiscModulesInit(void);
 static void Main_FlashLayoutUpdate(void);
 static void Main_AppInit_patch(void);
-static void Main_MiscDriverConfigSetup(void);
 static void Main_AtUartDbgUartSwitch(void);
-#if 0
-static void Main_ApsUartRxDectecConfig(void);
-#endif
-#ifdef __APS_UART_DETECT__ // !!! don't detect the IO pin, bcz it will be sometimmes false alarm.
-static void Main_ApsUartRxDectecCb(E_GpioIdx_t tGpioIdx);
-#endif
 
 /***********
 C Functions
@@ -150,17 +134,60 @@ void __Patch_EntryPoint(void)
     // update the flash layout
     MwFim_FlashLayoutUpdate = Main_FlashLayoutUpdate;
 
+    /* APS_HEAP_START and APS_HEAP_LENGTH are from scatter/linker file
+     * When needs to change HEAP size, please modify scatter/linker file.
+     * Do NOT write the argument here */
     osHeapAssign(APS_HEAP_START, APS_HEAP_LENGTH);
-    //Sys_SetUnsuedSramEndBound(0x43E000);
+    Main_HeapPatchInit();
     
     // the initial of driver part for cold and warm boot
-    Sys_MiscModulesInit = Main_MiscDriverConfigSetup;
+    Sys_MiscModulesInit = Main_MiscModulesInit;
     
     // update the switch AT UART / dbg UART function
     at_cmd_switch_uart1_dbguart = Main_AtUartDbgUartSwitch;
     
     // application init
     Sys_AppInit = Main_AppInit_patch;
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Main_HeadPatchInit
+*
+* DESCRIPTION:
+*   Update HEAP setting here.
+*   This function must be run after osHeapAssign. i.e. HEAP size updated first.
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+static void Main_HeapPatchInit(void)
+{
+#if SVN_REVISION_PATCH >= 6440
+   osMemoryDef_t PartitionMemoryTable[MAX_NUM_MEM_POOL] = {
+        /* {block_size, number}
+         *     block_size: The memory block max allocation size.
+         *     number: The number of the memory block of given block size.
+         * The order of block size must be small to big.
+         * When block_size or block_num is zero, it means end of table.
+         *
+         *{block_size, number} */
+         {        32,     48},
+         {        64,     32},
+         {       128,     64},
+         {       256,     28},
+         {       512,     12},
+         {         0,      0},
+         {         0,      0},
+         {         0,      0}
+   };
+    
+   osMemoryPoolUpdate(PartitionMemoryTable);
+#endif
 }
 
 /*************************************************************************
@@ -230,8 +257,6 @@ static void Main_PinMuxUpdate(void)
     Hal_Pin_Config(HAL_PIN_TYPE_PATCH_IO_SIP_44);
     
     Hal_Pin_UpdatePsramCfg();
-    
-    // at_io01_uart_mode_set(HAL_PIN_MAIN_UART_MODE_PATCH);
 }
 
 /*************************************************************************
@@ -279,7 +304,7 @@ static void Main_FlashLayoutUpdate(void)
 
 /*************************************************************************
 * FUNCTION:
-*   Main_MiscDriverConfigSetup
+*   Main_MiscModulesInit
 *
 * DESCRIPTION:
 *   the initial of driver part for cold and warm boot
@@ -291,24 +316,41 @@ static void Main_FlashLayoutUpdate(void)
 *   none
 *
 *************************************************************************/
-static void Main_MiscDriverConfigSetup(void)
+static void Main_MiscModulesInit(void)
 {
     //Hal_Wdt_Stop();   //disable watchdog here.
 
     // initialize aux driver
     Hal_Aux_Init();
 
-#if 0
-    // IO 1 : detect the GPIO high level if APS UART Rx is connected to another UART Tx port.
-    // cold boot
-    if (0 == Boot_CheckWarmBoot())
+#if (EXT_PA_ENABLED == 1)
+    /*
+     * Two steps to active ext-Pa mode:
+     *
+     * Step 1) Config " hal_pin_config_project.h "
+     *         1-1) Assigned three pins according to schematic:
+     *                  [ TX_EN ]
+     *                  [ RX_EN ]
+     *                  [ LNA_EN ]
+     *              The three pins are MUST assinged to PIN_TYPE_GPIO_OUT_LOW.
+     *         1-2) (Optional) (0xFF for not exist)
+                    Assigned the pin : PwrCtrl according to schematic.
+     *                  [ Pwr Ctrl ]
+     *              The three pins are MUST assinged to PIN_TYPE_GPIO_OUT_LOW.
+     *
+     * Step 2) Set Hal_ExtPa_Pin_Set(), default value was disable.
+     *
+     */
+    Hal_ExtPa_Pin_Set( 4, 6, 3, 5); /* No PwrCtrl case */
+    // Hal_ExtPa_Pin_Set( 4, 6, 18, 5); /* PwrCtrl case */
+
+    // Force Wifi pwr to ext-PA level
+    uint8_t u8Temp = 0;
+    MwFim_FileRead(MW_FIM_IDX_GP01_RF_CFG, 0, MW_FIM_RF_CFG_SIZE, &u8Temp);
+    if(u8Temp < 0xE0)
     {
-        Hal_DbgUart_RxIntEn(0);
-        
-        if ((HAL_PIN_TYPE_PATCH_IO_1 && PIN_TYPE_UART1_TXD_IO0) == PIN_TYPE_UART1_TXD_IO0)
-        {
-            Main_ApsUartRxDectecConfig();
-        }
+        u8Temp = 0xE0;
+        MwFim_FileWrite(MW_FIM_IDX_GP01_RF_CFG, 0, MW_FIM_RF_CFG_SIZE, &u8Temp);
     }
 #endif
 }
@@ -350,77 +392,6 @@ static void Main_AtUartDbgUartSwitch(void)
     g_eAppMainUartMode = (E_PIN_MAIN_UART_MODE)!g_eAppMainUartMode;
 }
 
-
-/*************************************************************************
-* FUNCTION:
-*   Main_ApsUartRxDectecConfig
-*
-* DESCRIPTION:
-*   detect the GPIO high level if APS UART Rx is connected to another UART Tx port.
-*
-* PARAMETERS
-*   none
-*
-* RETURNS
-*   none
-*
-*************************************************************************/
-#if 0
-static void Main_ApsUartRxDectecConfig(void)
-{
-    E_GpioLevel_t eGpioLevel;
-
-    Hal_Pin_ConfigSet(1, PIN_TYPE_GPIO_INPUT, PIN_DRIVING_LOW);
-    eGpioLevel = Hal_Vic_GpioInput(GPIO_IDX_01);
-    if (GPIO_LEVEL_HIGH == eGpioLevel)
-    {
-        // it is connected
-        Hal_Pin_ConfigSet(1, HAL_PIN_TYPE_IO_1, HAL_PIN_DRIVING_IO_1);
-        Hal_DbgUart_RxIntEn(1);
-    }
-    else //if (GPIO_LEVEL_LOW == eGpioLevel)
-    {
-#ifdef __APS_UART_DETECT__ // !!! don't detect the IO pin, bcz it will be sometimes false alarm.
-        // it is not conncected, set the high level to trigger the GPIO interrupt
-        Hal_Vic_GpioCallBackFuncSet(GPIO_IDX_01, Main_ApsUartRxDectecCb);
-        //Hal_Vic_GpioDirection(GPIO_IDX_01, GPIO_INPUT);
-        Hal_Vic_GpioIntTypeSel(GPIO_IDX_01, INT_TYPE_LEVEL);
-        Hal_Vic_GpioIntInv(GPIO_IDX_01, 0);
-        Hal_Vic_GpioIntMask(GPIO_IDX_01, 0);
-        Hal_Vic_GpioIntEn(GPIO_IDX_01, 1);
-#endif
-    }
-}
-#endif
-
-/*************************************************************************
-* FUNCTION:
-*   Main_ApsUartRxDectecCb
-*
-* DESCRIPTION:
-*   detect the GPIO high level if APS UART Rx is connected to another UART Tx port.
-*
-* PARAMETERS
-*   1. tGpioIdx : Index of call-back GPIO
-*
-* RETURNS
-*   none
-*
-*************************************************************************/
-#ifdef __APS_UART_DETECT__ // !!! done't detect the IO pin, bcz it will be sometimes false alarm.
-static void Main_ApsUartRxDectecCb(E_GpioIdx_t tGpioIdx)
-{
-#if 0
-    // disable the GPIO interrupt
-    Hal_Vic_GpioIntEn(GPIO_IDX_01, 0);
-
-    // it it connected
-    Hal_Pin_ConfigSet(1, HAL_PIN_TYPE_IO_1, HAL_PIN_DRIVING_IO_1);
-    Hal_DbgUart_RxIntEn(1);
-#endif
-}
-#endif
-
 /*************************************************************************
 * FUNCTION:
 *   Main_AppInit_patch
@@ -443,15 +414,6 @@ static void Main_AppInit_patch(void)
     printf("Version: %s\r\n", QD_FWK_RELEASE_VER);
     printf("Date: %s\r\n", QD_FWK_RELEASE_DATE);
     printf("====================================\r\n");
-
-#if defined(OPL2500_A0)
-    at_cmd_wifi_func_init();
-    at_cmd_app_func_preinit();
-    at_cmd_property_func_init();
-    at_msg_ext_init();
-
-    // wifi_init(NULL, NULL);
-#endif
 
     // add the application initialization from here
 

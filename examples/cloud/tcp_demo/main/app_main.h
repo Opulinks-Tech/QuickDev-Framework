@@ -51,7 +51,7 @@ extern "C" {
 
 #define APP_TASK_PRIORITY               (osPriorityNormal)
 #define APP_QUEUE_SIZE                  (20)
-#define APP_TASK_STACK_SIZE             (512)
+#define APP_TASK_STACK_SIZE             (1024)
 
 /********************************************
 Declaration of data structure
@@ -81,6 +81,11 @@ typedef enum E_AppEvtId
 
     APP_EVT_SYS_TIMER_TIMEOUT,
 
+    APP_EVT_POST_SET,   // For post data set
+
+#if (OPL_POWER_SLEEP_CONTROL == 1) 
+    APP_EVT_PWR_SLEEP_CONTROL,
+#endif
     // user event end here
     
     APP_EVT_TOTAL,
@@ -101,6 +106,32 @@ typedef struct S_AppMsgStruct
     uint32_t            u32DataLen;
     uint8_t             pau8Data[];
 } T_AppMsgStruct;
+
+// For post data set
+typedef struct S_PostSetMsg
+{
+    uint32_t            u32PostDuration;
+    uint32_t            u32PostTotalCnt;
+    uint32_t            u32PostWaitAck;
+} T_PostSetMsg;
+
+#if (OPL_POWER_SLEEP_CONTROL == 1) 
+typedef enum E_SlpMode
+{
+    SLP_MODE_SMART_SLEEP,
+    SLP_MODE_TIMER_SLEEP,
+    SLP_MODE_DEEP_SLEEP,
+
+    SLP_MODE_NONE,
+    SLP_MODE_MAX,
+} T_SlpMode;
+
+typedef struct S_SlpCtrlMsg
+{
+    T_SlpMode           eSlpMode;
+    uint32_t            u32SmrtSlpEn;
+} T_SlpCtrlMsg;
+#endif
 
 /********************************************
 Declaration of Global Variables & Functions
@@ -201,6 +232,10 @@ static void APP_EvtHandler_CloudConnectInd(uint32_t u32EventId, void *pData, uin
 static void APP_EvtHandler_CloudDisconnectInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_CloudRecvInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_SysTimerTimeout(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
+static void APP_EvtHandler_PostSet(uint32_t u32EventId, void *pData, uint32_t u32DataLen);  // For post data set
+#if (OPL_POWER_SLEEP_CONTROL == 1)
+static void APP_EvtHandler_PowerSleepControl(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
+#endif
 
 /***********
 C Functions

@@ -52,6 +52,9 @@ Head Block of The File
 #include "pwr_save.h"
 #include "rf_pwr.h"
 #include "wifi_mngr_api.h"
+#if (OPL_POWER_SLEEP_CONTROL == 1)
+#include "wifi_agent.h"
+#endif
 
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
 
@@ -64,6 +67,17 @@ Declaration of data structure
 Declaration of Global Variables & Functions
 ********************************************/
 // Sec 4: declaration of global variable
+#if (OPL_POWER_SLEEP_CONTROL == 1)
+bool g_bTcpSlpReq = false;  // Deep sleep or timer sleep request form TCP
+T_SlpMode g_eSlpMode = SLP_MODE_NONE;
+#endif
+
+// For post data set
+uint32_t g_u32PostOn = 1;
+uint32_t g_u32PostCnt = 0;
+uint32_t g_u32PostTotalCnt = 1000;
+uint32_t g_u32PostWaitAck = 0;
+
 
 // Sec 5: declaration of global function prototype
 
@@ -94,6 +108,12 @@ static T_AppEvtHandlerTbl g_tAppEvtHandlerTbl[] =
 
     {APP_EVT_SYS_TIMER_TIMEOUT,             APP_EvtHandler_SysTimerTimeout},
 
+    {APP_EVT_POST_SET,                      APP_EvtHandler_PostSet},    // For post data set
+
+#if (OPL_POWER_SLEEP_CONTROL == 1)
+    {APP_EVT_PWR_SLEEP_CONTROL,             APP_EvtHandler_PowerSleepControl},
+#endif
+
     {0xFFFFFFFF,                            NULL},
 };
 
@@ -108,6 +128,9 @@ void APP_BleInit(void);
 void APP_NetInit(void);
 void APP_CldInit(void);
 void APP_UserAtInit(void);
+#if (OPL_POWER_SLEEP_CONTROL == 1)
+static void APP_SleepCkeckEnter(void);
+#endif
 
 /***********
 C Functions
@@ -258,6 +281,15 @@ static void APP_EvtHandler_BleStartAdv(uint32_t u32EventId, void *pData, uint32_
 static void APP_EvtHandler_BleStopAdv(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
     OPL_LOG_INFO(APP, "BLE stop advertise");
+
+#if (OPL_POWER_SLEEP_CONTROL == 1)
+    // Check if ready to enter deep sleep or timer sleep
+    if(g_bTcpSlpReq)
+    {
+        OPL_LOG_WARN(APP, "BLE stop adv, check if ready to enter sleep!");
+        APP_SleepCkeckEnter();
+    }
+#endif
 }
 
 static void APP_EvtHandler_BleConnected(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
@@ -276,6 +308,15 @@ static void APP_EvtHandler_BleConnected(uint32_t u32EventId, void *pData, uint32
 static void APP_EvtHandler_BleDisconnected(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
     OPL_LOG_INFO(APP, "BLE disconnected");
+
+#if (OPL_POWER_SLEEP_CONTROL == 1)
+    // Check if ready to enter deep sleep or timer sleep
+    if(g_bTcpSlpReq)
+    {
+        OPL_LOG_WARN(APP, "BLE disconnected, check if ready to enter sleep!");
+        APP_SleepCkeckEnter();
+    }
+#endif
 }
 
 static void APP_EvtHandler_BleDataInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
@@ -308,7 +349,22 @@ static void APP_EvtHandler_NetworkDown(uint32_t u32EventId, void *pData, uint32_
 {
     OPL_LOG_INFO(APP, "Network disconnected");
 
+#if (OPL_POWER_SLEEP_CONTROL == 1)
+    if(g_bTcpSlpReq)
+    {
+        OPL_LOG_WARN(APP, "Network disconnected, check if ready to enter sleep!");
+        // Check if ready to enter deep sleep or timer sleep
+        APP_SleepCkeckEnter();
+    }
+    else
+    {
+        Cloud_MsgSend(CLOUD_EVT_TYPE_DISCONNECT, NULL, 0);
+    }
+#else
     Cloud_MsgSend(CLOUD_EVT_TYPE_DISCONNECT, NULL, 0);
+#endif
+    
+
 }
 
 static void APP_EvtHandler_NetworkReset(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
@@ -323,14 +379,48 @@ static void APP_EvtHandler_CloudConnectInd(uint32_t u32EventId, void *pData, uin
 
     // start periodic timer
 #if (TCP_DEMO_PERI_POST_EN == 1)
-    osTimerStart(g_tAppSysTimer, TCP_DEMO_PERI_POST_INTERVAL);
+    if(g_u32PostOn)
+    {
+        osTimerStart(g_tAppSysTimer, TCP_DEMO_PERI_POST_INTERVAL);
+    }
 #endif
 }
 
 static void APP_EvtHandler_CloudDisconnectInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
+    OPL_LOG_WARN(APP, "Cloud Disconnect Ind");
+#if (OPL_POWER_SLEEP_CONTROL == 1)
+    //OPL_LOG_WARN(APP, "APP_EvtHandler_CloudDisconnectInd");
+    if(g_bTcpSlpReq)
+    {
+        if(OPL_OK == Opl_Ble_Stop_Req()) //wait response OK
+        {
+            OPL_LOG_WARN(APP, "BLE Off Request Success");
+        }
+        else
+        {
+            OPL_LOG_WARN(APP, "BLE Off Request Fail");
+        }
+
+        //Turn off Wi-Fi  //wait response OK
+        if(OPL_OK == Opl_Wifi_AC_Disable_Req(true, NULL))
+        {
+            OPL_LOG_WARN(APP, "Wi-Fi Off Request Success");
+        }
+        else
+        {
+            OPL_LOG_WARN(APP, "Wi-Fi Off Request Fail");
+        }
+    }
+    else
+    {
+        // start ble advertising
+        Opl_Ble_Start_Req(true);
+    }
+#else
     // start ble advertising
     Opl_Ble_Start_Req(true);
+#endif
 
     // stop periodic timer
 #if (TCP_DEMO_PERI_POST_EN == 1)
@@ -345,6 +435,7 @@ static void APP_EvtHandler_CloudRecvInd(uint32_t u32EventId, void *pData, uint32
 
 static void APP_EvtHandler_SysTimerTimeout(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
+#if 0
     uint8_t u8PostData[8] = "HelloTCP";
 
     T_CloudPayloadFmt tCloudPayloadFmt = {0};
@@ -352,15 +443,159 @@ static void APP_EvtHandler_SysTimerTimeout(uint32_t u32EventId, void *pData, uin
     tCloudPayloadFmt.u8TopicIndex = 0; //topic not used in tcp cloud
     tCloudPayloadFmt.u32PayloadLen = sizeof(u8PostData);
     memcpy(tCloudPayloadFmt.u8aPayloadBuf, u8PostData, tCloudPayloadFmt.u32PayloadLen);
+#else // For post data set
+    T_CloudPayloadFmt tCloudPayloadFmt = {0};
+
+    tCloudPayloadFmt.u8TopicIndex = 0; //topic not used in tcp cloud
+    
+    tCloudPayloadFmt.u32PayloadLen = sprintf((char *)tCloudPayloadFmt.u8aPayloadBuf, "data %d", g_u32PostCnt+1);
+
+    g_u32PostCnt = (g_u32PostCnt + 1) % g_u32PostTotalCnt;
+#endif
 
     Cloud_MsgSend(CLOUD_EVT_TYPE_POST, (uint8_t *)&tCloudPayloadFmt, sizeof(T_CloudPayloadFmt));
 }
+
+// For post data set
+static void APP_EvtHandler_PostSet(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
+{
+    T_PostSetMsg *tPostSetMsg = (T_PostSetMsg *)pData;
+
+    if(0 == tPostSetMsg->u32PostDuration)
+    {
+        g_u32PostOn = 0;
+        g_u32PostCnt =  0;
+        g_u32PostWaitAck = 0;
+        osTimerStop(g_tAppSysTimer);
+
+        OPL_LOG_WARN(APP, "Post data disable");
+    }
+    else
+    {
+        g_u32PostOn = 1;
+        g_u32PostTotalCnt = tPostSetMsg->u32PostTotalCnt;
+        g_u32PostWaitAck = tPostSetMsg->u32PostWaitAck;
+        g_u32PostCnt =  0;
+
+        osTimerStop(g_tAppSysTimer);
+        osTimerStart(g_tAppSysTimer, tPostSetMsg->u32PostDuration * 1000);
+
+        OPL_LOG_WARN(APP, "Post data duration[%d], total count[%d], post wait ack[%d]", 
+                     tPostSetMsg->u32PostDuration, 
+                     tPostSetMsg->u32PostTotalCnt, 
+                     tPostSetMsg->u32PostWaitAck);
+    }
+}
+
+#if (OPL_POWER_SLEEP_CONTROL == 1) 
+static void APP_EvtHandler_PowerSleepControl(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
+{
+    T_SlpCtrlMsg *ptSlpCtrMsg = (T_SlpCtrlMsg *)pData;
+
+    switch(ptSlpCtrMsg->eSlpMode)
+    {
+        case SLP_MODE_SMART_SLEEP:
+        {
+            if(ptSlpCtrMsg->u32SmrtSlpEn)
+            {
+                OPL_LOG_WARN(APP, "Enable Smart Sleep!!");
+                PS_EnterSmartSleep(0);
+                g_eSlpMode = SLP_MODE_SMART_SLEEP;
+            }
+            else
+            {
+                OPL_LOG_WARN(APP, "Disable Smart Sleep!!");
+                PS_ExitSmartSleep();
+                g_eSlpMode = SLP_MODE_NONE;
+            }
+            break;
+        }
+        case SLP_MODE_TIMER_SLEEP:
+        {
+            OPL_LOG_WARN(APP, "Timer Sleep not yet implemented!!");
+            g_eSlpMode = SLP_MODE_TIMER_SLEEP;
+            break;
+        }
+        case SLP_MODE_DEEP_SLEEP:
+        {
+            OPL_LOG_WARN(APP, "Prepare to enable Deep Sleep.....");
+
+            if (Cloud_OnlineStatusGet())
+            {
+                // Request to diconnect TCP server first
+                Cloud_MsgSend(CLOUD_EVT_TYPE_DISCONNECT, NULL, 0);
+            }
+            else
+            {
+                if(OPL_OK == Opl_Ble_Stop_Req()) //wait response OK
+                {
+                    OPL_LOG_WARN(APP, "BLE Off Request Success");
+                }
+                else
+                {
+                    OPL_LOG_WARN(APP, "BLE Off Request Fail");
+                }
+
+                //Turn off Wi-Fi  //wait response OK
+                if(OPL_OK == Opl_Wifi_AC_Disable_Req(true, NULL))
+                {
+                    OPL_LOG_WARN(APP, "Wi-Fi Off Request Success");
+                }
+                else
+                {
+                    OPL_LOG_WARN(APP, "Wi-Fi Off Request Fail");
+                }
+            }
+
+            g_bTcpSlpReq = true;
+            g_eSlpMode = SLP_MODE_DEEP_SLEEP;
+
+            break;
+        }
+        default:
+            break;
+    }
+
+}
+#endif
 
 //////////////////////////////////// 
 //// APP function group
 ////////////////////////////////////
 
 // add your application function here
+
+#if (OPL_POWER_SLEEP_CONTROL == 1)
+static void APP_SleepCkeckEnter(void)
+{
+    if(SLP_MODE_TIMER_SLEEP == g_eSlpMode)
+    {
+        g_bTcpSlpReq = false;
+        g_eSlpMode = SLP_MODE_NONE;
+    }
+    else
+    if(SLP_MODE_DEEP_SLEEP == g_eSlpMode)
+    {
+        // Make sure BLE & Wi-Fi module are both in Idle state
+        if( BM_ST_IDLE == Opl_Ble_EntityGet()->u16CurrentState && 
+            WA_ST_IDLE == WM_WaFsmDefGet()->ptFsmStateInfo.tCurrentState )
+        {
+            OPL_LOG_WARN(APP, "Enable Deep Sleep!!!");
+
+            g_bTcpSlpReq = false;
+            g_eSlpMode = SLP_MODE_NONE;
+
+            // Disable smart sleep to avoid simultaneous operation
+            PS_ExitSmartSleep();
+
+            // Enter deep sleep
+            PS_EnterDeepSleep(DEEP_SLEEP_IO_PORT, INT_TYPE_FALLING_EDGE);
+            //ps_deep_sleep();
+        }
+    }
+}
+#endif
+
 
 void APP_BleAdvDataInit(void)
 {
@@ -440,8 +675,12 @@ void APP_BleScanRspDataInit(void)
 
 void APP_SysInit(void)
 {
+#if (EXT_PA_ENABLED == 1)
+    // Do not overwrite RF power setting if external PA enable
+#else
     // initialize rf power setting
     RF_PwrSet(RF_CFG_DEF_PWR_SET);
+#endif
 
     // initialize ota manager
     OTA_Init();
@@ -643,6 +882,23 @@ T_OplErr APP_EventProcess(T_AppMsgStruct *ptMsg)
     }
 }
 
+#if (OPL_POWER_SLEEP_CONTROL == 1)
+void _SlaveReady(void)
+{
+    // Infor master slave is ready via slave rady GPIO
+
+    Hal_Gpio_Output(SLAVE_READY_IO_PORT, GPIO_LEVEL_HIGH);
+
+    OPL_LOG_WARN(APP, "GPIO[%d] high", SLAVE_READY_IO_PORT);
+
+    osDelay(20);
+
+    Hal_Gpio_Output(SLAVE_READY_IO_PORT, GPIO_LEVEL_LOW);
+
+    OPL_LOG_WARN(APP, "GPIO[%d] low", SLAVE_READY_IO_PORT);
+}
+#endif
+
 /*************************************************************************
 * FUNCTION:
 *   AppInit
@@ -661,6 +917,10 @@ void APP_Main(void *args)
 {
     osEvent tEvent;
     T_AppMsgStruct *ptMsg;
+
+#if (OPL_POWER_SLEEP_CONTROL == 1)
+    _SlaveReady();
+#endif
 
     for(;;)
     {
@@ -719,6 +979,11 @@ void APP_MainInit(void)
     APP_CldInit();
 
     APP_UserAtInit();
+
+#if 0   // Workaround for after several auto-connect rounds will cause SDK hang
+    printf("Warning: ice mode!!!\r\n");
+    reg_write(0x40001100, 0x12);    // software ice mode workaround for mantis 3226 
+#endif
     
     // enter smart sleep after 5s
 #if (PS_ENABLED == 1)
