@@ -67,7 +67,8 @@ extern "C" {
 #define RF_CFG_DEF_PWR_SET                      (RF_PWR_LVL_D0)
 #endif
 
-#if 0 // Should be enable for OPL2500P
+// If 2500, build M25P for default
+#ifdef OPL2500_A0
 #define EXT_PA_ENABLED                          (1)
 #else
 #define EXT_PA_ENABLED                          (0)

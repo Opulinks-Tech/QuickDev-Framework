@@ -97,6 +97,8 @@ typedef enum E_NmEventList
     //NM_EVT_INIT_REQ,
     NM_EVT_WIFI_SCAN_REQ,
     NM_EVT_WIFI_CNCT_REQ,
+    NM_EVT_WIFI_STOP_REQ,
+    NM_EVT_WIFI_RESUME_REQ,
    
     NM_EVT_WIFI_INIT_IND,
     NM_EVT_WIFI_SCAN_IND,
@@ -132,33 +134,37 @@ typedef enum E_NmStateList
 
     NM_ST_DHCP_WAIT_DISC    = 6,
     NM_ST_CNCT_WAIT_DISC    = 7,
+    NM_ST_STOP_WAIT_DISC    = 8,
 
-    NM_ST_WIFI_UP_WAIT_SCAN = 8,
-    NM_ST_WIFI_UP_ACPT_SCAN = 9,
+    NM_ST_WIFI_UP_WAIT_SCAN = 9,
+    NM_ST_WIFI_UP_ACPT_SCAN = 10,
 
-    NM_ST_GOT_IP_WAIT_SCAN  = 10,
+    NM_ST_GOT_IP_WAIT_SCAN  = 11,
 
-    NM_ST_IDLE_WAIT_AC_EN   = 11,
+    NM_ST_IDLE_WAIT_AC_EN   = 12,
 
-    NM_ST_AC_EN             = 12,
-    NM_ST_AC_WIFI_UP        = 13,
+    NM_ST_AC_EN             = 13,
+    NM_ST_AC_WIFI_UP        = 14,
 
-    NM_ST_AC_DHCP_WAIT_DISC = 14,
+    NM_ST_AC_DHCP_WAIT_DISC = 15,
     
-    NM_ST_AC_SCAN_WAIT_DISC = 15,
-    NM_ST_AC_CNCT_WAIT_DISC = 16,
+    NM_ST_AC_SCAN_WAIT_DISC = 16,
+    NM_ST_AC_CNCT_WAIT_DISC = 17,
+    NM_ST_AC_STOP_WAIT_DISC = 18,
 
-    NM_ST_AC_GOT_IP         = 17,
+    NM_ST_AC_GOT_IP         = 19,
 
-    NM_ST_SCAN_WAIT_AC_EN   = 18,
-    NM_ST_CNCT_WAIT_AC_EN   = 19,
+    NM_ST_SCAN_WAIT_AC_EN   = 20,
+    NM_ST_CNCT_WAIT_AC_EN   = 21,
+    NM_ST_STOP_WAIT_AC_EN   = 22,
 
-    NM_ST_SCAN_WAIT_AC_DISA = 20,
-    NM_ST_CNCT_WAIT_AC_DISA = 21,
+    NM_ST_SCAN_WAIT_AC_DISA = 23,
+    NM_ST_CNCT_WAIT_AC_DISA = 24,
+    NM_ST_STOP_WAIT_AC_DISA = 25,
 
-    NM_ST_GOT_IP_WAIT_AC_EN = 22,
+    NM_ST_GOT_IP_WAIT_AC_EN = 26,
 
-    NM_ST_QSET_WAIT_AC_EN   = 23,
+    NM_ST_QSET_WAIT_AC_EN   = 27,
 
 } T_NmStateList;
 
@@ -200,6 +206,10 @@ static T_OplErr APP_NmInitIndHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEvent, u
 static T_OplErr APP_NmScanReqHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEvent, uint8_t *pu8Data, uint32_t u32DataLen);
 
 static T_OplErr APP_NmCnctReqHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEvent, uint8_t *pu8Data, uint32_t u32DataLen);
+
+static T_OplErr APP_NmStopReqHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEvent, uint8_t *pu8Data, uint32_t u32DataLen);
+
+static T_OplErr APP_NmResumeReqHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEvent, uint8_t *pu8Data, uint32_t u32DataLen);
 
 static T_OplErr APP_NmScanDoneHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEvent, uint8_t *pu8Data, uint32_t u32DataLen);
 

@@ -73,8 +73,9 @@ typedef enum E_AppEvtId
     APP_EVT_OPL_PRV_TIMEOUT_IND,
 
     APP_EVT_BLE_STATUS_REQ,
+    APP_EVT_BLE_INIT_IND,
     APP_EVT_BLE_START_ADV_IND,
-    APP_EVT_BLE_STOP_ADV_IND,
+    APP_EVT_BLE_STOP_IND,
     APP_EVT_BLE_CONNECTED_IND,
     APP_EVT_BLE_DISCONNECTED_IND,
     APP_EVT_BLE_DATA_IND,
@@ -85,6 +86,7 @@ typedef enum E_AppEvtId
     APP_EVT_WIFI_STATUS_REQ,
 
     APP_EVT_WIFI_SCAN_IND,
+    APP_EVT_NETWORK_INIT_IND,
     APP_EVT_NETWORK_UP_IND,
     APP_EVT_NETWORK_DOWN_IND,
     APP_EVT_NETWORK_RESET_IND,
@@ -259,6 +261,7 @@ static void APP_EvtHandler_BleDataInd(uint32_t u32EventId, void *pData, uint32_t
 
 static void APP_EvtHandler_WifiCommandReq(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_WifiScanInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
+static void APP_EvtHandler_NetworkInit(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_NetworkUp(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_NetworkDown(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_NetworkReset(uint32_t u32EventId, void *pData, uint32_t u32DataLen);

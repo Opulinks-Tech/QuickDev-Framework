@@ -1,5 +1,23 @@
 ## Release Version:
 State : RC
+Version : v0.2.8
+
+## Release Date: 2023/09/22
+
+## Descript
+
+1. For OPL2500, apply IO22 rather than IO5 in Main_AtUartDbgUartSwitch (main_patch.c)
+2. Add following APIs in Network Manager
+    - APP_NmWifiStopReq: Stop all Wi-Fi activities (disconnect Wi-Fi and disable Auto-connect)
+    - APP_NmWifiResumeReq: Resume Wi-Fi (Enable auto connect), should only be called after Wi-Fi stop
+3. If applying OPL2500 project in examples, build M25P (with external PA) binary for default
+4. For example qd_app
+    - Fix the issue that can not do BLE OTA again if previous BLE OTA fail
+    - Fix the issue that connection can not finish if applying wrong password or wrong SSID in App "Opulinks Wireless Utilities"
+5. For example tcp_demo, fix the issue that disconnect while receive more than 200 bytes
+
+## Release Version:
+State : RC
 Version : v0.2.7
 
 ## Release Date: 2023/05/12

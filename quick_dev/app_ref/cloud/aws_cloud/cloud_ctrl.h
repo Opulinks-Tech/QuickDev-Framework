@@ -103,6 +103,7 @@ typedef enum E_UploadFileType
     UPLOAD_FILE_TYPE_MQTT_ROOT_CA = 1,
     UPLOAD_FILE_TYPE_MQTT_CLIENT_CERT,
     UPLOAD_FILE_TYPE_MQTT_PRIVATE_KEY,
+    UPLOAD_FILE_TYPE_HTTPS_CA_CHAIN,
     UPLOAD_FILE_TYPE_MAX,
 } T_UploadFileType;
 
@@ -150,6 +151,7 @@ typedef struct S_CloudPayloadFmt
     uint16_t u16PayloadLen;                             // payload lens
 } T_CloudPayloadFmt;
 
+extern T_CloudPayloadFmt *g_pMqttLastWill;
 /********************************************
 Declaration of Global Variables & Functions
 ********************************************/
@@ -223,6 +225,39 @@ T_OplErr Cloud_MqttFileSet(uint8_t u8FileType, uint8_t *u8Data, uint32_t u32Data
 *
 *************************************************************************/
 void Cloud_MqttFileFree(uint8_t *u8Data);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_MqttClientId_Set
+*
+* DESCRIPTION:
+*   Set AWS MQTT ClientID
+*
+* PARAMETERS
+*   u8ClientId:         [IN] AWS Client ID 
+*   u16DataLen:         [IN] AWS Client ID Len
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_MqttClientId_Set(uint8_t *u8ClientId, uint16_t u16DataLen);
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_MqttLastWill_Set
+*
+* DESCRIPTION:
+*   LastWill Set
+*
+* PARAMETERS
+*   tData:         [IN] Last Will structure buffer 
+*   
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_MqttLastWill_Set(T_CloudPayloadFmt *tData);
 
 /*************************************************************************
 * FUNCTION:

@@ -72,6 +72,7 @@ Declaration of Global Variables & Functions
 Declaration of static Global Variables & Functions
 ***************************************************/
 // Sec 6: declaration of static global variable
+extern osSemaphoreId g_tYieldSemaphoreId;
 
 // timer group
 static osTimerId g_tCloudTimer[CLOUD_TMR_MAX] = {NULL};
@@ -1060,7 +1061,9 @@ void Cloud_DisconnectHandler(uint32_t u32EventId, void *pData, uint32_t u32DataL
 
     IoT_Error_t rc = FAILURE;
 
+    osSemaphoreWait(g_tYieldSemaphoreId, osWaitForever);   // Prevent disconnect while yield
     rc = aws_iot_mqtt_disconnect(&client);
+    osSemaphoreRelease(g_tYieldSemaphoreId);
 
     if(SUCCESS != rc)
     {
@@ -1531,7 +1534,9 @@ void Cloud_ReceiveHandler(void)
         IOT_INFO("-->Yield");
 
 #if 1
+        osSemaphoreWait(g_tYieldSemaphoreId, osWaitForever);
         rc = aws_iot_mqtt_yield(&client);
+        osSemaphoreRelease(g_tYieldSemaphoreId);
 #else
         rc = aws_iot_mqtt_yield(&client, MQTT_YIELD_TIMEOUT);
 #endif

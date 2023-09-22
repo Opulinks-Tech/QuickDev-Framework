@@ -377,7 +377,7 @@ static void Main_AtUartDbgUartSwitch(void)
         Hal_Pin_Config(PIN_TYPE_APS_UART_TXD_IO0 | PIN_INMODE_IO0_FLOATING);
         Hal_Pin_Config(PIN_TYPE_APS_UART_RXD_IO2 | PIN_INMODE_IO2_PULL_UP);
 
-        Hal_Pin_Config(PIN_TYPE_UART1_TXD_IO5 | PIN_INMODE_IO5_FLOATING);
+        Hal_Pin_Config(PIN_TYPE_UART1_TXD_IO22 | PIN_INMODE_IO5_FLOATING);
         Hal_Pin_Config(PIN_TYPE_UART1_RXD_IO1 | PIN_INMODE_IO1_PULL_UP);
     }
     else
@@ -385,7 +385,7 @@ static void Main_AtUartDbgUartSwitch(void)
         Hal_Pin_Config(PIN_TYPE_UART1_TXD_IO0 | PIN_INMODE_IO0_FLOATING);
         Hal_Pin_Config(PIN_TYPE_UART1_RXD_IO2 | PIN_INMODE_IO2_PULL_UP);
         
-        Hal_Pin_Config(PIN_TYPE_APS_UART_TXD_IO5 | PIN_INMODE_IO5_FLOATING);
+        Hal_Pin_Config(PIN_TYPE_APS_UART_TXD_IO22 | PIN_INMODE_IO5_FLOATING);
         Hal_Pin_Config(PIN_TYPE_APS_UART_RXD_IO1 | PIN_INMODE_IO1_PULL_UP);
     }
     

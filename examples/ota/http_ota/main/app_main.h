@@ -64,12 +64,14 @@ typedef enum E_AppEvtId
 
     // user event begin here
 
+    APP_EVT_BLE_INIT_IND,
     APP_EVT_BLE_START_ADV,
-    APP_EVT_BLE_STOP_ADV,
+    APP_EVT_BLE_STOP_IND,
     APP_EVT_BLE_CONNECTED,
     APP_EVT_BLE_DISCONNECTED,
     APP_EVT_BLE_DATA_IND,
 
+    APP_EVT_NETWORK_INIT_IND,
     APP_EVT_NETWORK_UP,
     APP_EVT_NETWORK_DOWN,
     APP_EVT_NETWORK_RESET,
@@ -182,11 +184,13 @@ Declaration of static Global Variables & Functions
 // Sec 6: declaration of static global variable
 
 // Sec 7: declaration of static function prototype
+static void APP_EvtHandler_BleInit(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_BleStartAdv(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_BleStopAdv(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_BleConnected(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_BleDisconnected(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_BleDataInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
+static void APP_EvtHandler_NetworkInit(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_NetworkUp(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_NetworkDown(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_NetworkReset(uint32_t u32EventId, void *pData, uint32_t u32DataLen);

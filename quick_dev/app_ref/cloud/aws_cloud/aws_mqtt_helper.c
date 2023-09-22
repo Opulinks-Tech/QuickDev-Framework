@@ -34,10 +34,11 @@ Head Block of The File
 
 // Sec 1: Include File
 
-#include "aws_mqtt_helper.h"
-#include "cloud_config.h"
+// #include "aws_mqtt_helper.h"
+// #include "cloud_config.h"
 #include "clock.h"
 #include "wifi_mngr_api.h"
+#include "cloud_ctrl.h"
 
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
 
@@ -75,7 +76,7 @@ Head Block of The File
 Declaration of data structure
 ********************************************/
 // Sec 3: structure, uniou, enum, linked list
-
+extern T_CloudPayloadFmt *g_pMqttLastWill;
 // Each compilation unit must define the NetworkContext struct
 struct NetworkContext
 {
@@ -87,6 +88,7 @@ struct NetworkContext
 Declaration of Global Variables & Functions
 ********************************************/
 // Sec 4: declaration of global variable
+extern uint32_t g_u32KeepAliveInterval;
 
 // Sec 5: declaration of global function prototype
 
@@ -197,6 +199,7 @@ bool AWS_MqttHelperEstablishSession( MQTTContext_t *ptMqttContext,
     MbedtlsOplStatus_t mbedtlsStatus = MBEDTLS_OPL_SUCCESS;
     MQTTStatus_t mqttStatus = MQTTSuccess;
     MQTTConnectInfo_t mqttConnectInfo;
+    MQTTPublishInfo_t connectParams; // Last Will Parameter
     bool sessionPresent = false;
     bool ret = false;
 
@@ -220,7 +223,7 @@ bool AWS_MqttHelperEstablishSession( MQTTContext_t *ptMqttContext,
         // i.e. direct the MQTT broker to discard any previous session data.
         // if #createCleanSession is false, direct hte broker to attempt to
         // restablish a session which was already present.
-        mqttConnectInfo.cleanSession = false;
+        mqttConnectInfo.cleanSession = true;
 
         // the client identifier is used to uniquely identify this MQTT client to
         // the MQTT broker. In a production device the identifier can be something
@@ -238,7 +241,8 @@ bool AWS_MqttHelperEstablishSession( MQTTContext_t *ptMqttContext,
         // by cloud template, so the following keepAliveSeconds variable sets for
         // connection data carried and let server's know the keep alive interval
         // of device.
-        mqttConnectInfo.keepAliveSeconds = (uint16_t)MQTT_KEEP_ALIVE_INTERVAL_SEC;
+        //mqttConnectInfo.keepAliveSeconds = (uint16_t)MQTT_KEEP_ALIVE_INTERVAL_SEC;
+        mqttConnectInfo.keepAliveSeconds = (uint16_t)(g_u32KeepAliveInterval/1000);
 
         // username and password for authentication
         mqttConnectInfo.pUserName = NULL;
@@ -246,16 +250,39 @@ bool AWS_MqttHelperEstablishSession( MQTTContext_t *ptMqttContext,
         mqttConnectInfo.pPassword = NULL;
         mqttConnectInfo.passwordLength = 0U;
 
+        //Last will parameter set
+        if(NULL != g_pMqttLastWill)
+        {
+            connectParams.qos = MQTTQoS1;
+            connectParams.pTopicName = g_pMqttLastWill->u8TopicName;
+            connectParams.topicNameLength = g_pMqttLastWill->u16TopicNameLen;
+            connectParams.pPayload = g_pMqttLastWill->u8aPayloadBuf;
+            connectParams.payloadLength = g_pMqttLastWill->u16PayloadLen;
+            
+            printf("LatwillTopic name: %s, payload: %s\r\n", connectParams.pTopicName, connectParams.pPayload);
+
+
         mqttStatus = MQTT_Connect( ptMqttContext,
                                    &mqttConnectInfo,
-                                   NULL,
+                                   &connectParams, //If not NULL, last will would be operation
                                    CONNACK_RECV_TIMEOUT_MS,
                                    &sessionPresent);
+        }
+        else
+        {
+            printf("No LastWill\r\n");
+            mqttStatus = MQTT_Connect( ptMqttContext,
+                                    &mqttConnectInfo,
+                                    NULL, //If NULL, last will would be not operation
+                                    CONNACK_RECV_TIMEOUT_MS,
+                                    &sessionPresent);
+            
+        }
         
         if(MQTTSuccess != mqttStatus)
         {
-            OPL_LOG_DEBG(AWSH, "Connection with MQTT broker failed %s", MQTT_Status_strerror(mqttStatus));
-
+            //OPL_LOG_DEBG(AWSH, "Connection with MQTT broker failed %s", MQTT_Status_strerror(mqttStatus));
+            OPL_LOG_WARN(AWSH, "Connection with MQTT broker failed %s", MQTT_Status_strerror(mqttStatus));
             // end TLS session, the close TCP connection
             Mbedtls_Opl_Disconnect(ptNetworkContext);
         
@@ -269,8 +296,8 @@ bool AWS_MqttHelperEstablishSession( MQTTContext_t *ptMqttContext,
     }
     else
     {
-        OPL_LOG_DEBG(AWSH, "Connection to broker failed");
-
+        //OPL_LOG_DEBG(AWSH, "Connection to broker failed");
+        OPL_LOG_WARN(AWSH, "Connection to broker FAIL [%d]", mbedtlsStatus);
         ret = false;
     }
 

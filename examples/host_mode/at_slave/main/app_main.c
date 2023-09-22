@@ -94,8 +94,9 @@ static T_AppEvtHandlerTbl g_tAppEvtHandlerTbl[] =
     {APP_EVT_OPL_PRV_TIMEOUT_IND,           APP_EvtHandler_OplPrvSwitchReq},
 
     {APP_EVT_BLE_STATUS_REQ,                APP_EvtHandler_BleWifiStatusReq},
+    {APP_EVT_BLE_INIT_IND,                  APP_EvtHandler_BleEventIndicate},
     {APP_EVT_BLE_START_ADV_IND,             APP_EvtHandler_BleEventIndicate},
-    {APP_EVT_BLE_STOP_ADV_IND,              APP_EvtHandler_BleEventIndicate},
+    {APP_EVT_BLE_STOP_IND,                  APP_EvtHandler_BleEventIndicate},
     {APP_EVT_BLE_CONNECTED_IND,             APP_EvtHandler_BleEventIndicate},
     {APP_EVT_BLE_DISCONNECTED_IND,          APP_EvtHandler_BleEventIndicate},
     {APP_EVT_BLE_DATA_IND,                  APP_EvtHandler_BleDataInd},
@@ -106,6 +107,7 @@ static T_AppEvtHandlerTbl g_tAppEvtHandlerTbl[] =
     {APP_EVT_WIFI_STATUS_REQ,               APP_EvtHandler_BleWifiStatusReq},
 
     {APP_EVT_WIFI_SCAN_IND,                 APP_EvtHandler_WifiScanInd},
+    {APP_EVT_NETWORK_INIT_IND,              APP_EvtHandler_NetworkInit},
     {APP_EVT_NETWORK_UP_IND,                APP_EvtHandler_NetworkUp},
     {APP_EVT_NETWORK_DOWN_IND,              APP_EvtHandler_NetworkDown},
     {APP_EVT_NETWORK_RESET_IND,             APP_EvtHandler_NetworkReset},
@@ -189,6 +191,12 @@ void APP_NmUnsolicitedCallback(T_NmUslctdEvtType tEvtType, uint8_t *pu8Data, uin
     // tEvtType refer to net_mngr_api.h
     switch(tEvtType)
     {
+        case NM_USLCTD_EVT_NETWORK_INIT:
+        {
+            APP_SendMessage(APP_EVT_NETWORK_INIT_IND, NULL, 0);
+
+            break;
+        }
         case NM_USLCTD_EVT_NETWORK_UP:
         {
             APP_SendMessage(APP_EVT_NETWORK_UP_IND, pu8Data, u32DataLen);
@@ -249,21 +257,23 @@ void APP_BleUnsolicitedCallback(uint16_t u16EvtType, T_OplErr tEvtRst, uint8_t *
             // initialize ble scan response data
             APP_BleScanRspDataInit();
 
+            APP_SendMessage(APP_EVT_BLE_INIT_IND, NULL, 0);
+
             g_u8BleStatus = 0;
 
             break;
         }
         case USLCTED_CB_EVT_BLE_ENT_ADVERTISE:
         {
-            APP_SendMessage(APP_EVT_BLE_START_ADV_IND, NULL, 0);
+            APP_SendMessage(APP_EVT_BLE_START_ADV_IND, &tEvtRst, sizeof(T_OplErr));
 
             g_u8BleStatus = 1;
 
             break;
         }
-        case USLCTED_CB_EVT_BLE_EXI_ADVERTISE:
+        case USLCTED_CB_EVT_BLE_STOP:
         {
-            APP_SendMessage(APP_EVT_BLE_STOP_ADV_IND, NULL, 0);
+            APP_SendMessage(APP_EVT_BLE_STOP_IND, &tEvtRst, sizeof(T_OplErr));
 
             g_u8BleStatus = 0;
 
@@ -469,28 +479,62 @@ static void APP_EvtHandler_BleEventIndicate(uint32_t u32EventId, void *pData, ui
 
     switch(u32EventId)
     {
+        case APP_EVT_BLE_INIT_IND:
+        {
+            OPL_LOG_INFO(APP, "BLE ready");
+
+            break;
+        }
         case APP_EVT_BLE_START_ADV_IND:
         {
-            APP_HostModeResponseAck(AT_CMD_ACK_PROVISION, &u8Payload, sizeof(u8Payload));
+            T_OplErr eOplErr = *((T_OplErr *)pData);
 
-            uint8_t u8aBleMac[6] = {0};
-            Opl_Ble_MacAddr_Read(u8aBleMac);
+            if(OPL_OK == eOplErr)
+            {
+                APP_HostModeResponseAck(AT_CMD_ACK_PROVISION, &u8Payload, sizeof(u8Payload));
 
-            OPL_LOG_INFO(APP, "BLE advertising...Device mac [%0X:%0X:%0X:%0X:%0X:%0X]", u8aBleMac[0],
-                                                                                        u8aBleMac[1],
-                                                                                        u8aBleMac[2],
-                                                                                        u8aBleMac[3],
-                                                                                        u8aBleMac[4],
-                                                                                        u8aBleMac[5]);
+                uint8_t u8aBleMac[6] = {0};
+                Opl_Ble_MacAddr_Read(u8aBleMac);
+
+                OPL_LOG_INFO(APP, "BLE advertising...Device mac [%0X:%0X:%0X:%0X:%0X:%0X]", u8aBleMac[0],
+                                                                                            u8aBleMac[1],
+                                                                                            u8aBleMac[2],
+                                                                                            u8aBleMac[3],
+                                                                                            u8aBleMac[4],
+                                                                                            u8aBleMac[5]);
+            }
+            else
+            {
+                u8Payload = 0x33; // '3' : req err
+
+                APP_HostModeResponseAck(AT_CMD_ACK_PROVISION, &u8Payload, sizeof(u8Payload));
+                
+                OPL_LOG_WARN(APP, "Start BLE advertising fail!");
+            }
+
             break;
         }
 
-        case APP_EVT_BLE_STOP_ADV_IND:
+        case APP_EVT_BLE_STOP_IND:
         {
-            u8Payload = 0x32; // '2' : user req
-            APP_HostModeResponseAck(AT_CMD_ACK_PROVISION, &u8Payload, sizeof(u8Payload));
+            T_OplErr eOplErr = *((T_OplErr *)pData);
 
-            OPL_LOG_INFO(APP, "BLE stop advertise");
+            if(OPL_OK == eOplErr)
+            {
+                u8Payload = 0x32; // '2' : user req
+
+                APP_HostModeResponseAck(AT_CMD_ACK_PROVISION, &u8Payload, sizeof(u8Payload));
+
+                OPL_LOG_INFO(APP, "BLE stop success");
+            }
+            else
+            {
+                u8Payload = 0x33; // '3' : req err
+
+                APP_HostModeResponseAck(AT_CMD_ACK_PROVISION, &u8Payload, sizeof(u8Payload));
+
+                OPL_LOG_INFO(APP, "BLE stop fail");
+            }
 
             break;
         }
@@ -623,6 +667,11 @@ static void APP_EvtHandler_WifiScanInd(uint32_t u32EventId, void *pData, uint32_
     free(pstScanList);
 
     APP_HostModeResponseAck(AT_CMD_ACK_WIFI_SCAN, &u8Payload, sizeof(u8Payload));
+}
+
+static void APP_EvtHandler_NetworkInit(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
+{
+    OPL_LOG_INFO(APP, "WiFi ready");
 }
 
 static void APP_EvtHandler_NetworkUp(uint32_t u32EventId, void *pData, uint32_t u32DataLen)

@@ -138,6 +138,58 @@ static void AT_CmdNmConnIndCb(T_OplErr tEvtRst)
 
 /*************************************************************************
 * FUNCTION:
+*   AT_CmdNmStopIndCb
+*
+* DESCRIPTION:
+*   indicate callback for network manager scan request
+*
+* PARAMETERS
+*   tEvtRst :       [IN] see in opl_err.h
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+static void AT_CmdNmStopIndCb(T_OplErr tEvtRst)
+{
+    if(OPL_OK == tEvtRst)
+    {
+        NM_AT_LOG("[IND] Stop done success\r\n");        
+    }
+    else
+    {
+        NM_AT_LOG("[IND] Stop done fail\r\n");
+    }
+}
+
+/*************************************************************************
+* FUNCTION:
+*   AT_CmdNmResumeIndCb
+*
+* DESCRIPTION:
+*   indicate callback for network manager scan request
+*
+* PARAMETERS
+*   tEvtRst :       [IN] see in opl_err.h
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+static void AT_CmdNmResumeIndCb(T_OplErr tEvtRst)
+{
+    if(OPL_OK == tEvtRst)
+    {
+        NM_AT_LOG("[IND] Resume done success\r\n");        
+    }
+    else
+    {
+        NM_AT_LOG("[IND] Resume done fail\r\n");
+    }
+}
+
+/*************************************************************************
+* FUNCTION:
 *   AT_CmdNmQConnSetIndCb
 *
 * DESCRIPTION:
@@ -361,6 +413,151 @@ done:
     return iRet;
 }
 
+
+/*************************************************************************
+* FUNCTION:
+*   AT_CmdNmStopHandler
+*
+* DESCRIPTION:
+*   at cmd for network manager scan request
+*
+* PARAMETERS
+*   buf :           [IN] at cmd input
+*   len :           [IN] at cmd input lens
+*   mode :          [IN] at cmd type
+*
+* RETURNS
+*   int :           handler result
+*
+*************************************************************************/
+int AT_CmdNmStopHandler(char *buf, int len, int mode)
+{
+    int iRet = 0;
+
+#if (NM_AT_ENABLED == 1)
+
+    int argc = 0;
+    char *argv[AT_MAX_CMD_ARGS] = {0};
+
+    if (!at_cmd_buf_to_argc_argv(buf, &argc, argv, AT_MAX_CMD_ARGS))
+    {
+        goto done;
+    }
+
+    if (argc > 2)
+    {
+        NM_AT_LOG("invalid param number\r\n");
+        goto done;
+    }
+
+    
+    switch (mode)
+    {
+        case AT_CMD_MODE_SET:
+        case AT_CMD_MODE_EXECUTION:
+        {
+            NM_AT_LOG("NM Stop request \r\n");
+
+            if(OPL_OK != APP_NmWifiStopReq(AT_CmdNmStopIndCb))
+            {
+                NM_AT_LOG("NM stop request fail\r\n");
+            }
+
+            iRet = 1;
+        
+            break;
+        }
+    }
+
+done:
+    if (iRet)
+    {
+        NM_AT_LOG("OK\r\n");
+    }
+    else
+    {
+        NM_AT_LOG("ERROR\r\n");
+    }
+
+#else
+    NM_AT_LOG("NM at cmd not support\r\n");
+#endif /* NM_AT_ENABLED */
+
+    return iRet;
+}
+
+
+/*************************************************************************
+* FUNCTION:
+*   AT_CmdNmStopHandler
+*
+* DESCRIPTION:
+*   at cmd for network manager scan request
+*
+* PARAMETERS
+*   buf :           [IN] at cmd input
+*   len :           [IN] at cmd input lens
+*   mode :          [IN] at cmd type
+*
+* RETURNS
+*   int :           handler result
+*
+*************************************************************************/
+int AT_CmdNmResumeHandler(char *buf, int len, int mode)
+{
+    int iRet = 0;
+
+#if (NM_AT_ENABLED == 1)
+
+    int argc = 0;
+    char *argv[AT_MAX_CMD_ARGS] = {0};
+
+    if (!at_cmd_buf_to_argc_argv(buf, &argc, argv, AT_MAX_CMD_ARGS))
+    {
+        goto done;
+    }
+
+    if (argc > 2)
+    {
+        NM_AT_LOG("invalid param number\r\n");
+        goto done;
+    }
+
+    
+    switch (mode)
+    {
+        case AT_CMD_MODE_SET:
+        case AT_CMD_MODE_EXECUTION:
+        {
+            NM_AT_LOG("NM resume request \r\n");
+
+            if(OPL_OK != APP_NmWifiResumeReq(AT_CmdNmResumeIndCb))
+            {
+                NM_AT_LOG("NM resume request fail\r\n");
+            }
+
+            iRet = 1;
+        
+            break;
+        }
+    }
+
+done:
+    if (iRet)
+    {
+        NM_AT_LOG("OK\r\n");
+    }
+    else
+    {
+        NM_AT_LOG("ERROR\r\n");
+    }
+
+#else
+    NM_AT_LOG("NM at cmd not support\r\n");
+#endif /* NM_AT_ENABLED */
+
+    return iRet;
+}
 
 
 /*************************************************************************

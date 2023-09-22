@@ -67,6 +67,7 @@ typedef enum E_AppEvtId
     APP_EVT_WIFI_SCAN_DONE,
     APP_EVT_WIFI_CONNECT_FAIL,
 
+    APP_EVT_NETWORK_INIT_IND,
     APP_EVT_NETWORK_UP,
     APP_EVT_NETWORK_DOWN,
     APP_EVT_NETWORK_RESET,
@@ -181,6 +182,7 @@ Declaration of static Global Variables & Functions
 // Sec 7: declaration of static function prototype
 static void APP_EvtHandler_WifiScanDone(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_WifiConnectFail(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
+static void APP_EvtHandler_NetworkInit(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_NetworkUp(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_NetworkDown(uint32_t u32EventId, void *pData, uint32_t u32DataLen);
 static void APP_EvtHandler_NetworkReset(uint32_t u32EventId, void *pData, uint32_t u32DataLen);

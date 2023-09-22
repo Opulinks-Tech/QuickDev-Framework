@@ -125,7 +125,8 @@ extern "C" {
 #define MQTT_PROCESS_TIMEOUT_MS                         (3000U)
 
 // buffer size used to declaire the buffer for passing data to MQTT library
-#define MQTT_NETWORK_BUFFER_SIZE                        (512U)
+//#define MQTT_NETWORK_BUFFER_SIZE                        (512U)
+#define MQTT_NETWORK_BUFFER_SIZE                        (1024U)
 
 // keep alive interval in sec
 #define MQTT_KEEP_ALIVE_INTERVAL_SEC                    (CLOUD_KEEP_ALIVE_TIME / 1000)

@@ -43,9 +43,15 @@ Head Block of The File
 extern "C" {
 #endif
 
+#if 1
 #define QD_FWK_RELEASE_STATE                            "RC"
-#define QD_FWK_RELEASE_VER                              "v0.2.7"
-#define QD_FWK_RELEASE_DATE                             "2023/05/08"
+#define QD_FWK_RELEASE_VER                              "v0.2.8"
+#define QD_FWK_RELEASE_DATE                             "2023/09/22"
+#else
+#define QD_FWK_RELEASE_STATE                            "TEST"
+#define QD_FWK_RELEASE_VER                              "After v0.2.8"
+#define QD_FWK_RELEASE_DATE                             "2023/09/22"
+#endif
 
 /********************************************
 Declaration of data structure

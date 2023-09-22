@@ -101,7 +101,43 @@ int AT_CmdNmConnectHandler(char *buf, int len, int mode);
 
 /*************************************************************************
 * FUNCTION:
-*   AT_CmdNmConnectHandler
+*   AT_CmdNmStopHandler
+*
+* DESCRIPTION:
+*   at cmd for network manager connect request
+*
+* PARAMETERS
+*   buf :           [IN] at cmd input
+*   len :           [IN] at cmd input lens
+*   mode :          [IN] at cmd type
+*
+* RETURNS
+*   int :           handler result
+*
+*************************************************************************/
+int AT_CmdNmStopHandler(char *buf, int len, int mode);
+
+/*************************************************************************
+* FUNCTION:
+*   AT_CmdNmStopHandler
+*
+* DESCRIPTION:
+*   at cmd for network manager connect request
+*
+* PARAMETERS
+*   buf :           [IN] at cmd input
+*   len :           [IN] at cmd input lens
+*   mode :          [IN] at cmd type
+*
+* RETURNS
+*   int :           handler result
+*
+*************************************************************************/
+int AT_CmdNmResumeHandler(char *buf, int len, int mode);
+
+/*************************************************************************
+* FUNCTION:
+*   AT_CmdNmQuickConnectSetHandler
 *
 * DESCRIPTION:
 *   at cmd for network manager connect request

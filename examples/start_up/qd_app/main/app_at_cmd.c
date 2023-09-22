@@ -107,6 +107,8 @@ at_command_t g_taAppAtCmd[] =
 #if (NM_ENABLED == 1 && NM_AT_ENABLED == 1)
     {"at+nmscan",          AT_CmdNmScanHandler,                 "Send scan request to network manager"},
     {"at+nmconnect",       AT_CmdNmConnectHandler,              "Send connect request to network manager"},
+    {"at+nmstop",          AT_CmdNmStopHandler,                 "Send WiFi stop request to network manager"},
+    {"at+nmresume",        AT_CmdNmResumeHandler,               "Send WiFi resume (AC) request to network manager"},
     {"at+nmqset",          AT_CmdNmQuickConnectSetHandler,      "Send quick connect set request to network manager"},
 #endif
 

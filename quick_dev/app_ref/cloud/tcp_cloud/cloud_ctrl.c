@@ -1084,7 +1084,8 @@ void Cloud_PostBackupHandler(uint32_t u32EventId, void *pData, uint32_t u32DataL
 *************************************************************************/
 void Cloud_ReceiveHandler(void)
 {
-    int8_t i8Ret = -1;
+    //int8_t i8Ret = -1;
+    int32_t i32Ret = -1;
 
     // user implement
     // 1. receive data from cloud
@@ -1105,10 +1106,10 @@ void Cloud_ReceiveHandler(void)
         osSemaphoreRelease(g_tCloudSemaphoreId);
     }
 
-    i8Ret = TCP_Recv(g_ptrCloudTcpHdlId, (char *)databuf, TCP_RX_BUF_SIZE, TCP_RX_RECV_TIMEOUT);
+    i32Ret = TCP_Recv(g_ptrCloudTcpHdlId, (char *)databuf, TCP_RX_BUF_SIZE, TCP_RX_RECV_TIMEOUT);
     
     // 2. determine the receive status
-    if(i8Ret > 0)
+    if(i32Ret > 0)
     {
         OPL_LOG_INFO(CLOUD, "recv: %s (%d)", databuf, strlen(databuf));
 
@@ -1117,9 +1118,9 @@ void Cloud_ReceiveHandler(void)
         // notify to application
         Cloud_StatusCallback(CLOUD_CB_STA_RECV_IND, (uint8_t *)databuf, strlen(databuf));
     }
-    else if(i8Ret < 0)
+    else if(i32Ret < 0)
     {
-        OPL_LOG_ERRO(CLOUD, "recv fail (ret %d)", i8Ret);
+        OPL_LOG_ERRO(CLOUD, "recv fail (ret %d)", i32Ret);
 
         if(NULL != g_tCloudSemaphoreId)
         {

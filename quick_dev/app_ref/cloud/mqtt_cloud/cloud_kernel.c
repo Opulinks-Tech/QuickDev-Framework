@@ -60,6 +60,7 @@ Declaration of Global Variables & Functions
 Declaration of static Global Variables & Functions
 ***************************************************/
 // Sec 6: declaration of static global variable
+osSemaphoreId g_tYieldSemaphoreId;
 
 // cloud kernel event table
 static T_CloudTxEvtHandlerTbl g_tCloudTxEvtHandlerTbl[] = 
@@ -316,6 +317,17 @@ void Cloud_Init(T_CloudConnInfo *tCloudInitConnInfo)
 {
     // create event group
     EG_Create(&g_tCloudEventGroup);
+
+    // create semaphore
+    osSemaphoreDef_t tSemaphoreDef;
+
+    tSemaphoreDef.dummy = 0;
+    g_tYieldSemaphoreId = osSemaphoreCreate(&tSemaphoreDef, 1);
+
+    if (g_tYieldSemaphoreId == NULL)
+    {
+        OPL_LOG_ERRO(CLOUD, "Create yield semaphore fail");
+    }
 
     // init tx task
     Cloud_TxTaskInit();

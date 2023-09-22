@@ -309,8 +309,8 @@ int32_t _HTTP_OtaHttpRetrieveGet(HTTPCLIENT_T *client, char *url, char *buf, uin
         u32DataRecv += u32DataLen;
         u32RecvTemp = tHttpOtaHttpClientData.retrieve_len;
 
-        OPL_LOG_INFO(HTTPOTA, "written image length %d", u32WriteCount);
-        OPL_LOG_INFO(HTTPOTA, "download progress %u", u32DataRecv * 100 / tHttpOtaHttpClientData.response_content_len);
+        //OPL_LOG_INFO(HTTPOTA, "written image length %d", u32WriteCount);
+        //OPL_LOG_INFO(HTTPOTA, "download progress %u", u32DataRecv * 100 / tHttpOtaHttpClientData.response_content_len);
 
 #if defined(HTTPCLIENT_EXP)
     } while (i8Ret == HTTPCLIENT_RETRIEVE_MORE_DATA_T);
@@ -412,8 +412,25 @@ int32_t HTTP_OtaHttpDownload(char *url, int len)
             osDelay(1000);
             u8RetryCount ++;
             OPL_LOG_WARN(HTTPOTA, "Connect to http server fail, retry count (%d)", u8RetryCount);
+
+            // close http connection
+#if defined(HTTPCLIENT_EXP)
+            httpclient_exp_close(&g_tHttpOtaHttpClient);
+#else
+            httpclient_close(&g_tHttpOtaHttpClient);
+#endif
         }
     } while(u8RetryCount < HTTP_OTA_HTTP_CONNECTION_RETRY_COUNT);
+
+    if(i8Ret)
+    {
+        OPL_LOG_ERRO(HTTPOTA, "Http connect retry out, OTA fail");
+
+        free(buf);
+        buf = NULL;
+
+        return i8Ret;
+    }
 
     // get current ota version
     OTA_CurrentVersionGet(&u16Pid, &u16Cid, &u16Fid);

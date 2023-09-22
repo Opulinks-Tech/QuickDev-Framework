@@ -222,11 +222,13 @@ T_OplErr OTA_UpgradeFinish(uint16_t u16SeqId)
 
     if(OPL_OK == tEvtRst)
     {
-        OTA_LOG_INFO("OTA finish");
+        //OTA_LOG_INFO("OTA finish");
+        tracer_drct_printf("\n\nOTA finish\n\n");
     }
     else
     {
-        OTA_LOG_ERRO("OTA fail");
+        //OTA_LOG_ERRO("OTA fail");
+        tracer_drct_printf("\n\nOTA fail\n\n");
     }
 
     return tEvtRst;

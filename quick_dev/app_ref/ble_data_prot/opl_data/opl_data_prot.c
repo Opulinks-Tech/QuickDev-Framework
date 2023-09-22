@@ -579,6 +579,9 @@ static void OPL_OtaTimeoutIndCb(void)
 
     OPL_OtaSendUpgradeRsp(OPL_DATA_OTA_ERR_NOT_ACTIVE);
 
+    free(gTheOta);
+    gTheOta = NULL;
+
     // OTA_TriggerReboot(3000);
 }
 
@@ -1304,6 +1307,7 @@ void OPL_DataSendEncap(uint16_t u16Type, uint8_t *pu8Data, uint32_t u32TotalData
 *************************************************************************/
 void OPL_DataSendResponse(uint16_t type_id, uint8_t status)
 {
+    OPL_LOG_DEBG(OPL, "Rsp to Phone [0x%x][%d]]", type_id, status);
     OPL_DataSendEncap(type_id, &status, 1);
 }
 

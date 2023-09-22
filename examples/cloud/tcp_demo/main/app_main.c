@@ -92,12 +92,14 @@ osTimerId g_tAppSysTimer;
 
 static T_AppEvtHandlerTbl g_tAppEvtHandlerTbl[] = 
 {
+    {APP_EVT_BLE_INIT_IND,                  APP_EvtHandler_BleInit},
     {APP_EVT_BLE_START_ADV,                 APP_EvtHandler_BleStartAdv},
-    {APP_EVT_BLE_STOP_ADV,                  APP_EvtHandler_BleStopAdv},
+    {APP_EVT_BLE_STOP_IND,                  APP_EvtHandler_BleStopAdv},
     {APP_EVT_BLE_CONNECTED,                 APP_EvtHandler_BleConnected},
     {APP_EVT_BLE_DISCONNECTED,              APP_EvtHandler_BleDisconnected},
     {APP_EVT_BLE_DATA_IND,                  APP_EvtHandler_BleDataInd},
 
+    {APP_EVT_NETWORK_INIT_IND,              APP_EvtHandler_NetworkInit},
     {APP_EVT_NETWORK_UP,                    APP_EvtHandler_NetworkUp},
     {APP_EVT_NETWORK_DOWN,                  APP_EvtHandler_NetworkDown},
     {APP_EVT_NETWORK_RESET,                 APP_EvtHandler_NetworkReset},
@@ -150,6 +152,12 @@ void APP_NmUnsolicitedCallback(T_NmUslctdEvtType tEvtType, uint8_t *pu8Data, uin
     // tEvtType refer to net_mngr_api.h
     switch(tEvtType)
     {
+        case NM_USLCTD_EVT_NETWORK_INIT:
+        {
+            APP_SendMessage(APP_EVT_NETWORK_INIT_IND, NULL, 0);
+
+            break;
+        }
         case NM_USLCTD_EVT_NETWORK_UP:
         {
             APP_SendMessage(APP_EVT_NETWORK_UP, pu8Data, u32DataLen);
@@ -189,17 +197,19 @@ void APP_BleUnsolicitedCallback(uint16_t u16EvtType, T_OplErr tEvtRst, uint8_t *
             // initialize ble scan response data
             APP_BleScanRspDataInit();
 
+            APP_SendMessage(APP_EVT_BLE_INIT_IND, NULL, 0);
+
             break;
         }
         case USLCTED_CB_EVT_BLE_ENT_ADVERTISE:
         {
-            APP_SendMessage(APP_EVT_BLE_START_ADV, NULL, 0);
+            APP_SendMessage(APP_EVT_BLE_START_ADV, &tEvtRst, sizeof(T_OplErr));
 
             break;
         }
-        case USLCTED_CB_EVT_BLE_EXI_ADVERTISE:
+        case USLCTED_CB_EVT_BLE_STOP:
         {
-            APP_SendMessage(APP_EVT_BLE_STOP_ADV, NULL, 0);
+            APP_SendMessage(APP_EVT_BLE_STOP_IND, &tEvtRst, sizeof(T_OplErr));
 
             break;
         }
@@ -265,31 +275,54 @@ static void APP_SysTimerTimeoutHandler(void const *argu)
 
 // add your event handler function here
 
+static void APP_EvtHandler_BleInit(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
+{
+    OPL_LOG_INFO(APP, "BLE ready");
+}
+
 static void APP_EvtHandler_BleStartAdv(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
-    uint8_t u8aBleMac[6] = {0};
-    Opl_Ble_MacAddr_Read(u8aBleMac);
+    T_OplErr eOplErr = *((T_OplErr *)pData);
 
-    OPL_LOG_INFO(APP, "BLE advertising...Device mac [%0X:%0X:%0X:%0X:%0X:%0X]", u8aBleMac[0],
-                                                                                u8aBleMac[1],
-                                                                                u8aBleMac[2],
-                                                                                u8aBleMac[3],
-                                                                                u8aBleMac[4],
-                                                                                u8aBleMac[5]);
+    if(OPL_OK == eOplErr)
+    {
+        uint8_t u8aBleMac[6] = {0};
+        Opl_Ble_MacAddr_Read(u8aBleMac);
+
+        OPL_LOG_INFO(APP, "BLE advertising...Device mac [%0X:%0X:%0X:%0X:%0X:%0X]", u8aBleMac[0],
+                                                                                    u8aBleMac[1],
+                                                                                    u8aBleMac[2],
+                                                                                    u8aBleMac[3],
+                                                                                    u8aBleMac[4],
+                                                                                    u8aBleMac[5]);
+    }
+    else
+    {
+        OPL_LOG_WARN(APP, "Start BLE advertising fail!");
+    }
 }
 
 static void APP_EvtHandler_BleStopAdv(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
-    OPL_LOG_INFO(APP, "BLE stop advertise");
+    T_OplErr eOplErr = *((T_OplErr *)pData);
+
+    if(OPL_OK == eOplErr)
+    {
+        OPL_LOG_INFO(APP, "BLE stop success");
 
 #if (OPL_POWER_SLEEP_CONTROL == 1)
-    // Check if ready to enter deep sleep or timer sleep
-    if(g_bTcpSlpReq)
-    {
-        OPL_LOG_WARN(APP, "BLE stop adv, check if ready to enter sleep!");
-        APP_SleepCkeckEnter();
-    }
+        // Check if ready to enter deep sleep or timer sleep
+        if(g_bTcpSlpReq)
+        {
+            OPL_LOG_WARN(APP, "BLE stop adv, check if ready to enter sleep!");
+            APP_SleepCkeckEnter();
+        }
 #endif
+    }
+    else
+    {
+        OPL_LOG_WARN(APP, "BLE stop fail");
+    }
 }
 
 static void APP_EvtHandler_BleConnected(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
@@ -322,6 +355,11 @@ static void APP_EvtHandler_BleDisconnected(uint32_t u32EventId, void *pData, uin
 static void APP_EvtHandler_BleDataInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
     OPL_DataRecvHandler(pData, (uint16_t)u32DataLen);
+}
+
+static void APP_EvtHandler_NetworkInit(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
+{
+    OPL_LOG_INFO(APP, "WiFi ready");
 }
 
 static void APP_EvtHandler_NetworkUp(uint32_t u32EventId, void *pData, uint32_t u32DataLen)

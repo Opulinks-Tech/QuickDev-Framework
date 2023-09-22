@@ -133,6 +133,22 @@ void OPL_DataHandler_WifiConnectionIndCb(T_OplErr tEvtRst);
 *************************************************************************/
 void OPL_DataHandler_WifiDisconnectionIndCb(T_OplErr tEvtRst);
 
+/*************************************************************************
+* FUNCTION:
+*   none
+*
+* DESCRIPTION:
+*   none
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void OPL_DataHandler_WifiResetCb(void);
+
 /***************************************************
 Declaration of static Global Variables & Functions
 ***************************************************/

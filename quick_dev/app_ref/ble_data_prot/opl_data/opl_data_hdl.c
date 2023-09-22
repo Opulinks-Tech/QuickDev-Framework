@@ -780,4 +780,31 @@ void OPL_DataHandler_WifiDisconnectionIndCb(T_OplErr tEvtRst)
 //     App_Ctrl_LedStatusChange();
 // }
 
+/*************************************************************************
+* FUNCTION:
+*   none
+*
+* DESCRIPTION:
+*   none
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void OPL_DataHandler_WifiResetCb(void)
+{
+    OPL_LOG_WARN(OPL, "Notiy wifi reset");
+
+    // TODO: call clear profile
+    Opl_Wifi_Profile_Clear();
+
+    // TODO: call disconnect wifi
+    Opl_Wifi_Disc_Req(NULL);
+
+    OPL_DataSendResponse(OPL_DATA_RSP_RESET, 0);
+}
+
 #endif /* OPL_DATA_ENABLED */

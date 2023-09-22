@@ -63,6 +63,8 @@ static const T_FsmStateExctblEvent tNmIdleExctblEvent[] =
     {NM_EVT_WIFI_SCAN_REQ,      APP_NmScanReqHndlr},
     {NM_EVT_WIFI_CNCT_REQ,      APP_NmCnctReqHndlr},
     {NM_EVT_AC_EN_TIMEOUT,      APP_NmAcEnTimeoutHndlr},
+    {NM_EVT_WIFI_STOP_REQ,      APP_NmStopReqHndlr},
+    {NM_EVT_WIFI_RESUME_REQ,    APP_NmResumeReqHndlr},
     {FSM_EV_NULL_EVENT,         FSM_AT_NULL_ACTION},
 };
 
@@ -98,6 +100,7 @@ static const T_FsmStateExctblEvent tNmGotIpExctblEvent[] =
     {NM_EVT_WIFI_DOWN_IND,      APP_NmWiFiDownHndlr},
     {NM_EVT_WIFI_SCAN_REQ,      APP_NmScanReqHndlr},
     {NM_EVT_WIFI_CNCT_REQ,      APP_NmCnctReqHndlr},
+    {NM_EVT_WIFI_STOP_REQ,      APP_NmStopReqHndlr},
     {NM_EVT_AC_EN_TIMEOUT,      APP_NmAcEnTimeoutHndlr},
     {FSM_EV_NULL_EVENT,         FSM_AT_NULL_ACTION},
 };
@@ -109,6 +112,12 @@ static const T_FsmStateExctblEvent tNmDhcpWaitDiscExctblEvent[] =
 };
 
 static const T_FsmStateExctblEvent tNmCnctWaitDiscExctblEvent[] = 
+{
+    {NM_EVT_WIFI_DISC_IND,      APP_NmWiFiDiscIndHndlr},
+    {FSM_EV_NULL_EVENT,         FSM_AT_NULL_ACTION},
+};
+
+static const T_FsmStateExctblEvent tNmStopWaitDiscExctblEvent[] =
 {
     {NM_EVT_WIFI_DISC_IND,      APP_NmWiFiDiscIndHndlr},
     {FSM_EV_NULL_EVENT,         FSM_AT_NULL_ACTION},
@@ -127,6 +136,7 @@ static const T_FsmStateExctblEvent tNmWifiUpAcptScanExctblEvent[] =
     {NM_EVT_DHCP_TIMEOUT,       APP_NmDhcpTimeoutHndlr},
     {NM_EVT_WIFI_SCAN_REQ,      APP_NmScanReqHndlr},
     {NM_EVT_WIFI_CNCT_REQ,      APP_NmCnctReqHndlr},
+    {NM_EVT_WIFI_STOP_REQ,      APP_NmStopReqHndlr},
     {FSM_EV_NULL_EVENT,         FSM_AT_NULL_ACTION},
 };
 
@@ -142,6 +152,7 @@ static const T_FsmStateExctblEvent tNmIdleWaitAcEnExctblEvent[] =
     {NM_EVT_WIFI_AC_EN_IND,     APP_NmAcEnIndHndlr},
     {NM_EVT_WIFI_SCAN_REQ,      APP_NmScanReqHndlr},
     {NM_EVT_WIFI_CNCT_REQ,      APP_NmCnctReqHndlr},
+    {NM_EVT_WIFI_STOP_REQ,      APP_NmStopReqHndlr},
     {FSM_EV_NULL_EVENT,         FSM_AT_NULL_ACTION},
 };
 
@@ -151,6 +162,7 @@ static const T_FsmStateExctblEvent tNmAcEnExctblEvent[] =
     {NM_EVT_WIFI_UP_IND,        APP_NmWiFiUpHndlr},
     {NM_EVT_WIFI_SCAN_REQ,      APP_NmScanReqHndlr},
     {NM_EVT_WIFI_CNCT_REQ,      APP_NmCnctReqHndlr},
+    {NM_EVT_WIFI_STOP_REQ,      APP_NmStopReqHndlr},
     {FSM_EV_NULL_EVENT,         FSM_AT_NULL_ACTION},
 };
 
@@ -159,6 +171,7 @@ static const T_FsmStateExctblEvent tNmAcWifiUpExctblEvent[] =
     {NM_EVT_GOT_IP,             APP_NmGotIpHndlr},
     {NM_EVT_WIFI_SCAN_REQ,      APP_NmScanReqHndlr},
     {NM_EVT_WIFI_CNCT_REQ,      APP_NmCnctReqHndlr},
+    {NM_EVT_WIFI_STOP_REQ,      APP_NmStopReqHndlr},
     {NM_EVT_WIFI_DOWN_IND,      APP_NmWiFiDownHndlr},
     {NM_EVT_DHCP_TIMEOUT,       APP_NmDhcpTimeoutHndlr},
     {FSM_EV_NULL_EVENT,         FSM_AT_NULL_ACTION},
@@ -170,6 +183,7 @@ static const T_FsmStateExctblEvent tNmAcDhcpWaitDiscExctblEvent[] =
     {NM_EVT_WIFI_DISC_IND,      APP_NmWiFiDiscIndHndlr},
     {NM_EVT_WIFI_SCAN_REQ,      APP_NmScanReqHndlr},
     {NM_EVT_WIFI_CNCT_REQ,      APP_NmCnctReqHndlr},
+    {NM_EVT_WIFI_STOP_REQ,      APP_NmStopReqHndlr},
     {FSM_EV_NULL_EVENT,         FSM_AT_NULL_ACTION},
 };
 
@@ -188,11 +202,19 @@ static const T_FsmStateExctblEvent tNmAcCnctWaitDiscExctblEvent[] =
 };
 
 
+static const T_FsmStateExctblEvent tNmAcStopWaitDiscExctblEvent[] =
+{
+    {NM_EVT_WIFI_DISC_IND,      APP_NmWiFiDiscIndHndlr},
+    {FSM_EV_NULL_EVENT,         FSM_AT_NULL_ACTION},
+};
+
+
 static const T_FsmStateExctblEvent tNmAcGotIpExctblEvent[] = 
 {
     {NM_EVT_WIFI_DOWN_IND,      APP_NmWiFiDownHndlr},
     {NM_EVT_WIFI_SCAN_REQ,      APP_NmScanReqHndlr},
     {NM_EVT_WIFI_CNCT_REQ,      APP_NmCnctReqHndlr},
+    {NM_EVT_WIFI_STOP_REQ,      APP_NmStopReqHndlr},
     {FSM_EV_NULL_EVENT,         FSM_AT_NULL_ACTION},
 };
 
@@ -204,6 +226,12 @@ static const T_FsmStateExctblEvent tNmScanWaitAcEnExctblEvent[] =
 };
 
 static const T_FsmStateExctblEvent tNmCnctWaitAcEnExctblEvent[] = 
+{
+    {NM_EVT_WIFI_AC_EN_IND,     APP_NmAcEnIndHndlr},
+    {FSM_EV_NULL_EVENT,         FSM_AT_NULL_ACTION},
+};
+
+static const T_FsmStateExctblEvent tNmStopWaitAcEnExctblEvent[] =
 {
     {NM_EVT_WIFI_AC_EN_IND,     APP_NmAcEnIndHndlr},
     {FSM_EV_NULL_EVENT,         FSM_AT_NULL_ACTION},
@@ -221,11 +249,18 @@ static const T_FsmStateExctblEvent tNmCnctWaitAcDisaExctblEvent[] =
     {FSM_EV_NULL_EVENT,         FSM_AT_NULL_ACTION},
 };
 
+static const T_FsmStateExctblEvent tNmStopWaitAcDisaExctblEvent[] =
+{
+    {NM_EVT_WIFI_AC_DISA_IND,   APP_NmAcDisaIndHndlr},
+    {FSM_EV_NULL_EVENT,         FSM_AT_NULL_ACTION},
+};
+
 static const T_FsmStateExctblEvent tNmGotIpWaitAcEnExctblEvent[] = 
 {
     {NM_EVT_WIFI_AC_EN_IND,     APP_NmAcEnIndHndlr},
     {NM_EVT_WIFI_SCAN_REQ,      APP_NmScanReqHndlr},
     {NM_EVT_WIFI_CNCT_REQ,      APP_NmCnctReqHndlr},
+    {NM_EVT_WIFI_STOP_REQ,      APP_NmStopReqHndlr},
     {FSM_EV_NULL_EVENT,         FSM_AT_NULL_ACTION},
 };
 
@@ -249,6 +284,7 @@ static const T_FsmStateTable tNmStateTbl[] =
 
     {tNmDhcpWaitDiscExctblEvent},
     {tNmCnctWaitDiscExctblEvent},
+    {tNmStopWaitDiscExctblEvent},
 
     {tNmWiFiUpWaitScanExctblEvent},
     {tNmWifiUpAcptScanExctblEvent},
@@ -264,14 +300,18 @@ static const T_FsmStateTable tNmStateTbl[] =
     
     {tNmAcScanWaitDiscExctblEvent},
     {tNmAcCnctWaitDiscExctblEvent},
+    {tNmAcStopWaitDiscExctblEvent},
 
     {tNmAcGotIpExctblEvent},
 
     {tNmScanWaitAcEnExctblEvent},
     {tNmCnctWaitAcEnExctblEvent},
+    {tNmStopWaitAcEnExctblEvent},
 
     {tNmScanWaitAcDisaExctblEvent},
     {tNmCnctWaitAcDisaExctblEvent},
+
+    {tNmStopWaitAcDisaExctblEvent},
 
     {tNmGotIpWaitAcEnExctblEvent},
 
@@ -327,6 +367,8 @@ static T_NmInitStatus tNmInitStatus = {0};
 
 static T_NmScanDoneIndCbFp  g_tNmScanDoneIndCbFp = NULL;
 static T_NmCnctIndCbFp      g_tNmConnectIndCbFp = NULL;
+static T_NmStopIndCbFp      g_tNmStopIndCbFp = NULL;
+static T_NmResumeIndCbFp    g_tNmResumeIndCbFp = NULL;
 
 // Sec 7: declaration of static function prototype
 
@@ -532,6 +574,11 @@ void APP_NmUslctdCbRun(T_NmEventList tEvtType, uint8_t *pu8Data, uint32_t u32Dat
 
     if( NULL != g_fpNmUslctdCb)
     {
+        if ( NM_EVT_WIFI_INIT_IND == tEvtType )
+        {
+            g_fpNmUslctdCb(NM_USLCTD_EVT_NETWORK_INIT, pu8Data, u32DataLen);
+        }
+        else
         if( NM_EVT_WIFI_DOWN_IND == tEvtType )
         {
             g_fpNmUslctdCb(NM_USLCTD_EVT_NETWORK_DOWN, pu8Data, u32DataLen);
@@ -577,6 +624,14 @@ T_OplErr APP_WmIndCbSet(T_FsmEvent tFsmEvent, FsmIndicateCbFunc fpIndCb)
         {
             g_tNmConnectIndCbFp = (T_NmCnctIndCbFp)fpIndCb;
             return OPL_OK;
+        }
+        case NM_EVT_WIFI_STOP_REQ:
+        {
+            g_tNmStopIndCbFp = (T_NmStopIndCbFp)fpIndCb;
+        }
+        case NM_EVT_WIFI_RESUME_REQ:
+        {
+            g_tNmResumeIndCbFp = (T_NmResumeIndCbFp)fpIndCb;
         }
         default:
             break;
@@ -866,7 +921,7 @@ static T_OplErr APP_NmCnctReqHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEvent, u
             memcpy(g_tCnctReqConfig.ssid, ptNmWifiCnctConfig->u8aSsid, ptNmWifiCnctConfig->u8SsidLen);
             g_tCnctReqConfig.ssid_length = ptNmWifiCnctConfig->u8SsidLen;
 
-            NM_LOG_INFO("SSID[%d] length[%d]", g_tCnctReqConfig.ssid, g_tCnctReqConfig.ssid_length);
+            NM_LOG_INFO("SSID[%s] length[%d]", g_tCnctReqConfig.ssid, g_tCnctReqConfig.ssid_length);
         }
         else
         {
@@ -1013,24 +1068,176 @@ static T_OplErr APP_NmCnctReqHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEvent, u
         }
         else
         {
-        tEvtRst = Opl_Wifi_Conn_Req(&g_tCnctReqConfig, _WmCnctDoneIndCbFp);
+            tEvtRst = Opl_Wifi_Conn_Req(&g_tCnctReqConfig, _WmCnctDoneIndCbFp);
 
-        if(OPL_OK == tEvtRst)
-        {
-            // state change
-            FSM_StateChange(&g_tNmFsmDef, NM_ST_WAIT_CNCT);
+            if(OPL_OK == tEvtRst)
+            {
+                // state change
+                FSM_StateChange(&g_tNmFsmDef, NM_ST_WAIT_CNCT);
+            }
+            else
+            {
+                // TODO: ??
+            }
         }
-        else
-        {
-            // TODO: ??
-        }
-    }
     }
 
     return tEvtRst;
 }
 
 
+
+/*************************************************************************
+* FUNCTION:
+*   none
+*
+* DESCRIPTION:
+*   none
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+static T_OplErr APP_NmStopReqHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEvent, uint8_t *pu8Data, uint32_t u32DataLen)
+{
+    T_OplErr tEvtRst = OPL_OK;
+    
+    NM_LOG_DEBG("Stop req");
+
+    if(NM_ST_IDLE_WAIT_AC_EN == g_tNmFsmDef.ptFsmStateInfo.tCurrentState ||
+        NM_ST_GOT_IP_WAIT_AC_EN == g_tNmFsmDef.ptFsmStateInfo.tCurrentState)
+    {
+        // state change
+        FSM_StateChange(&g_tNmFsmDef, NM_ST_STOP_WAIT_AC_EN);
+    }
+    else
+    if( NM_ST_AC_EN == g_tNmFsmDef.ptFsmStateInfo.tCurrentState ||
+        NM_ST_AC_WIFI_UP == g_tNmFsmDef.ptFsmStateInfo.tCurrentState ||
+        NM_ST_AC_GOT_IP == g_tNmFsmDef.ptFsmStateInfo.tCurrentState)
+    {
+        if(NM_ST_AC_WIFI_UP == g_tNmFsmDef.ptFsmStateInfo.tCurrentState)
+        {
+            // Stop DHCP Timer
+            osTimerStop(g_tDhcpTmr);
+        }
+
+        tEvtRst = Opl_Wifi_AC_Disable_Req(true, _AcDisaIndCbFp);
+
+        if(OPL_OK != tEvtRst)
+        {
+            NM_LOG_WARN("Wifi ac disable req fail [%d]", tEvtRst);
+
+            // TODO: ??
+        }
+        else
+        {
+            // state change
+            FSM_StateChange(&g_tNmFsmDef, NM_ST_STOP_WAIT_AC_DISA);
+        }
+    }
+    else
+    if( NM_ST_GOT_IP == g_tNmFsmDef.ptFsmStateInfo.tCurrentState || 
+        //NM_ST_WIFI_UP == g_tNmFsmDef.ptFsmStateInfo.tCurrentState ||
+        NM_ST_WIFI_UP_ACPT_SCAN == g_tNmFsmDef.ptFsmStateInfo.tCurrentState)
+    {
+        if(NM_ST_GOT_IP == g_tNmFsmDef.ptFsmStateInfo.tCurrentState)
+        {
+            // Stop AC enable Timer
+            osTimerStop(g_tAcEnTmr);
+        }
+        else    // Shoulde be NM_ST_WIFI_UP_ACPT_SCAN
+        {
+            // Stop DHCP Timer
+            osTimerStop(g_tDhcpTmr);
+        }
+
+        tEvtRst = Opl_Wifi_Disc_Req(_WmDiscDoneIndCbFp);
+
+        if(OPL_OK == tEvtRst)
+        {
+            // state change
+            FSM_StateChange(&g_tNmFsmDef, NM_ST_STOP_WAIT_DISC);
+        }
+        else
+        {
+            // TODO: ??
+        }
+    }
+    else
+    if(NM_ST_AC_DHCP_WAIT_DISC == g_tNmFsmDef.ptFsmStateInfo.tCurrentState)
+    {
+        //tEvtRst = Opl_Wifi_Disc_Req(_WmDiscDoneIndCbFp);
+
+        if(OPL_OK == tEvtRst)
+        {
+            // state change
+            FSM_StateChange(&g_tNmFsmDef, NM_ST_AC_STOP_WAIT_DISC);
+        }
+        else
+        {
+            // TODO: ??
+        }
+    }
+    else
+    if(NM_ST_IDLE == g_tNmFsmDef.ptFsmStateInfo.tCurrentState)
+    {
+        // Stop AC enable Timer
+        osTimerStop(g_tAcEnTmr);
+
+        g_u32AcEnable = 0;
+
+        // Indicate wifi stop done
+        if (g_tNmStopIndCbFp != NULL)
+        {
+            g_tNmStopIndCbFp(OPL_OK);
+        }
+
+        // state not change
+    }
+
+    return tEvtRst;
+}
+
+
+/*************************************************************************
+* FUNCTION:
+*   none
+*
+* DESCRIPTION:
+*   none
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+static T_OplErr APP_NmResumeReqHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEvent, uint8_t *pu8Data, uint32_t u32DataLen)
+{
+    T_OplErr tEvtRst = OPL_OK;
+    
+    NM_LOG_DEBG("Resume req");
+
+    // Enable AC again
+    g_u32AcEnable = 1;
+
+    // state change - IDLE_WAIT_AC_EN
+    FSM_StateChange(&g_tNmFsmDef, NM_ST_IDLE_WAIT_AC_EN);
+
+    Opl_Wifi_AC_Enable_Req(_AcEnIndCbFp);
+
+    // Indicate wifi resume done
+    /*if (g_tNmResumeIndCbFp != NULL)
+    {
+        g_tNmResumeIndCbFp(OPL_OK);
+    }*/
+
+    return tEvtRst;
+}
 
 /*************************************************************************
 * FUNCTION:
@@ -1304,6 +1511,22 @@ static T_OplErr APP_NmAcEnIndHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEvent, u
         }
     }
     else
+    if(NM_ST_STOP_WAIT_AC_EN == g_tNmFsmDef.ptFsmStateInfo.tCurrentState)
+    {
+        tEvtRst = Opl_Wifi_AC_Disable_Req(true, _AcDisaIndCbFp);
+
+        if(OPL_OK != tEvtRst)
+        {
+            NM_LOG_WARN("Wifi ac disable req fail [%d]", tEvtRst);
+
+            // TODO: ??
+        }
+        else
+        {
+            FSM_StateChange(&g_tNmFsmDef, NM_ST_STOP_WAIT_AC_DISA);
+        }
+    }
+    else
     if(NM_ST_GOT_IP_WAIT_AC_EN == g_tNmFsmDef.ptFsmStateInfo.tCurrentState)
     {
     	FSM_StateChange(&g_tNmFsmDef, NM_ST_AC_GOT_IP);
@@ -1318,6 +1541,16 @@ static T_OplErr APP_NmAcEnIndHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEvent, u
                 g_tNmConnectIndCbFp(OPL_OK);
             }
 
+        }
+        else    // NM_ST_IDLE_WAIT_AC_EN
+        {
+            // Indicate wifi resume done
+            if (g_tNmResumeIndCbFp != NULL)
+            {
+                g_tNmResumeIndCbFp(OPL_OK);
+
+                g_tNmResumeIndCbFp = NULL;  // Clear callback
+            }
         }
 
     	if( WM_WIFI_ST_NOT_CONNECT == (T_WmWifiConnectionState)*pu8Data)
@@ -1590,6 +1823,7 @@ static T_OplErr APP_NmAcDisaIndHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEvent,
         }
     }
     else    // NM_ST_CNCT_WAIT_AC_DISA
+    if(NM_ST_CNCT_WAIT_AC_DISA == g_tNmFsmDef.ptFsmStateInfo.tCurrentState)
     {
         if(g_u32CnctQuickSet)
         {
@@ -1620,20 +1854,37 @@ static T_OplErr APP_NmAcDisaIndHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEvent,
             // state change - QSET_WAIT_AC_E
             FSM_StateChange(&g_tNmFsmDef, NM_ST_QSET_WAIT_AC_EN);
         }
-    else
-    {
-        tEvtRst = Opl_Wifi_Conn_Req(&g_tCnctReqConfig, _WmCnctDoneIndCbFp);
-
-        if(OPL_OK == tEvtRst)
-        {
-            // state change
-            FSM_StateChange(&g_tNmFsmDef, NM_ST_WAIT_CNCT);
-        }
         else
         {
-            // TODO: ??
+            tEvtRst = Opl_Wifi_Conn_Req(&g_tCnctReqConfig, _WmCnctDoneIndCbFp);
+
+            if(OPL_OK == tEvtRst)
+            {
+                // state change
+                FSM_StateChange(&g_tNmFsmDef, NM_ST_WAIT_CNCT);
+            }
+            else
+            {
+                // TODO: ??
+            }
         }
     }
+    else
+    if(NM_ST_STOP_WAIT_AC_DISA == g_tNmFsmDef.ptFsmStateInfo.tCurrentState)
+    {
+        // Stop AC enable Timer
+        osTimerStop(g_tAcEnTmr);
+
+        g_u32AcEnable = 0;
+
+        // Indicate wifi stop done
+        if (g_tNmStopIndCbFp != NULL)
+        {
+            g_tNmStopIndCbFp(OPL_OK);
+        }
+
+        // state change
+        FSM_StateChange(&g_tNmFsmDef, NM_ST_IDLE);
     }
 
     return tEvtRst;
@@ -1786,6 +2037,23 @@ static T_OplErr APP_NmWiFiDiscIndHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEven
         }
     }
     else
+    if(NM_ST_STOP_WAIT_DISC == g_tNmFsmDef.ptFsmStateInfo.tCurrentState)
+    {
+        // Stop AC enable Timer
+        osTimerStop(g_tAcEnTmr);
+
+        g_u32AcEnable = 0;
+
+        // Indicate wifi stop done
+        if (g_tNmStopIndCbFp != NULL)
+        {
+            g_tNmStopIndCbFp(OPL_OK);
+        }
+
+        // state change
+        FSM_StateChange(&g_tNmFsmDef, NM_ST_IDLE);
+    }
+    else
     if(NM_ST_AC_SCAN_WAIT_DISC == g_tNmFsmDef.ptFsmStateInfo.tCurrentState)
     {
         tEvtRst = Opl_Wifi_AC_Disable_Req(false, _AcDisaIndCbFp);
@@ -1815,6 +2083,22 @@ static T_OplErr APP_NmWiFiDiscIndHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEven
         else
         {
             FSM_StateChange(&g_tNmFsmDef, NM_ST_CNCT_WAIT_AC_DISA);
+        }
+    }
+    else
+    if(NM_ST_AC_STOP_WAIT_DISC == g_tNmFsmDef.ptFsmStateInfo.tCurrentState)
+    {
+        tEvtRst = Opl_Wifi_AC_Disable_Req(true, _AcDisaIndCbFp);
+
+        if(OPL_OK != tEvtRst)
+        {
+            NM_LOG_WARN("Wifi ac disable req fail [%d]", tEvtRst);
+
+            // TODO: ??
+        }
+        else
+        {
+            FSM_StateChange(&g_tNmFsmDef, NM_ST_STOP_WAIT_AC_DISA);
         }
     }
     else
@@ -1920,7 +2204,8 @@ T_OplErr APP_NmEventProc(uint32_t u32EventId, uint8_t *u8Data, uint32_t u32DataL
             // Unsolicited callback
             if(OPL_OK == tEvtRst)
             {
-                if( u32EventId == NM_EVT_WIFI_DOWN_IND ||
+                if( u32EventId == NM_EVT_WIFI_INIT_IND ||
+                    u32EventId == NM_EVT_WIFI_DOWN_IND ||
                     u32EventId == NM_EVT_GOT_IP ) //||
                     //u32EventId == NM_EVT_WIFI_RESET )
                 {

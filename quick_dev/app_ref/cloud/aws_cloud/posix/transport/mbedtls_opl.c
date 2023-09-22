@@ -39,6 +39,8 @@ extern "C" {
 #define MBEDTLS_DEBUG_BUFFER_SIZE 2048
 #endif
 
+uint32_t g_u32RcvZeroCnt = 0;
+
 // each compilation unit that consumes the NetworkContext must defeine it.
 // It should contain a single pointer as seen below whenever the header file
 // of this transport implementation is included to your project.
@@ -354,6 +356,7 @@ MbedtlsOplStatus_t Mbedtls_Opl_Connect( NetworkContext_t *ptNetworkContext,
             if(MBEDTLS_ERR_SSL_WANT_READ != mbedtlsError && MBEDTLS_ERR_SSL_WANT_WRITE != mbedtlsError)
             {
                 LogError("failed\n ! mbedtls_ssl_handshake returned -0x%x\n", -mbedtlsError);
+                OPL_LOG_WARN(AWSH, "failed\n ! mbedtls_ssl_handshake returned -0x%x\n", -mbedtlsError);
                 
                 if(MBEDTLS_ERR_X509_CERT_VERIFY_FAILED == mbedtlsError)
                 {
@@ -436,14 +439,28 @@ int32_t Mbedtls_Opl_Recv(NetworkContext_t *ptNetworkContext, void *pBuffer, size
 
         // mark these set of errors as a timeout. The libraries may retry read on these errors.
         tlsStatus = 0; 
+        g_u32RcvZeroCnt = 0;
     }
     else if(0 > tlsStatus)
     {
         LogError("failed to read data -0x%x.\n", -tlsStatus);
+        g_u32RcvZeroCnt = 0;
     }
     else
     {
         // empty else marker
+        
+        //tracer_drct_printf("### rcv [0x%x].\n", tlsStatus);
+        if(0 == tlsStatus)
+        {
+            g_u32RcvZeroCnt++;
+            if(g_u32RcvZeroCnt > 10)
+            {
+                tracer_drct_printf("### Treate as MBEDTLS_ERR_SSL_CONN_EOF\n");
+                tlsStatus = MBEDTLS_ERR_SSL_CONN_EOF;
+                g_u32RcvZeroCnt = 0;
+            }
+        }
     }
 
     return tlsStatus;

@@ -75,6 +75,8 @@ static T_BmSvcHandle *g_patBmSvcHandle[BM_SVC_NUM_MAX] = {0};
 
 static uint8_t g_u8AutoAdvFlag = false;
 
+static uint8_t g_u8DiscByStopReqFlag = false;
+
 static T_BmUslctedCbFp tBmUnslctedCb = NULL;
 
 static BLE_ADV_SCAN_DATA_T g_tAdvData = {0};
@@ -426,7 +428,7 @@ static void BM_CmMsgHandler(TASK task, MESSAGEID id, MESSAGE message)
                         BM_StateChange(BM_ST_ADVING);
 
                         // call unsolicited callback
-                        tBmUnslctedCb(USLCTED_CB_EVT_BLE_EXI_ADVERTISE, OPL_ERR_BLE_EXI_ADV_CMD_FAIL, NULL, 0);
+                        tBmUnslctedCb(USLCTED_CB_EVT_BLE_STOP, OPL_ERR_BLE_EXI_ADV_CMD_FAIL, NULL, 0);
                     }
                     else
                     {
@@ -468,7 +470,7 @@ static void BM_CmMsgHandler(TASK task, MESSAGEID id, MESSAGE message)
                     BM_StateChange(BM_ST_IDLE);
 
                     // call unsolicited callback
-                    tBmUnslctedCb(USLCTED_CB_EVT_BLE_EXI_ADVERTISE, OPL_OK, NULL, 0);
+                    tBmUnslctedCb(USLCTED_CB_EVT_BLE_STOP, OPL_OK, NULL, 0);
                 }
                 else
                 {
@@ -483,7 +485,7 @@ static void BM_CmMsgHandler(TASK task, MESSAGEID id, MESSAGE message)
                 BM_StateChange(BM_ST_ADVING);
 
                 // call unsolicited callback
-                tBmUnslctedCb(USLCTED_CB_EVT_BLE_EXI_ADVERTISE, OPL_ERR_BLE_EXI_ADV_FAIL, NULL, 0);
+                tBmUnslctedCb(USLCTED_CB_EVT_BLE_STOP, OPL_ERR_BLE_EXI_ADV_FAIL, NULL, 0);
             }
         }
         break;
@@ -648,7 +650,14 @@ static void BM_CmMsgHandler(TASK task, MESSAGEID id, MESSAGE message)
                     BM_StateChange(BM_ST_IDLE);
 
                     // call unsolicited callback
-                    tBmUnslctedCb(USLCTED_CB_EVT_BLE_DISCONNECT, OPL_OK, NULL, 0);
+                    if(g_u8DiscByStopReqFlag)
+                    {
+                        tBmUnslctedCb(USLCTED_CB_EVT_BLE_STOP, OPL_OK, NULL, 0);
+                    }
+                    else
+                    {
+                        tBmUnslctedCb(USLCTED_CB_EVT_BLE_DISCONNECT, OPL_OK, NULL, 0);
+                    }
 
                     if(true == g_u8AutoAdvFlag)
                     {
@@ -675,6 +684,9 @@ static void BM_CmMsgHandler(TASK task, MESSAGEID id, MESSAGE message)
                 // TODO: Need to make sure the state
                 // BM_StateChange(BM_ST_CONNECTED);
             }
+
+            // Clear disconnect caused by stop request lag
+            g_u8DiscByStopReqFlag = false;
         }
         break;
 
@@ -749,6 +761,9 @@ static void BM_AppMsgHandler(TASK task, MESSAGEID id, MESSAGE message)
             else
             {
                 BM_LOG_WARN("Unknown case %d %d", g_tTheBle.u16CurrentState, __LINE__);
+
+                // call unsolicited callback
+                tBmUnslctedCb(USLCTED_CB_EVT_BLE_ENT_ADVERTISE, OPL_ERR_BLE_ENT_ADV_CMD_FAIL, NULL, 0);
             }
         }
         break;
@@ -772,7 +787,7 @@ static void BM_AppMsgHandler(TASK task, MESSAGEID id, MESSAGE message)
                 if(OPL_OK != BM_AdvertiseSwitch(false))
                 {
                     // call unsolicited callback
-                    tBmUnslctedCb(USLCTED_CB_EVT_BLE_EXI_ADVERTISE, OPL_ERR_BLE_EXI_ADV_CMD_FAIL, NULL, 0);
+                    tBmUnslctedCb(USLCTED_CB_EVT_BLE_STOP, OPL_ERR_BLE_EXI_ADV_CMD_FAIL, NULL, 0);
                 }
                 else
                 {
@@ -785,6 +800,9 @@ static void BM_AppMsgHandler(TASK task, MESSAGEID id, MESSAGE message)
                 // clear the auto advertise flag
                 g_u8AutoAdvFlag = false;
 
+                // The discconnect is cause by stop request
+                g_u8DiscByStopReqFlag = true;
+
                 // terminate the connection
                 LE_ERR_STATE rc = LeGapDisconnectReq(g_tTheBle.conn_hdl);
                 
@@ -793,12 +811,18 @@ static void BM_AppMsgHandler(TASK task, MESSAGEID id, MESSAGE message)
                     BM_LOG_ERRO("Disconnect Request fail (rc=%x)", rc);
 
                     // call unsolicited callback
-                    tBmUnslctedCb(USLCTED_CB_EVT_BLE_DISCONNECT, OPL_ERR_BLE_DISCONNECT_CMD_FAIL, NULL, 0);
+                    tBmUnslctedCb(USLCTED_CB_EVT_BLE_STOP, OPL_ERR_BLE_DISCONNECT_CMD_FAIL, NULL, 0);
+
+                    // Clear disconnect caused by stop request lag
+                    g_u8DiscByStopReqFlag = false;
                 }
             }
             else
             {
                 BM_LOG_WARN("Unknown case %d %d", g_tTheBle.u16CurrentState, __LINE__);
+
+                // call unsolicited callback
+                tBmUnslctedCb(USLCTED_CB_EVT_BLE_STOP, OPL_ERR_BLE_EXI_ADV_CMD_FAIL, NULL, 0);
             }
         }
         break;

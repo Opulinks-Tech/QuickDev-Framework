@@ -102,7 +102,8 @@ typedef struct S_NmWifiQCnctSet
 // Netowrk manager unsolicited event type
 typedef enum E_NmUslctdEvtType
 {
-    NM_USLCTD_EVT_NETWORK_UP    = 0,
+    NM_USLCTD_EVT_NETWORK_INIT = 0,
+    NM_USLCTD_EVT_NETWORK_UP,
     NM_USLCTD_EVT_NETWORK_DOWN,
     NM_USLCTD_EVT_NETWORK_RESET,
 } T_NmUslctdEvtType;
@@ -110,6 +111,8 @@ typedef enum E_NmUslctdEvtType
 // Netowrk manager indicate callback typedef
 typedef void (* T_NmScanDoneIndCbFp)(T_OplErr tEvtRst);
 typedef void (* T_NmCnctIndCbFp)(T_OplErr tEvtRst);
+typedef void (* T_NmStopIndCbFp)(T_OplErr tEvtRst);
+typedef void (* T_NmResumeIndCbFp)(T_OplErr tEvtRst);
 typedef void (* T_NmQCnctSetIndCbFp)(T_OplErr tEvtRst);
 
 // Network manager unsolicited callback typedef
@@ -228,6 +231,43 @@ T_OplErr APP_NmWifiScanReq(T_NmScanDoneIndCbFp fpIndCb);
 *
 *************************************************************************/
 T_OplErr APP_NmWifiCnctReq(T_NmWifiCnctConfig *ptNmWifiCnctConfig, T_NmCnctIndCbFp fpIndCb);
+
+/*************************************************************************
+* FUNCTION:
+*   APP_NmWifiStopReq
+*
+* DESCRIPTION:
+*   Stop all WiFi activities (disconnect WiFi and disable Auto-connect)
+*
+* PARAMETERS
+*   ptWmWifiCnctConfig :
+*                   [IN] WI-FI connect configuration
+*   fpIndCb :       [IN] indicate callback function pointer (if required)
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr APP_NmWifiStopReq(T_NmStopIndCbFp fpIndCb);
+
+
+/*************************************************************************
+* FUNCTION:
+*   APP_NmWifiResumeReq
+*
+* DESCRIPTION:
+*   Resume WiFi (Enable auto connect), should only be called after WiFi stop
+*
+* PARAMETERS
+*   ptWmWifiCnctConfig :
+*                   [IN] WI-FI connect configuration
+*   fpIndCb :       [IN] indicate callback function pointer (if required)
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr APP_NmWifiResumeReq(T_NmResumeIndCbFp fpIndCb);
 
 /***************************************************
 Declaration of static Global Variables & Functions

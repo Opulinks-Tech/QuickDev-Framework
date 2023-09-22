@@ -54,6 +54,9 @@ Head Block of The File
 #include "ble_hci_if.h"
 #include "wifi_agent.h"
 #include "ps_public.h"
+#if (BAT_MEAS_ENABLED == 1)
+#include "bat_aux.h"
+#endif
 
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
 #define BleAdvIntvTransform     (1.6)
@@ -87,8 +90,9 @@ T_BlePCStruct g_tPcStruct = {0};
 
 static T_AppEvtHandlerTbl g_tAppEvtHandlerTbl[] = 
 {
+    {APP_EVT_BLE_INIT_IND,                  APP_EvtHandler_BleInit},
     {APP_EVT_BLE_START_ADV,                 APP_EvtHandler_BleStartAdv},
-    {APP_EVT_BLE_STOP_ADV,                  APP_EvtHandler_BleStopAdv},
+    {APP_EVT_BLE_STOP_IND,                  APP_EvtHandler_BleStopAdv},
     {APP_EVT_BLE_CONNECTED,                 APP_EvtHandler_BleConnected},
     {APP_EVT_BLE_DISCONNECTED,              APP_EvtHandler_BleDisconnected},
     {APP_EVT_BLE_DATA_IND,                  APP_EvtHandler_BleDataInd},
@@ -96,6 +100,7 @@ static T_AppEvtHandlerTbl g_tAppEvtHandlerTbl[] =
     {APP_EVT_BLE_POWER_CONSUMPTION,         APP_EvtHandler_BlePowerConsumptionInd}, 
     {APP_EVT_WAKEUP_TIMER_START,            APP_EvtHandler_WakeUp},  
 #endif
+    {APP_EVT_NETWORK_INIT_IND,              APP_EvtHandler_NetworkInit},
     {APP_EVT_NETWORK_UP,                    APP_EvtHandler_NetworkUp},
     {APP_EVT_NETWORK_DOWN,                  APP_EvtHandler_NetworkDown},
     {APP_EVT_NETWORK_RESET,                 APP_EvtHandler_NetworkReset},
@@ -155,6 +160,12 @@ void APP_NmUnsolicitedCallback(T_NmUslctdEvtType tEvtType, uint8_t *pu8Data, uin
     // tEvtType refer to net_mngr_api.h
     switch(tEvtType)
     {
+        case NM_USLCTD_EVT_NETWORK_INIT:
+        {
+            APP_SendMessage(APP_EVT_NETWORK_INIT_IND, NULL, 0);
+
+            break;
+        }
         case NM_USLCTD_EVT_NETWORK_UP:
         {
             APP_SendMessage(APP_EVT_NETWORK_UP, pu8Data, u32DataLen);
@@ -194,17 +205,19 @@ void APP_BleUnsolicitedCallback(uint16_t u16EvtType, T_OplErr tEvtRst, uint8_t *
             // initialize ble scan response data
             APP_BleScanRspDataInit();
 
+            APP_SendMessage(APP_EVT_BLE_INIT_IND, NULL, 0);
+
             break;
         }
         case USLCTED_CB_EVT_BLE_ENT_ADVERTISE:
         {
-            APP_SendMessage(APP_EVT_BLE_START_ADV, NULL, 0);
+            APP_SendMessage(APP_EVT_BLE_START_ADV, &tEvtRst, sizeof(T_OplErr));
 
             break;
         }
-        case USLCTED_CB_EVT_BLE_EXI_ADVERTISE:
+        case USLCTED_CB_EVT_BLE_STOP:
         {
-            APP_SendMessage(APP_EVT_BLE_STOP_ADV, NULL, 0);
+            APP_SendMessage(APP_EVT_BLE_STOP_IND, &tEvtRst, sizeof(T_OplErr));
 
             break;
         }
@@ -240,22 +253,51 @@ static void APP_SysTimerTimeoutHandler(void const *argu)
 
 // add your event handler function here
 
+static void APP_EvtHandler_BleInit(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
+{
+    OPL_LOG_INFO(APP, "BLE ready");
+}
+
 static void APP_EvtHandler_BleStartAdv(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
-    uint8_t u8aBleMac[6] = {0};
-    Opl_Ble_MacAddr_Read(u8aBleMac);
+    T_OplErr eOplErr = *((T_OplErr *)pData);
 
-    OPL_LOG_INFO(APP, "BLE advertising...Device mac [%0X:%0X:%0X:%0X:%0X:%0X]", u8aBleMac[0],
-                                                                                u8aBleMac[1],
-                                                                                u8aBleMac[2],
-                                                                                u8aBleMac[3],
-                                                                                u8aBleMac[4],
-                                                                                u8aBleMac[5]);
+    if(OPL_OK == eOplErr)
+    {
+        uint8_t u8aBleMac[6] = {0};
+        Opl_Ble_MacAddr_Read(u8aBleMac);
+
+        OPL_LOG_INFO(APP, "BLE advertising...Device mac [%0X:%0X:%0X:%0X:%0X:%0X]", u8aBleMac[0],
+                                                                                    u8aBleMac[1],
+                                                                                    u8aBleMac[2],
+                                                                                    u8aBleMac[3],
+                                                                                    u8aBleMac[4],
+                                                                                    u8aBleMac[5]);
+    }
+    else
+    {
+        OPL_LOG_WARN(APP, "Start BLE advertising fail!");
+    }
 }
 
 static void APP_EvtHandler_BleStopAdv(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
-    OPL_LOG_INFO(APP, "BLE stop advertise");
+    T_OplErr eOplErr = *((T_OplErr *)pData);
+
+    if(OPL_OK == eOplErr)
+    {
+        OPL_LOG_INFO(APP, "BLE stop success");
+#if (OPL_DATA_CURRENT_MEASURE_ENABLED == 1)
+        if(true == bBleUserPC)
+        {
+            APP_Sleep_Check();    
+        }
+#endif
+    }
+    else
+    {
+        OPL_LOG_WARN(APP, "BLE stop fail");
+    }
 }
 
 static void APP_EvtHandler_BleConnected(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
@@ -369,6 +411,11 @@ static void APP_EvtHandler_BlePowerConsumptionInd(uint32_t u32EventId, void *pDa
 }
 #endif /*OPL_DATA_CURRENT_MEASURE_ENABLED*/
 
+static void APP_EvtHandler_NetworkInit(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
+{
+    OPL_LOG_INFO(APP, "WiFi ready");
+}
+
 static void APP_EvtHandler_NetworkUp(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
     OPL_LOG_INFO(APP, "Network connected");
@@ -404,6 +451,10 @@ static void APP_EvtHandler_NetworkDown(uint32_t u32EventId, void *pData, uint32_
 static void APP_EvtHandler_NetworkReset(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
     OPL_LOG_INFO(APP, "Network reset");
+#if (OPL_DATA_ENABLED == 1)
+    //OPL_LOG_WARN(APP, "Notify reset");
+    OPL_DataHandler_WifiResetCb();
+#endif
 }
 
 #if (OPL_DATA_CURRENT_MEASURE_ENABLED == 1)
@@ -868,6 +919,10 @@ void APP_Main(void *args)
     osEvent tEvent;
     T_AppMsgStruct *ptMsg;
 
+#if (BAT_MEAS_ENABLED == 1)
+    OPL_LOG_WARN(APP, "VBat[%.3fV]", Bat_AuxAdc_Get());
+#endif
+
     for(;;)
     {
         // wait event
@@ -915,7 +970,9 @@ void APP_MainInit(void)
     APP_SysInit();
 
     APP_DataInit();
-
+#if (BAT_MEAS_ENABLED == 1)
+    Bat_AuxAdc_Init();
+#endif
     APP_TaskInit();
 
     APP_BleInit();

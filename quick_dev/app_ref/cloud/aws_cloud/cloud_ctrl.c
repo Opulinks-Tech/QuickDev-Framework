@@ -44,6 +44,7 @@ Head Block of The File
 #include "cloud_ctrl.h"
 #include "cloud_kernel.h"
 #include "wifi_mngr_api.h"
+#include "transfer.h"
 
 #if (CLOUD_TX_DATA_BACKUP_ENABLED == 1)
 #include "ring_buffer.h"
@@ -71,12 +72,14 @@ Declaration of Global Variables & Functions
 uint8_t *g_pu8MqttRootCA = NULL;
 uint8_t *g_pu8MqttCert = NULL;
 uint8_t *g_pu8MqttPriKey = NULL;
+T_CloudPayloadFmt *g_pMqttLastWill = NULL;
 // Sec 5: declaration of global function prototype
 
 /***************************************************
 Declaration of static Global Variables & Functions
 ***************************************************/
 // Sec 6: declaration of static global variable
+extern osSemaphoreId g_tYieldSemaphoreId;
 
 // timer group
 static osTimerId g_tCloudTimer[CLOUD_TMR_MAX] = {NULL};
@@ -112,7 +115,7 @@ static uint16_t g_SubscribePacketAckIdentifier = 0U;
 static uint16_t g_UnsubscribePacketAckIdentifier = 0U;
 static uint16_t g_PublishPacketAckIdentifier = 0U;
 
-static uint32_t g_u32KeepAliveInterval = CLOUD_KEEP_ALIVE_TIME;
+uint32_t g_u32KeepAliveInterval = CLOUD_KEEP_ALIVE_TIME;
 static uint8_t g_u8RegisteredTopicNumber = 0;
 static bool g_blCloudTimerAndDtimInitFlag = false;
 
@@ -279,6 +282,73 @@ T_OplErr Cloud_MqttFileSet(uint8_t u8FileType, uint8_t *u8Data, uint32_t u32Data
 
     tRet = OPL_OK;
     return tRet;
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_MqttClientId_Set
+*
+* DESCRIPTION:
+*   Set AWS MQTT ClientID
+*
+* PARAMETERS
+*   u8ClientId:             [IN] AWS Client ID 
+*   u16ClientIdLen:         [IN] AWS Client ID Len
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+void Cloud_MqttClientId_Set(uint8_t *u8ClientId, uint16_t u16ClientIdLen)
+{
+    AWS_MqttHelperClientIdSet(u8ClientId, u16ClientIdLen);
+}
+
+/*************************************************************************
+* FUNCTION:
+*   Cloud_MqttLastWill_Set
+*
+* DESCRIPTION:
+*   LastWill Set
+*
+* PARAMETERS
+*   u8Data:         [IN] file buffer 
+*   u32DataLen:     [IN] file len
+*   
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr Cloud_MqttLastWill_Set(T_CloudPayloadFmt *tData)
+{
+    T_OplErr tRet = OPL_ERR;
+    T_CloudPayloadFmt **tMqttLastWill = NULL;
+
+    if(NULL == tData)
+    {
+        return tRet;
+    }
+
+    if(g_pMqttLastWill != NULL)
+    {
+        Cloud_MqttFileFree((uint8_t *)g_pMqttLastWill);
+    }
+
+    tMqttLastWill = &g_pMqttLastWill;
+
+    *tMqttLastWill =(T_CloudPayloadFmt *) malloc(sizeof(T_CloudPayloadFmt));
+        
+    if(NULL == tMqttLastWill)
+    {
+        return tRet;
+    }
+
+    memset(*tMqttLastWill, 0, sizeof(T_CloudPayloadFmt));
+    memcpy(*tMqttLastWill, tData, sizeof(T_CloudPayloadFmt));
+
+    tRet = OPL_OK;
+    return tRet;
+
 }
 
 /*************************************************************************
@@ -847,19 +917,7 @@ void Cloud_InitHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
     g_tNetworkContext.tMbedtlsOplContext = &g_tMbedtlsOplContext;
     g_tNetworkContext.tMbedtlsOplCredentials = &g_tMbedtlsOplCredentials;
 
-    // set the client identifier
-    uint8_t u8ClientId[32] = {0};
-    uint8_t u8BleAddr[6] = {0};
-    Opl_Ble_MacAddr_Read(u8BleAddr);
-
-    sprintf((char *)u8ClientId, "%s_%.2X:%.2X:%.2X:%.2X", MQTT_CLIENT_ID_TAG, 
-                                                          u8BleAddr[2],
-                                                          u8BleAddr[3],
-                                                          u8BleAddr[4],
-                                                          u8BleAddr[5]);
-
-    AWS_MqttHelperClientIdSet(u8ClientId, strlen((char *)u8ClientId));
-
+    OPL_LOG_INFO(CLOUD,"Client ID: %s", AWS_MqttHelperClientIdGet());
     bool ret = false;
 
     // initialize mqtt
@@ -899,12 +957,14 @@ void Cloud_EstablishHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLe
     // check network is up or down
     if(false == Cloud_NetworkStatusGet())
     {
+        AT_FAIL(ACK_TAG_CLOUD_MQTT_ESTAB_REQ, NULL, 0);
         OPL_LOG_WARN(CLOUD, "Network not up, cloud connect won't do");
         return;
     }
 
     if(true == Cloud_OnlineStatusGet())
     {
+        AT_FAIL(ACK_TAG_CLOUD_MQTT_ESTAB_REQ, NULL, 0);
         OPL_LOG_WARN(CLOUD, "Broker connected already");
         return;
     }
@@ -921,10 +981,12 @@ void Cloud_EstablishHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLe
         memcpy(&g_tCloudConnInfo, &tCloudConnInfo, sizeof(T_CloudConnInfo));
     }
 
-    osMemoryPoolPcbInfoDump();
+    //osMemoryPoolPcbInfoDump();
 
     // disable skip dtim
     Cloud_MqttSkipDtimSet(false, 0);
+
+    OPL_LOG_INFO(CLOUD, "MQTT connect start");
 
     ret = AWS_MqttHelperEstablishSession( &g_tMqttContext,
                                           &g_tNetworkContext,
@@ -990,7 +1052,9 @@ void Cloud_DisconnectHandler(uint32_t u32EventId, void *pData, uint32_t u32DataL
 
         Cloud_MqttSkipDtimSet(false, 0);
 
+        osSemaphoreWait(g_tYieldSemaphoreId, osWaitForever);   // Prevent disconnect while yield
         AWS_MqttHelperDisconnectSession(&g_tMqttContext, &g_tNetworkContext);
+        osSemaphoreRelease(g_tYieldSemaphoreId);
 
         Cloud_MqttSkipDtimSet(true, 0);
 
@@ -1012,6 +1076,11 @@ void Cloud_DisconnectHandler(uint32_t u32EventId, void *pData, uint32_t u32DataL
 
         // notify to app of disconnect result
         Cloud_StatusCallback(CLOUD_CB_STA_DISCONN, NULL, 0);
+    }
+    else
+    {
+        AT_FAIL(ACK_TAG_CLOUD_MQTT_DISCON_REQ, NULL, 0);
+        OPL_LOG_WARN(CLOUD, "Broker not yet connected");
     }
 }
 
@@ -1232,6 +1301,7 @@ void Cloud_PostHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
     // check connection
     if(false == Cloud_OnlineStatusGet())
     {
+        AT_FAIL(ACK_TAG_CLOUD_MQTT_PUB_DATA_REQ, NULL, 0);
         OPL_LOG_WARN(CLOUD, "Cloud disconnected");
         return;
     }
@@ -1327,6 +1397,13 @@ void Cloud_RegisterTopicHandler(uint32_t u32EventId, void *pData, uint32_t u32Da
 {
     int32_t ret = 0;
 
+    if(true != Cloud_OnlineStatusGet())
+    {
+        AT_FAIL(ACK_TAG_CLOUD_MQTT_SUB_TOPIC_REQ, NULL, 0);
+        OPL_LOG_WARN(CLOUD, "Broker not yet connected");
+        return;
+    }
+
     T_CloudTopicRegInfo ptCloudTopicRegInfo;
     memcpy(&ptCloudTopicRegInfo, pData, sizeof(T_CloudTopicRegInfo));
 
@@ -1399,6 +1476,13 @@ void Cloud_RegisterTopicHandler(uint32_t u32EventId, void *pData, uint32_t u32Da
 void Cloud_UnRegisterTopicHandler(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
     int32_t ret = 0;
+
+    if(true != Cloud_OnlineStatusGet())
+    {
+        AT_FAIL(ACK_TAG_CLOUD_MQTT_UNSUB_TOPIC_REQ, NULL, 0);
+        OPL_LOG_WARN(CLOUD, "Broker not yet connected");
+        return;
+    }
 
     T_CloudTopicRegInfo ptCloudTopicRegInfo;
     memcpy(&ptCloudTopicRegInfo, pData, sizeof(T_CloudTopicRegInfo));
@@ -1525,11 +1609,17 @@ void Cloud_ReceiveHandler(void)
         MQTTStatus_t mqttStatus;
 
         OPL_LOG_INFO(CLOUD, "-->Yield");
+
+        osSemaphoreWait(g_tYieldSemaphoreId, osWaitForever);
         mqttStatus = AWS_MqttHelperProcessLoop(&g_tMqttContext);
+        osSemaphoreRelease(g_tYieldSemaphoreId);
+        
         OPL_LOG_INFO(CLOUD, "<--Yield %s", MQTT_Status_strerror(mqttStatus));
 
         if(MQTTSuccess != mqttStatus)
         {
+            OPL_LOG_INFO(CLOUD, "<--Yield %s", MQTT_Status_strerror(mqttStatus));
+
             // check status again, since might happen the offline during process loop
             if(true == Cloud_OnlineStatusGet())
             {
@@ -1539,6 +1629,7 @@ void Cloud_ReceiveHandler(void)
 
             osDelay(2000);
         }
+        osDelay(10);
     }
 
     // if(OPL_OK == EG_StatusWait(g_tCloudMqttCtrl, CLOUD_MQTT_EG_BIT_RX_PROC, 0xFFFFFFFF))

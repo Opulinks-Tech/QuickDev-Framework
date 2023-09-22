@@ -155,4 +155,53 @@ T_OplErr APP_NmWifiCnctReq(T_NmWifiCnctConfig *ptWmWifiCnctConfig, T_NmCnctIndCb
                   );
 }
 
+
+/*************************************************************************
+* FUNCTION:
+*   APP_NmWifiStopReq
+*
+* DESCRIPTION:
+*   Stop all WiFi activities (disconnect WiFi and disable Auto-connect)
+*
+* PARAMETERS
+*   fpIndCb :       [IN] indicate callback function pointer (if required)
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr APP_NmWifiStopReq(T_NmStopIndCbFp fpIndCb)
+{
+    return FSM_Run( APP_NmFsmDefGet(), 
+                    NM_EVT_WIFI_STOP_REQ, 
+                    NULL, 
+                    0, 
+                    (FsmIndicateCbFunc)fpIndCb
+                  );
+}
+
+/*************************************************************************
+* FUNCTION:
+*   APP_NmWifiResumeReq
+*
+* DESCRIPTION:
+*   Resume WiFi (Enable auto connect), should only be called after WiFi stop
+*
+* PARAMETERS
+*   fpIndCb :       [IN] indicate callback function pointer (if required)
+*
+* RETURNS
+*   T_OplErr :      see in opl_err.h
+*
+*************************************************************************/
+T_OplErr APP_NmWifiResumeReq(T_NmResumeIndCbFp fpIndCb)
+{
+    return FSM_Run( APP_NmFsmDefGet(), 
+                    NM_EVT_WIFI_RESUME_REQ, 
+                    NULL, 
+                    0, 
+                    (FsmIndicateCbFunc)fpIndCb
+                  );
+}
+
 #endif /* NM_ENABLED */

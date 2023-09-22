@@ -70,6 +70,7 @@ osTimerId g_tAppSysTimer;
 
 static T_AppEvtHandlerTbl g_tAppEvtHandlerTbl[] = 
 {
+    {APP_EVT_NETWORK_INIT_IND,              APP_EvtHandler_NetworkInit},
     {APP_EVT_NETWORK_UP,                    APP_EvtHandler_NetworkUp},
     {APP_EVT_NETWORK_DOWN,                  APP_EvtHandler_NetworkDown},
     {APP_EVT_NETWORK_RESET,                 APP_EvtHandler_NetworkReset},
@@ -107,6 +108,12 @@ void APP_NmUnsolicitedCallback(T_NmUslctdEvtType tEvtType, uint8_t *pu8Data, uin
     // tEvtType refer to net_mngr_api.h
     switch(tEvtType)
     {
+        case NM_USLCTD_EVT_NETWORK_INIT:
+        {
+            APP_SendMessage(APP_EVT_NETWORK_INIT_IND, NULL, 0);
+
+            break;
+        }
         case NM_USLCTD_EVT_NETWORK_UP:
         {
             APP_SendMessage(APP_EVT_NETWORK_UP, pu8Data, u32DataLen);
@@ -144,6 +151,11 @@ static void APP_SysTimerTimeoutHandler(void const *argu)
 ////////////////////////////////////
 
 // add your event handler function here
+
+static void APP_EvtHandler_NetworkInit(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
+{
+    OPL_LOG_INFO(APP, "WiFi ready");
+}
 
 static void APP_EvtHandler_NetworkUp(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
