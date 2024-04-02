@@ -42,7 +42,7 @@
     - "wifi_mngr": source code of WiFi manager, implemented commonly used WiFi related features, such as WiFi scan/connect, and Auto-connect sub-module.
 - “sdk”: Opulinks SDK folder, please download SDK from Opulinks Github and put into this folder. Currently QuickDev framework supports Oplulinks OPL1000 A3 and OPL2500 A0 SoC.
   - OPL1000_A3: https://github.com/Opulinks-Tech/OPL1000A3-SDK
-  - OPL2500_A0: TBD.
+  - OPL2500_A0: https://github.com/Opulinks-Tech/OPL2500A0-SDK
 
 # User Guide
   - Please refer to: https://opulinks-tech.github.io/QuickDev-Framework-User-Guide/
