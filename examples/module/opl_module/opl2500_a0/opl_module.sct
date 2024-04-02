@@ -1,0 +1,94 @@
+#! armcc -E
+
+#include "../../../../sdk/SDK/APS/project/common/svn_rev_patch.h"
+
+/* User can modify APS_HEAP_START to adjust code size ram and HEAP start address
+ * Heap starts equals to program end */
+//#define APS_HEAP_START      0x435000
+#define APS_HEAP_START      0x4337A0
+
+/******* Don't modify below *********/
+#define APS_PATCH_START     0x412454        /* OPL2500A0 patch start */
+#define APS_RAM_START       0x400000
+#define APS_RAM_END         0x454000        /* OPL2500 RAM range: 0x400000~0x454000, 336kB */
+#define APS_PATCH_LEN       (APS_RAM_END-APS_PATCH_START)
+#define APS_HEAP_LENGTH     (APS_RAM_END-APS_HEAP_START)
+
+#if SVN_REVISION_PATCH >= 6440
+
+/* Share RAM */
+#define SHM_START           0x5091E8
+#define SHM_END             0x50C100
+#define SHM_LEN             (SHM_END - SHM_START)
+/* Rom pbuf memory */
+#define APS_PART1_START     0x409B64    /* PBUF memory */
+#define APS_PART1_END       0x40FB28
+#define APS_PART1_LEN       (APS_PART1_END - APS_PART1_START)
+/* Cache: Release cache ram for software use.
+ * When XIP is enabled, this part is not available */
+#define CACHE_START         APS_RAM_END
+#define CACHE_END           0x45C000
+#define CACHE_LEN           (CACHE_END - CACHE_START)
+
+
+LR_IROM1 APS_PATCH_START APS_PATCH_LEN
+{
+    RW_IRAM1_EntryPoint +0
+    {
+        .ANY (ENTRY_POINT)
+    }
+    RW_IRAM1 +0 APS_PATCH_LEN
+    {
+        .ANY1 (+RO, +RW, +ZI)
+    }
+    
+    RW_IRAMx_Heap APS_HEAP_START EMPTY APS_HEAP_LENGTH {}
+}
+ScatterAssert(ImageLimit(LR_IROM1) <= APS_RAM_END)
+
+LR_IROM2 SHM_START SHM_LEN
+{
+    RW_IRAM2_ShareRam SHM_START SHM_LEN
+    {
+        .ANY3 (+RO)
+    }
+}
+ScatterAssert(ImageLimit(LR_IROM2) <= SHM_END)
+
+LR_IROM3 APS_PART1_START APS_PART1_LEN
+{
+    RW_IRAM3_PartMem APS_PART1_START APS_PART1_LEN
+    {
+        .ANY2 (+RO)
+    }
+}
+ScatterAssert(ImageLimit(LR_IROM3) <= APS_PART1_END)
+
+LR_IROM4 CACHE_START CACHE_LEN
+{
+    RW_IRAM4_CacheRam CACHE_START CACHE_LEN
+    {
+        .ANY2 (+RO)
+    }
+}
+ScatterAssert(ImageLimit(LR_IROM4) <= CACHE_END)
+
+#else
+
+LR_IROM1 APS_PATCH_START APS_PATCH_LEN
+{
+    RW_IRAM1_EntryPoint +0
+    {
+        .ANY (ENTRY_POINT)
+    }
+    RW_IRAM1 +0 
+    {
+       .ANY (+RO)
+       .ANY (+RW +ZI)
+    }
+    
+    RW_IRAMx_Heap APS_HEAP_START EMPTY APS_HEAP_LENGTH {}
+}
+ScatterAssert(ImageLimit(LR_IROM1) <= APS_RAM_END)
+
+#endif

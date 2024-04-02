@@ -331,6 +331,19 @@ static void APP_EvtHandler_BleDataInd(uint32_t u32EventId, void *pData, uint32_t
 }
 
 #if (OPL_DATA_CURRENT_MEASURE_ENABLED == 1)
+void WifiStopCb(T_OplErr tEvtRst)
+{
+    if(OPL_OK == tEvtRst)
+    {
+        OPL_LOG_INFO(APP,"Wifi Stop success");
+        if(true == bBleUserPC)
+        {
+            APP_Sleep_Check();    
+        }
+    }
+    return;
+}
+
 static void APP_EvtHandler_BlePowerConsumptionInd(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
     memcpy(&g_tPcStruct, pData, u32DataLen);
@@ -367,7 +380,8 @@ static void APP_EvtHandler_BlePowerConsumptionInd(uint32_t u32EventId, void *pDa
             }
 
             //Turn off Wi-Fi  //wait response OK
-            if(OPL_OK == Opl_Wifi_AC_Disable_Req(true, NULL))
+            //if(OPL_OK == Opl_Wifi_AC_Disable_Req(true, NULL))
+            if(OPL_OK == APP_NmWifiStopReq(WifiStopCb))
             {
                 OPL_LOG_INFO(APP, "Wi-Fi Off Request Success");
             }
@@ -394,7 +408,8 @@ static void APP_EvtHandler_BlePowerConsumptionInd(uint32_t u32EventId, void *pDa
             }
 
             //Turn off Wi-Fi  //wait response OK
-            if(OPL_OK == Opl_Wifi_AC_Disable_Req(true, NULL))
+            //if(OPL_OK == Opl_Wifi_AC_Disable_Req(true, NULL))
+            if(OPL_OK == APP_NmWifiStopReq(WifiStopCb))
             {
                 OPL_LOG_INFO(APP, "Wi-Fi Off Request Success");
             }
@@ -439,13 +454,12 @@ static void APP_EvtHandler_NetworkUp(uint32_t u32EventId, void *pData, uint32_t 
 static void APP_EvtHandler_NetworkDown(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
 {
     OPL_LOG_INFO(APP, "Network disconnected");
-
-#if (OPL_DATA_CURRENT_MEASURE_ENABLED == 1)
+/*#if (OPL_DATA_CURRENT_MEASURE_ENABLED == 1)
     if(true == bBleUserPC)
     {
         APP_Sleep_Check();    
     }
-#endif
+#endif*/
 }
 
 static void APP_EvtHandler_NetworkReset(uint32_t u32EventId, void *pData, uint32_t u32DataLen)
@@ -993,6 +1007,8 @@ void APP_MainInit(void)
     PS_EnterSmartSleep(5000);
 #endif
 
+#ifndef OPL_DATA_CURRENT_MEASURE_ENABLED // Do not start timer (to print hello world) in current measure
     // start periodic timer
     osTimerStart(g_tAppSysTimer, 10000);
+#endif
 }

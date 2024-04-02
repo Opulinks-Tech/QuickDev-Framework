@@ -1,9 +1,9 @@
 # QuickDev-Framework
 - QuickDev framework aims to Opulinks SoC family (OPL1000 A3, OPL2500 A0, and after).
-- Provide an easy entry to develop IoT application.
+- Provide an easy entry to develop IoT applications.
 - Provide application reference modules consist of complete IoT application functions.
 - Provide enhanced Opulinks SDK middleware.
-- Modelized architecture, fulfills different vendor requirement.
+- Modelized architecture, fulfills different vendor requirements.
 - Provide easy configuration mechanism to config different kind of applications and different modules.
 - Provide cloud template to adapt public/private cloud.
 - Provide piratical usage examples to facilitate developing.
@@ -16,6 +16,15 @@
   - “cloud”: examples that demonstrate how to adapt cloud template of QuickDev framework.
     - “tcp_demo”:  demonstrate a simple TCP communicate between server and device, and how to adapt the QuickDev cloud template to TCP server.
     - “mqtt_demo”: demonstrate a simple MQTT communicate with broker, and how to adapt the QuickDev cloud template to MQTT broker.
+    - "aws": an example as a slave device that demonstrate the MQTT cloud's connection and data post/receive functionalities
+    - "aws_host": a host example for aws example.
+  - "module": an example as a slave device which can be controlled by the host via UART
+    - "opl": Include three pre-configurations: OPL_MODULE, OPL_AWS_BLE, and OPL_AWS_HTTP.
+  - "ota": demonstrate the firmware upgrade over the air base on different application layer protocol
+    - "http_ota": a demonstration of the OTA via HTTP
+  - "peripheral":
+    - "app_fim": The example for application using FIM, apply Zone2
+    - "i2c_master": The I2C master example (apply tcp_demo as slave) demonstrate the deep sleep mechanism
   - “start_up”: entry examples for QuickDev framework.
     - “qd_app”: This is a quick-start example for developer running QuickDev framework on Opulink Devkit. The “qd_app” (applying the Opulinks Utility App on iOS or Android), demonstrates the functionalities such as BLE/WiFi provision ad BLE OTA.
   - “wifi”: The Wi-Fi relative examples.

@@ -362,6 +362,7 @@ int32_t AWS_MqttHelperPing( MQTTContext_t *ptMqttContext)
 
 void AWS_MqttHelperClientIdSet(uint8_t *u8ClientId, uint16_t u16ClientIdLen)
 {
+    memset(g_u8ClientIdBuffer, 0, sizeof(uint8_t)*64);
     strncpy((char *)g_u8ClientIdBuffer, (char *)u8ClientId, u16ClientIdLen);
 }
 

@@ -143,6 +143,7 @@ static const T_FsmStateExctblEvent tNmWifiUpAcptScanExctblEvent[] =
 static const T_FsmStateExctblEvent tNmGotIpWaitScanExctblEvent[] = 
 {
     {NM_EVT_WIFI_SCAN_IND,      APP_NmScanDoneHndlr},
+    {NM_EVT_WIFI_DOWN_IND,      APP_NmWiFiDownHndlr},
     {FSM_EV_NULL_EVENT,         FSM_AT_NULL_ACTION},
 };
 
@@ -1475,6 +1476,7 @@ static T_OplErr APP_NmCnctIndHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEvent, u
 static T_OplErr APP_NmAcEnIndHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEvent, uint8_t *pu8Data, uint32_t u32DataLen)
 {
     T_OplErr tEvtRst = OPL_OK;
+    uint8_t bQset = 0;
 
     NM_LOG_DEBG("AC enable ind");
 
@@ -1535,6 +1537,10 @@ static T_OplErr APP_NmAcEnIndHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEvent, u
     {
         if(NM_ST_QSET_WAIT_AC_EN == g_tNmFsmDef.ptFsmStateInfo.tCurrentState)
         {
+            bQset = 1;
+        }
+        /*if(NM_ST_QSET_WAIT_AC_EN == g_tNmFsmDef.ptFsmStateInfo.tCurrentState)
+        {
             // Indicate app quick set done, the quick connect set apply same global callback
             if (g_tNmConnectIndCbFp != NULL)
             {
@@ -1551,7 +1557,7 @@ static T_OplErr APP_NmAcEnIndHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEvent, u
 
                 g_tNmResumeIndCbFp = NULL;  // Clear callback
             }
-        }
+        }*/
 
     	if( WM_WIFI_ST_NOT_CONNECT == (T_WmWifiConnectionState)*pu8Data)
         {
@@ -1572,6 +1578,26 @@ static T_OplErr APP_NmAcEnIndHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEvent, u
 
                 // Start Lwip network
                 lwip_net_start(WIFI_MODE_STA);
+            }
+        }
+
+        if(bQset)
+        {
+            // Indicate app quick set done, the quick connect set apply same global callback
+            if (g_tNmConnectIndCbFp != NULL)
+            {
+                g_tNmConnectIndCbFp(OPL_OK);
+            }
+
+        }
+        else    // NM_ST_IDLE_WAIT_AC_EN
+        {
+            // Indicate wifi resume done
+            if (g_tNmResumeIndCbFp != NULL)
+            {
+                g_tNmResumeIndCbFp(OPL_OK);
+
+                g_tNmResumeIndCbFp = NULL;  // Clear callback
             }
         }
     }
@@ -1690,6 +1716,9 @@ static T_OplErr APP_NmWiFiDownHndlr(T_FsmState tFsmState, T_FsmEvent tFsmEvent, 
         case NM_ST_WAIT_SCAN:
         case NM_ST_WAIT_CNCT:
             // nothing to do here
+            break;
+        case NM_ST_GOT_IP_WAIT_SCAN:
+            FSM_StateChange(&g_tNmFsmDef, NM_ST_WAIT_SCAN);
             break;
 		default:
 			break;

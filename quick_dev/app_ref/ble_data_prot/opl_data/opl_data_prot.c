@@ -53,6 +53,8 @@ Head Block of The File
 #include "qd_config.h"
 #include "qd_module.h"
 #include "wifi_mngr_api.h"
+#include "transfer.h"
+#include "app_main.h" 
 
 #if (OPL_DATA_CURRENT_MEASURE_ENABLED == 1)
 #include "wifi_agent.h"
@@ -577,6 +579,9 @@ static void OPL_OtaTimeoutIndCb(void)
 {
     OPL_LOG_DEBG(OPL, "OTA timeout");
 
+#if defined(AWS_MODULE)
+    APP_SendMessage(APP_EVT_OTA_FAIL_IND, NULL, 0);
+#endif
     OPL_OtaSendUpgradeRsp(OPL_DATA_OTA_ERR_NOT_ACTIVE);
 
     free(gTheOta);

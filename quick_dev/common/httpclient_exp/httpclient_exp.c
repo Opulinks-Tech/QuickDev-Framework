@@ -51,6 +51,7 @@ Head Block of The File
 #endif
 
 #include "qd_config.h"
+#include "qd_module.h"
 
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
 
@@ -88,11 +89,22 @@ Head Block of The File
 
 #define HTTPCLIENT_AUTHB_SIZE     128
 
-#define HTTPCLIENT_CHUNK_SIZE     512
-#define HTTPCLIENT_SEND_BUF_SIZE  512
+#define HTTPCLIENT_CHUNK_SIZE           (1024+1)
+// #define HTTPCLIENT_CHUNK_SIZE     512
+//#define HTTPCLIENT_SEND_BUF_SIZE  512
+#if defined(AWS_MODULE)
+#define HTTPCLIENT_SEND_BUF_SIZE     1664
+#else
+#define HTTPCLIENT_SEND_BUF_SIZE     512
+#endif
 
 #define HTTPCLIENT_MAX_HOST_LEN   64
-#define HTTPCLIENT_MAX_URL_LEN    256
+//#define HTTPCLIENT_MAX_URL_LEN    256
+#if defined(AWS_MODULE)
+#define HTTPCLIENT_MAX_URL_LEN     1536
+#else
+#define HTTPCLIENT_MAX_URL_LEN     256
+#endif
 
 //#define HTTPCLIENT_TIME_DEBUG  1
 
@@ -142,7 +154,11 @@ C Functions
 ***********/
 // Sec 8: C Functions
 
+#if defined(AWS_MODULE)
+SHM_DATA static void httpclient_base64enc(char *out, const char *in)
+#else
 static void httpclient_base64enc(char *out, const char *in)
+#endif
 {
     const char code[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=" ;
     int i = 0, x = 0, l = 0;
@@ -194,7 +210,11 @@ static int httpclient_exp_net_errno(int fd)
     return sock_errno;
 }
 
+#if defined(AWS_MODULE)
+SHM_DATA int httpclient_exp_select_check(int sock_fd, int timeout_ms)
+#else
 int httpclient_exp_select_check(int sock_fd, int timeout_ms)
+#endif
 {
     int ret = 0;
     int times = 0;
@@ -265,7 +285,11 @@ int httpclient_exp_select_check(int sock_fd, int timeout_ms)
     return ret;
 }
 
+#if defined(AWS_MODULE)
+SHM_DATA int httpclient_exp_conn(httpclient_exp_t *client, char *host)
+#else
 int httpclient_exp_conn(httpclient_exp_t *client, char *host)
+#endif
 {
     struct addrinfo hints, *addr_list, *cur;
     int ret = 0;
@@ -350,7 +374,11 @@ int httpclient_exp_conn(httpclient_exp_t *client, char *host)
     return ret;
 }
 
+#if defined(AWS_MODULE)
+SHM_DATA int httpclient_exp_parse_url(const char *url, char *scheme, size_t max_scheme_len, char *host, size_t maxhost_len, int *port, char *path, size_t max_path_len)
+#else
 int httpclient_exp_parse_url(const char *url, char *scheme, size_t max_scheme_len, char *host, size_t maxhost_len, int *port, char *path, size_t max_path_len)
+#endif
 {
     char *scheme_ptr = (char *) url;
     char *host_ptr = (char *) strstr(url, "://");
@@ -458,7 +486,11 @@ int httpclient_parse_host(char *url, char *host, size_t maxhost_len)
 }
 #endif
 
+#if defined(AWS_MODULE)
+SHM_DATA int httpclient_exp_get_info(httpclient_exp_t *client, char *send_buf, int *send_idx, char *buf, size_t len)   /* 0 on success, err code on failure */
+#else
 int httpclient_exp_get_info(httpclient_exp_t *client, char *send_buf, int *send_idx, char *buf, size_t len)   /* 0 on success, err code on failure */
+#endif
 {
     int ret ;
     int cp_len ;
@@ -546,7 +578,11 @@ int httpclient_exp_tcp_send_all(int sock_fd, char *data, int length)
     return written_len;
 }
 
+#if defined(AWS_MODULE)
+SHM_DATA int httpclient_exp_send_header(httpclient_exp_t *client, char *url, int method, httpclient_exp_data_t *client_data)
+#else
 int httpclient_exp_send_header(httpclient_exp_t *client, char *url, int method, httpclient_exp_data_t *client_data)
+#endif
 {
     char scheme[8] = {0};
     char host[HTTPCLIENT_MAX_HOST_LEN] = {0};
@@ -626,7 +662,11 @@ int httpclient_exp_send_header(httpclient_exp_t *client, char *url, int method, 
     return HTTPCLIENT_OK_T;
 }
 
+#if defined(AWS_MODULE)
+SHM_DATA int httpclient_exp_send_userdata(httpclient_exp_t *client, httpclient_exp_data_t *client_data)
+#else
 int httpclient_exp_send_userdata(httpclient_exp_t *client, httpclient_exp_data_t *client_data)
+#endif
 {
     int ret = 0;
 
@@ -658,7 +698,11 @@ int httpclient_exp_send_userdata(httpclient_exp_t *client, httpclient_exp_data_t
     return HTTPCLIENT_OK_T;
 }
 
+#if defined(AWS_MODULE)
+SHM_DATA int httpclient_exp_recv(httpclient_exp_t *client, char *buf, int min_len, int max_len, int *p_read_len)   /* 0 on success, err code on failure */
+#else
 int httpclient_exp_recv(httpclient_exp_t *client, char *buf, int min_len, int max_len, int *p_read_len)   /* 0 on success, err code on failure */
+#endif
 {
     int ret = 0;
     size_t readLen = 0;
@@ -737,7 +781,11 @@ int httpclient_exp_recv(httpclient_exp_t *client, char *buf, int min_len, int ma
     return HTTPCLIENT_OK_T;
 }
 
+#if defined(AWS_MODULE)
+SHM_DATA int httpclient_exp_retrieve_content(httpclient_exp_t *client, char *data, int len, httpclient_exp_data_t *client_data)
+#else
 int httpclient_exp_retrieve_content(httpclient_exp_t *client, char *data, int len, httpclient_exp_data_t *client_data)
+#endif
 {
     int count = 0;
     int templen = 0;
@@ -908,7 +956,11 @@ int httpclient_exp_retrieve_content(httpclient_exp_t *client, char *data, int le
     return HTTPCLIENT_OK_T;
 }
 
+#if defined(AWS_MODULE)
+SHM_DATA int httpclient_exp_response_parse(httpclient_exp_t *client, char *data, int len, httpclient_exp_data_t *client_data)
+#else
 int httpclient_exp_response_parse(httpclient_exp_t *client, char *data, int len, httpclient_exp_data_t *client_data)
+#endif
 {
     int crlf_pos;
     int header_buf_len = client_data->header_buf_len;
@@ -1016,11 +1068,22 @@ int httpclient_exp_response_parse(httpclient_exp_t *client, char *data, int len,
     return httpclient_exp_retrieve_content(client, data, len, client_data);
 }
 
+#if defined(AWS_MODULE)
+SHM_DATA HTTPCLIENT_RESULT_T httpclient_exp_connect(httpclient_exp_t *client, char *url)
+#else
 HTTPCLIENT_RESULT_T httpclient_exp_connect(httpclient_exp_t *client, char *url)
+#endif
 {
     int ret = HTTPCLIENT_ERROR_CONN_T;
     char host[HTTPCLIENT_MAX_HOST_LEN] = {0};
+    //char scheme[8] = {0};
+    
+#if defined(AWS_MOUDLE)
+    char scheme[32] = {0};
+#else
     char scheme[8] = {0};
+#endif
+           
     char path[HTTPCLIENT_MAX_URL_LEN] = {0};
 
 #ifdef HTTPCLIENT_TIME_DEBUG
@@ -1082,7 +1145,11 @@ HTTPCLIENT_RESULT_T httpclient_exp_connect(httpclient_exp_t *client, char *url)
     return (HTTPCLIENT_RESULT_T)ret;
 }
 
+#if defined(AWS_MODULE)
+SHM_DATA HTTPCLIENT_RESULT_T httpclient_exp_send_request(httpclient_exp_t *client, char *url, int method, httpclient_exp_data_t *client_data)
+#else
 HTTPCLIENT_RESULT_T httpclient_exp_send_request(httpclient_exp_t *client, char *url, int method, httpclient_exp_data_t *client_data)
+#endif
 {
     int ret = HTTPCLIENT_ERROR_CONN_T;
 
@@ -1103,7 +1170,11 @@ HTTPCLIENT_RESULT_T httpclient_exp_send_request(httpclient_exp_t *client, char *
     return (HTTPCLIENT_RESULT_T)ret;
 }
 
+#if defined(AWS_MODULE)
+SHM_DATA HTTPCLIENT_RESULT_T httpclient_exp_recv_response(httpclient_exp_t *client, httpclient_exp_data_t *client_data)
+#else
 HTTPCLIENT_RESULT_T httpclient_exp_recv_response(httpclient_exp_t *client, httpclient_exp_data_t *client_data)
+#endif
 {
     int reclen = 0;
     int ret = HTTPCLIENT_ERROR_CONN_T;
@@ -1236,8 +1307,13 @@ int httpclient_exp_get_response_header_value(char *header_buf, char *name, int *
     }
 }
 
+
 #ifdef HTTPCLIENT_SSL_ENABLE
+#if defined(AWS_MODULE)
+SHM_DATA static int httpclient_exp_ssl_nonblock_recv( void *ctx, unsigned char *buf, size_t len )
+#else
 static int httpclient_exp_ssl_nonblock_recv( void *ctx, unsigned char *buf, size_t len )
+#endif
 {
     int ret;
     int fd = ((mbedtls_net_context *) ctx)->fd;
@@ -1277,7 +1353,11 @@ static void httpclient_debug( void *ctx, int level, const char *file, int line, 
     DBG("%s", str);
 }
 
+#if defined(AWS_MODULE)
+SHM_DATA static int httpclient_exp_ssl_send_all(mbedtls_ssl_context *ssl, const char *data, size_t length)
+#else
 static int httpclient_exp_ssl_send_all(mbedtls_ssl_context *ssl, const char *data, size_t length)
+#endif
 {
     size_t written_len = 0;
 
@@ -1296,7 +1376,11 @@ static int httpclient_exp_ssl_send_all(mbedtls_ssl_context *ssl, const char *dat
     return written_len;
 }
 
+#if defined(AWS_MODULE)
+SHM_DATA static int httpclient_exp_ssl_conn(httpclient_exp_t *client, char *host)
+#else
 static int httpclient_exp_ssl_conn(httpclient_exp_t *client, char *host)
+#endif
 {
     int authmode = MBEDTLS_SSL_VERIFY_NONE;
     const char *pers = "https";
@@ -1305,6 +1389,25 @@ static int httpclient_exp_ssl_conn(httpclient_exp_t *client, char *host)
     char port[10] = {0};
     httpclient_exp_ssl_t *ssl;
 
+    //const int force_ciphersuite[] =
+    //{
+    //    MBEDTLS_TLS_RSA_WITH_AES_256_CBC_SHA256,
+    //    MBEDTLS_TLS_RSA_WITH_AES_256_CBC_SHA,
+    //    MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA256,
+    //    MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA,
+	//	0
+    //};
+#if defined(AWS_MODULE)
+    const int force_ciphersuite[] =
+    {
+        MBEDTLS_TLS_RSA_WITH_AES_256_CBC_SHA256,
+        MBEDTLS_TLS_RSA_WITH_AES_256_CBC_SHA,
+        MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA256,
+        MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA,
+        MBEDTLS_TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+		0
+    };
+#else
     const int force_ciphersuite[] =
     {
         MBEDTLS_TLS_RSA_WITH_AES_256_CBC_SHA256,
@@ -1313,6 +1416,7 @@ static int httpclient_exp_ssl_conn(httpclient_exp_t *client, char *host)
         MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA,
 		0
     };
+#endif
 
     client->ssl = malloc(sizeof(httpclient_exp_ssl_t));
     if (!client->ssl) {
@@ -1325,8 +1429,9 @@ static int httpclient_exp_ssl_conn(httpclient_exp_t *client, char *host)
     if (client->server_cert)
         authmode = MBEDTLS_SSL_VERIFY_REQUIRED;
 
-    mbedtls_ssl_config_max_content_len(1024*6);
-
+#if(HTTP_ENABLED == 1)
+    //mbedtls_ssl_config_max_content_len(1024*6);
+#endif
     /*
      * Initialize the RNG and the session data
      */
@@ -1401,6 +1506,21 @@ static int httpclient_exp_ssl_conn(httpclient_exp_t *client, char *host)
         goto exit;
     }
 
+#if (HTTP_ENABLED == 1 && defined(AWS_MODULE))
+//#if defined(AWS_MODULE)
+#if(OPL1000_A3)
+    // Enlarge in/out conent len
+    mbedtls_ssl_config_max_content_len(1024*8+288);
+    mbedtls_ssl_set_in_content_len(1024*8+288);
+    mbedtls_ssl_set_out_content_len(1024*8);
+#else
+    // Enlarge in/out conent len
+    mbedtls_ssl_config_max_content_len(1024*16);
+    mbedtls_ssl_set_out_content_len(1024*8);
+
+#endif
+#endif
+
     /* restrict ciphers */
     mbedtls_ssl_conf_ciphersuites( &ssl->ssl_conf, force_ciphersuite );
 
@@ -1429,6 +1549,14 @@ static int httpclient_exp_ssl_conn(httpclient_exp_t *client, char *host)
         goto exit;
     }
 
+#if defined(AWS_MODULE)
+    if ((ret = mbedtls_ssl_set_hostname(&ssl->ssl_ctx, host)) != 0)
+    {
+        HTTPC_ERR("mbedtls_ssl_set_hostname returned %d\n\n", ret);
+        goto exit;
+    }
+#endif
+
     mbedtls_ssl_conf_read_timeout(&ssl->ssl_conf, SSL_HANDSHAKE_TIMEOUT);
     mbedtls_ssl_set_bio(&ssl->ssl_ctx, &ssl->net_ctx, mbedtls_net_send, mbedtls_net_recv, mbedtls_net_recv_timeout);
 
@@ -1442,12 +1570,34 @@ static int httpclient_exp_ssl_conn(httpclient_exp_t *client, char *host)
 	sys_cfg_clk_set(SYS_CFG_CLK_143_MHZ);
 #endif
 
+    //while ((ret = mbedtls_ssl_handshake(&ssl->ssl_ctx)) != 0) {
+    //    if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
+    //        HTTPC_ERR("mbedtls_ssl_handshake() failed, ret:-0x%x.", -ret);
+    //        ret = -1;
+    //        sys_cfg_clk_set(SYS_CFG_CLK_RATE);
+    //        goto exit;
+    //    }
+    //}
     while ((ret = mbedtls_ssl_handshake(&ssl->ssl_ctx)) != 0) {
         if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
             HTTPC_ERR("mbedtls_ssl_handshake() failed, ret:-0x%x.", -ret);
+#if defined(AWS_MODULE)
+            if(0x2700 == -ret)   // Certificate verification failed, e.g. CRL, CA or signature check failed
+            {
+                HTTPC_ERR("Certificate verification failed");
+                ret = -4;   //  HTTPCLIENT_ERROR_PRTCL_T
+            }
+            else
+            {
+                ret = -1;
+            }
+            sys_cfg_clk_set(SYS_CFG_CLK_RATE);
+            goto exit;
+#else            
             ret = -1;
             sys_cfg_clk_set(SYS_CFG_CLK_RATE);
             goto exit;
+#endif
         }
     }
     sys_cfg_clk_set(SYS_CFG_CLK_RATE);
@@ -1476,7 +1626,11 @@ exit:
     return ret;
 }
 
+#if defined(AWS_MODULE)
+SHM_DATA static int httpclient_exp_ssl_close(httpclient_exp_t *client)
+#else
 static int httpclient_exp_ssl_close(httpclient_exp_t *client)
+#endif
 {
     httpclient_exp_ssl_t *ssl = (httpclient_exp_ssl_t *)client->ssl;
     client->client_cert = NULL;

@@ -526,7 +526,7 @@ void Cloud_TimerStopAll(void)
 T_OplErr Cloud_KeepAliveIntervalSet(uint32_t u32KeepAliveInterval)
 {
     // check keep alive range
-    if(CLOUD_KEEP_ALIVE_TIME_MAX < u32KeepAliveInterval && u32KeepAliveInterval < CLOUD_KEEP_ALIVE_TIME_MIN)
+    if(CLOUD_KEEP_ALIVE_TIME_MAX < u32KeepAliveInterval || u32KeepAliveInterval < CLOUD_KEEP_ALIVE_TIME_MIN)
     {
         return OPL_ERR;
     }
@@ -612,7 +612,7 @@ static void Cloud_MqttEventCallback(MQTTContext_t *ptMqttContext,
     {
         // handle incoming publish
         OPL_LOG_INFO(CLOUD, "Received PUBLISH on %.*s topic", ptDeserializeInfo->pPublishInfo->topicNameLength, ptDeserializeInfo->pPublishInfo->pTopicName);
-        OPL_LOG_INFO(CLOUD, "Payload: %s (%d)", ptDeserializeInfo->pPublishInfo->pPayload, ptDeserializeInfo->pPublishInfo->payloadLength);
+        OPL_LOG_INFO(CLOUD, "Payload: %.*s (%d)", ptDeserializeInfo->pPublishInfo->payloadLength, ptDeserializeInfo->pPublishInfo->pPayload, ptDeserializeInfo->pPublishInfo->payloadLength);
 
         T_CloudPayloadFmt tCloudPayloadFmt = {0};
         memcpy(&tCloudPayloadFmt.u8TopicName, ptDeserializeInfo->pPublishInfo->pTopicName, ptDeserializeInfo->pPublishInfo->topicNameLength);
@@ -1608,13 +1608,13 @@ void Cloud_ReceiveHandler(void)
     {
         MQTTStatus_t mqttStatus;
 
-        OPL_LOG_INFO(CLOUD, "-->Yield");
+        // OPL_LOG_INFO(CLOUD, "-->Yield"); 
 
         osSemaphoreWait(g_tYieldSemaphoreId, osWaitForever);
         mqttStatus = AWS_MqttHelperProcessLoop(&g_tMqttContext);
         osSemaphoreRelease(g_tYieldSemaphoreId);
         
-        OPL_LOG_INFO(CLOUD, "<--Yield %s", MQTT_Status_strerror(mqttStatus));
+        // OPL_LOG_INFO(CLOUD, "<--Yield %s", MQTT_Status_strerror(mqttStatus)); 
 
         if(MQTTSuccess != mqttStatus)
         {

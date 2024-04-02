@@ -89,7 +89,7 @@ extern "C" {
 #endif
 
 #ifndef CLOUD_KEEP_ALIVE_TIME_MAX
-#define CLOUD_KEEP_ALIVE_TIME_MAX                       (600000) //ms
+#define CLOUD_KEEP_ALIVE_TIME_MAX                       (6000000) //ms
 #endif
 
 #ifndef CLOUD_KEEP_ALIVE_TIME_MIN
@@ -122,7 +122,7 @@ extern "C" {
 /*---- below definition are requires to exist ----*/
 
 // timeout in milliseconds for processing
-#define MQTT_PROCESS_TIMEOUT_MS                         (3000U)
+#define MQTT_PROCESS_TIMEOUT_MS                         (5000U)
 
 // buffer size used to declaire the buffer for passing data to MQTT library
 //#define MQTT_NETWORK_BUFFER_SIZE                        (512U)

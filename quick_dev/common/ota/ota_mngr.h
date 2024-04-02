@@ -103,7 +103,21 @@ Declaration of Global Variables & Functions
 // Sec 4: declaration of global variable
 
 // Sec 5: declaration of global function prototype
-
+/*************************************************************************
+* FUNCTION:
+*   none
+*
+* DESCRIPTION:
+*   none
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+bool OTA_InProgress(void);
 /*************************************************************************
 * FUNCTION:
 *   none

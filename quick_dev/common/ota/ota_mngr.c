@@ -39,6 +39,10 @@ Head Block of The File
 #include "ota_mngr.h"
 #include "qd_config.h"
 #include "qd_module.h"
+#if defined(AWS_MODULE)
+#include "transfer.h"
+#include "app_main.h"
+#endif
 
 // Sec 2: Constant Definitions, Imported Symbols, miscellaneous
 
@@ -100,6 +104,30 @@ C Functions
 // OTA apis
 /*************************************************************************
 * FUNCTION:
+*   OTA_InProgress
+*
+* DESCRIPTION:
+*   none
+*
+* PARAMETERS
+*   none
+*
+* RETURNS
+*   none
+*
+*************************************************************************/
+bool OTA_InProgress(void)
+{
+    if(g_tOtaFsmDef.ptFsmStateInfo.tCurrentState == OTA_ST_PROC)
+    {
+        return true;
+    }
+
+    return false;
+}
+
+/*************************************************************************
+* FUNCTION:
 *   none
 *
 * DESCRIPTION:
@@ -155,14 +183,18 @@ T_OplErr OTA_UpgradeBegin(uint16_t *pu16SeqId, T_MwOtaFlashHeader *ptOtaHdr, T_O
         // assign ota timeout callback
         g_tOtaProcTimeoutIndCb = tOtaProcTimeoutIndCb;
 
-        OTA_LOG_INFO("OTA start (seq id %d)", g_u16SeqId);
-
+        OTA_LOG_INFO("OTA start (seq id %d)", g_u16SeqId);   
+#if defined(AWS_MODULE)     
+        APP_SendMessage(APP_EVT_OTA_START_IND, NULL, 0);
+#endif
         return OPL_OK;
     }
     else
     {
         OTA_LOG_ERRO("OTA fail");
-
+#if defined(AWS_MODULE)       
+        APP_SendMessage(APP_EVT_OTA_FAIL_IND, NULL, 0);
+#endif
         return OPL_OTA_FAIL;
     }
 }
@@ -228,6 +260,9 @@ T_OplErr OTA_UpgradeFinish(uint16_t u16SeqId)
     else
     {
         //OTA_LOG_ERRO("OTA fail");
+#if defined(AWS_MODULE)         
+        APP_SendMessage(APP_EVT_OTA_FAIL_IND, NULL, 0);
+#endif
         tracer_drct_printf("\n\nOTA fail\n\n");
     }
 
@@ -266,6 +301,9 @@ T_OplErr OTA_UpgradeGiveUp(uint16_t u16SeqId)
     else
     {
         OTA_LOG_ERRO("OTA fail");
+#if defined(AWS_MODULE) 
+        APP_SendMessage(APP_EVT_OTA_FAIL_IND, NULL, 0);
+#endif
     }
 
     return tEvtRst;

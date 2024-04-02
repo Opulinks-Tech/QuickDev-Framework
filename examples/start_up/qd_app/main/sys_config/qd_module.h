@@ -267,7 +267,7 @@ extern "C" {
 
 // <o> OPL_DATA_CURRENT_MEASURE_ENABLE - Enables current measure function in Opulinks BLE WI-FI data protocol
 #ifndef OPL_DATA_CURRENT_MEASURE_ENABLED
-#define OPL_DATA_CURRENT_MEASURE_ENABLED        (0) //For OWU current measurement default 0
+#define OPL_DATA_CURRENT_MEASURE_ENABLED        (1) //For OWU current measurement default 0
 #endif
 
 // </e>
