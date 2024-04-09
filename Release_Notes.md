@@ -2,19 +2,19 @@
 State : RC
 Version : v0.2.9
 
-## Release Date: 2024/04/02
+## Release Date: 2024/04/09
 
 ## Descript
 
-1. Add new project "opl_module" into QuickDev as a slave device which can be controlled by the host via UART. There are three pre-configurations:
+1. Add new project "opl_module" into QuickDev as a slave device that can be controlled by the host via UART. There are three pre-configurations:
     - OPL_MODULE: No cloud connection, WiFi provision, OTA and HTTP get/post.
     - OPL_AWS_BLE: AWS module with WiFi provision via BLE and OTA via BLE.
     - OPL_AWS_HTTP: AWS module with HTTP get and HTTP post.
 2. Add new project "aws_module" into the QuickDev code base as a cloud example. The aws_module is a configured example extended by opl_module. This example serves as a demonstration of the MQTT cloud's connection and data post/receive functionalities. The module includes two types:
     - Type OPL_DATA(Default): AWS module with WiFi provision via BLE and OTA via BLE.
     - Type HTTP: AWS module with HTTP get and HTTP post. Due to the memory limitation, the device can't execute HTTP-related functions after MQTT is connected.
-3. Add new project "aws_host" into QuickDev as referecne. It works as the host and "aws_module" as the slave. The host sends AT commands to the device (aws_module) through UART to demonstrate different scenarios.
-4. Add new exampple "app_fim"
+3. Add new project "aws_host" into QuickDev as a reference. It works as the host and "aws_module" as the slave. The host sends AT commands to the device (aws_module) through UART to demonstrate different scenarios.
+4. Add new example "app_fim"
    - Add example for application using FIM, apply Zone2, address 0x000A0000
 5. Verified with OPL2500 SDK version 3.3.
 

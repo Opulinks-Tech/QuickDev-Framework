@@ -46,11 +46,11 @@ extern "C" {
 #if 1
 #define QD_FWK_RELEASE_STATE                            "RC"
 #define QD_FWK_RELEASE_VER                              "v0.2.9"
-#define QD_FWK_RELEASE_DATE                             "2024/04/02"
+#define QD_FWK_RELEASE_DATE                             "2024/04/09"
 #else
 #define QD_FWK_RELEASE_STATE                            "TEST"
 #define QD_FWK_RELEASE_VER                              "After v0.2.9"
-#define QD_FWK_RELEASE_DATE                             "2024/04/02"
+#define QD_FWK_RELEASE_DATE                             "2024/04/09"
 #endif
 
 /********************************************

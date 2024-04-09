@@ -52,9 +52,7 @@ Head Block of The File
 #include "ota_mngr.h"
 #include "qd_config.h"
 #include "qd_module.h"
-#include "wifi_mngr_api.h"
-#include "transfer.h"
-#include "app_main.h" 
+#include "wifi_mngr_api.h" 
 
 #if (OPL_DATA_CURRENT_MEASURE_ENABLED == 1)
 #include "wifi_agent.h"

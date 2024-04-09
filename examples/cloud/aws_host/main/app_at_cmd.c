@@ -678,6 +678,10 @@ int AT_UploadFileRecvCB(uint32_t u32Type, uint8_t *u8aData, uint32_t u32DataLen,
     {
         APP_SendMessage(APP_EVT_CLOUD_MQTT_UPLOAD_FILE, (uint8_t *)ptUploadFileStruct, sizeof(T_UploadFileStruct) + ptUploadFileStruct->u32DataLen);
     }
+    else
+    {
+        goto done;
+    }
 
     iRet = 1;
    
@@ -844,6 +848,7 @@ done:
         AT_LOG("ERROR\r\n");
     }
 
+    return iRet;
 }
 
 /*************************************************************************
